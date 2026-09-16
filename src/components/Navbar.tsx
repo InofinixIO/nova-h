@@ -51,12 +51,14 @@ export const Navbar: React.FC<NavbarProps> = ({ onOpenAuth, onOpenCicd, onOpenTo
           id="nova-brand-logo"
         >
           <div className="w-9 h-9 rounded-lg bg-gradient-to-br from-blue-700 to-indigo-900 flex items-center justify-center text-white font-black text-lg tracking-wider shadow-xs group-hover:shadow-md transition-all shrink-0">
-            N
+            <div className="flex items-baseline translate-x-[2px]">
+              N<span className="w-1.5 h-1.5 rounded-full bg-red-500 ml-[2px]"></span>
+            </div>
           </div>
           <div>
             <div className="flex items-baseline gap-1">
-              <span className="font-extrabold text-xl sm:text-2xl tracking-tight text-slate-900 leading-none">NOVA</span>
-              <span className="w-1.5 h-1.5 rounded-full bg-blue-600"></span>
+              <span className="font-extrabold text-xl sm:text-2xl tracking-tight text-slate-900 leading-none">NOVA-H</span>
+              {/* <span className="w-1.5 h-1.5 rounded-full bg-blue-600"></span> */}
             </div>
             <p className="text-[9px] xl:text-[10px] font-semibold tracking-wider text-slate-500 uppercase mt-0.5 hidden sm:block whitespace-nowrap">
               Network for Owners, Vendors & Advisors
