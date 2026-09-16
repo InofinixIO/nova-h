@@ -1,5 +1,6 @@
 import React from 'react';
 import { FileText, Search, FileSpreadsheet, MessageSquare, TrendingUp, ArrowRight } from 'lucide-react';
+import { SectionHeading } from './SectionHeading';
 import { HOW_IT_WORKS_STEPS } from '../data/mockData';
 
 interface HowNovaWorksProps {
@@ -33,9 +34,9 @@ export const HowNovaWorks: React.FC<HowNovaWorksProps> = ({ onStepAction }) => {
           <span className="text-xs font-bold uppercase tracking-wider text-blue-700 bg-blue-50 px-3 py-1 rounded-full border border-blue-200">
             Methodology & Flow
           </span>
-          <h2 className="text-3xl sm:text-4xl font-extrabold text-slate-900 tracking-tight mt-3">
+          <SectionHeading id="how-it-works-section" className="text-3xl sm:text-4xl font-extrabold text-slate-900 tracking-tight mt-3">
             How NOVA Works
-          </h2>
+          </SectionHeading>
           <p className="text-slate-600 text-base sm:text-lg mt-2">
             A frictionless, transparent 5-step journey to move hospital projects from inception to grand opening.
           </p>

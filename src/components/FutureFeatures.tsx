@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { FileCheck, Wrench, Lightbulb, Cpu, BookOpen, Sparkles, ArrowRight, X, CheckCircle, Bot } from 'lucide-react';
+import { SectionHeading } from './SectionHeading';
 import { FUTURE_FEATURES } from '../data/mockData';
 
 interface FutureFeaturesProps {
@@ -35,9 +36,9 @@ export const FutureFeatures: React.FC<FutureFeaturesProps> = ({ onOpenAiConsulta
           <span className="text-xs font-bold uppercase tracking-wider text-blue-700 bg-blue-50 px-3 py-1 rounded-full border border-blue-200">
             Roadmap & Digital Ecosystem
           </span>
-          <h2 className="text-3xl sm:text-4xl font-extrabold text-slate-900 tracking-tight mt-3">
-            More Than a Directory
-          </h2>
+          <SectionHeading id="future-features" className="text-3xl sm:text-4xl font-extrabold text-slate-900 tracking-tight mt-3">
+            Coming to NOVA
+          </SectionHeading>
           <p className="text-slate-600 text-base sm:text-lg mt-2">
             NOVA is developing a comprehensive digital operating system for hospital promoters, vendors, and advisors.
           </p>

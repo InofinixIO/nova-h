@@ -17,6 +17,7 @@ import {
   Sparkles,
   RefreshCw
 } from 'lucide-react';
+import { SectionHeading } from './SectionHeading';
 import { DIRECTORY_DATA } from '../data/mockData';
 import { DirectoryItem } from '../types';
 import { detectUserCity } from '../utils/geoUtils';
@@ -172,9 +173,9 @@ export const DirectorySearch: React.FC<DirectorySearchProps> = ({
             <span className="text-xs font-bold uppercase tracking-wider text-blue-700 bg-blue-50 px-3 py-1 rounded-full border border-blue-200">
               Location-Based Search / Directory
             </span>
-            <h2 className="text-3xl sm:text-4xl font-extrabold text-slate-900 tracking-tight mt-3">
-              Find the Right Partners Near You
-            </h2>
+            <SectionHeading id="directory-section" className="text-3xl sm:text-4xl font-extrabold text-slate-900 tracking-tight mt-3">
+              NOVA Directory
+            </SectionHeading>
             <p className="text-slate-600 text-base sm:text-lg mt-1.5">
               Search verified vendors, advisors, and hospital infrastructure partners across Indian metros.
             </p>

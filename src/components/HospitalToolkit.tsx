@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { BookOpen, CheckCircle, ChevronLeft, ChevronRight, Sparkles, Layers, ArrowRight, ShieldCheck, Download } from 'lucide-react';
+import { SectionHeading } from './SectionHeading';
 import { TOOLKIT_15_STAGES } from '../data/mockData';
 
 interface HospitalToolkitProps {
@@ -20,7 +21,7 @@ export const HospitalToolkit: React.FC<HospitalToolkitProps> = ({ onOpenFullTool
   const activeStage = TOOLKIT_15_STAGES[currentSlide];
 
   return (
-    <section id="toolkit-section" className="py-16 sm:py-24 bg-slate-50 border-y border-slate-200">
+    <section className="py-16 sm:py-24 bg-slate-50 border-y border-slate-200">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         
         {/* Section Header */}
@@ -28,9 +29,9 @@ export const HospitalToolkit: React.FC<HospitalToolkitProps> = ({ onOpenFullTool
           <span className="text-xs font-bold uppercase tracking-wider text-blue-700 bg-blue-100/70 px-3 py-1 rounded-full">
             Essential Founder Resource
           </span>
-          <h2 className="text-3xl sm:text-4xl font-extrabold text-slate-900 tracking-tight mt-3">
-            Planning a Hospital?
-          </h2>
+          <SectionHeading id="toolkit-section" className="text-3xl sm:text-4xl font-extrabold text-slate-900 tracking-tight mt-3">
+            Hospital Owner's Toolkit
+          </SectionHeading>
           <p className="text-slate-600 text-base sm:text-lg mt-2">
             Start with the Hospital Owners Toolkit. Understand the complete hospital development journey before searching for vendors.
           </p>

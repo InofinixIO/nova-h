@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { Building, Cog, UserCheck, ArrowRight, Check, ChevronDown, ChevronUp } from 'lucide-react';
 import { UserRole } from '../types';
+import { SectionHeading } from './SectionHeading';
 
 interface ThreeUserGroupsProps {
   onSelectRole: (role: UserRole) => void;
@@ -22,9 +23,9 @@ export const ThreeUserGroups: React.FC<ThreeUserGroupsProps> = ({ onSelectRole, 
           <span className="text-xs font-bold uppercase tracking-wider text-blue-700 bg-blue-100/60 px-3 py-1 rounded-full">
             Ecosystem Stakeholders
           </span>
-          <h2 className="text-3xl sm:text-4xl font-extrabold text-slate-900 tracking-tight mt-3">
+          <SectionHeading id="three-groups" className="text-3xl sm:text-4xl font-extrabold text-slate-900 tracking-tight mt-3">
             One Network. Three Communities.
-          </h2>
+          </SectionHeading>
           <p className="text-slate-600 text-base sm:text-lg mt-2">
             Tailored journeys and dedicated workflows built specifically for healthcare creators, builders, and specialists.
           </p>

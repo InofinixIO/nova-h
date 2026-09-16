@@ -1,5 +1,6 @@
 import React from 'react';
-import { CheckCircle2, Building, Cog, UserCheck, ArrowRight } from 'lucide-react';
+import { CheckCircle2, Building, Cog, UserCheck, ShieldCheck, Zap, Globe, Users, ArrowRight } from 'lucide-react';
+import { SectionHeading } from './SectionHeading';
 import { UserRole } from '../types';
 
 interface WhyJoinNovaProps {
@@ -16,9 +17,9 @@ export const WhyJoinNova: React.FC<WhyJoinNovaProps> = ({ onSignUpRole }) => {
           <span className="text-xs font-bold uppercase tracking-wider text-blue-700 bg-blue-100/70 px-3 py-1 rounded-full">
             Network Value
           </span>
-          <h2 className="text-3xl sm:text-4xl font-extrabold text-slate-900 tracking-tight mt-3">
-            Why Join NOVA?
-          </h2>
+          <SectionHeading id="why-join-nova" className="text-3xl sm:text-4xl font-extrabold text-slate-900 tracking-tight mt-3">
+            Why Join the NOVA Network?
+          </SectionHeading>
           <p className="text-slate-600 text-base sm:text-lg mt-2">
             A purpose-built collaborative ecosystem created to de-risk healthcare capital projects and accelerate infrastructure delivery.
           </p>
