@@ -43,5 +43,9 @@
     padding: 24px !important;
     page-break-inside: avoid;
   }
+  html, body, #root {
+    height: 100%;
+    overflow: hidden !important;
+  }
 }
 
