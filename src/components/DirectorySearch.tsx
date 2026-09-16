@@ -280,26 +280,6 @@ export const DirectorySearch: React.FC<DirectorySearchProps> = ({
               </div>
             </div>
 
-            {/* Category Select */}
-            <div className="lg:col-span-3">
-              <label htmlFor="select-category" className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5 flex items-center gap-1">
-                <Tag className="w-3.5 h-3.5 text-blue-600" />
-                <span>Category</span>
-              </label>
-              <select
-                id="select-category"
-                value={selectedCategory}
-                onChange={(e) => setSelectedCategory(e.target.value)}
-                className="w-full h-11 px-3 rounded-lg bg-white border border-slate-300 text-sm text-slate-800 focus:outline-hidden focus:ring-2 focus:ring-blue-500 font-medium"
-              >
-                {categories.map((cat) => (
-                  <option key={cat} value={cat}>
-                    {cat === 'All' ? 'Select Category (All Disciplines)' : cat}
-                  </option>
-                ))}
-              </select>
-            </div>
-
             {/* Project Stage Select */}
             <div className="lg:col-span-2">
               <label htmlFor="select-stage" className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5 flex items-center gap-1">
@@ -315,6 +295,26 @@ export const DirectorySearch: React.FC<DirectorySearchProps> = ({
                 {stages.map((stg) => (
                   <option key={stg} value={stg}>
                     {stg === 'All' ? 'Select Stage (All)' : stg}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            {/* Category Select */}
+            <div className="lg:col-span-3">
+              <label htmlFor="select-category" className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5 flex items-center gap-1">
+                <Tag className="w-3.5 h-3.5 text-blue-600" />
+                <span>Category</span>
+              </label>
+              <select
+                id="select-category"
+                value={selectedCategory}
+                onChange={(e) => setSelectedCategory(e.target.value)}
+                className="w-full h-11 px-3 rounded-lg bg-white border border-slate-300 text-sm text-slate-800 focus:outline-hidden focus:ring-2 focus:ring-blue-500 font-medium"
+              >
+                {categories.map((cat) => (
+                  <option key={cat} value={cat}>
+                    {cat === 'All' ? 'Select Category (All Disciplines)' : cat}
                   </option>
                 ))}
               </select>
