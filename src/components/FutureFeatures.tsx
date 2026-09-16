@@ -39,7 +39,7 @@ export const FutureFeatures: React.FC<FutureFeaturesProps> = ({ onOpenAiConsulta
             More Than a Directory
           </h2>
           <p className="text-slate-600 text-base sm:text-lg mt-2">
-            NOBA is developing a comprehensive digital operating system for hospital promoters, vendors, and advisors.
+            NOVA is developing a comprehensive digital operating system for hospital promoters, vendors, and advisors.
           </p>
           <div className="mt-4 inline-block px-4 py-1.5 rounded-lg bg-slate-100 text-slate-800 text-xs font-medium">
             Our objective is simple: <strong>Make professional hospital-project knowledge and expertise easier to access.</strong>

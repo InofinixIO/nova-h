@@ -122,8 +122,12 @@ export function generateThemedQrSvg(text: string, options: ThemedQrOptions = {})
   if (logoUrl) {
     const logoPx = totalSize * logoSize;
     const logoXY = (totalSize - logoPx) / 2;
-    const logoBgRadius = (logoPx / 2) * 1.15; // Background for the logo to separate it from dots
-    elements += `<circle cx="${totalSize / 2}" cy="${totalSize / 2}" r="${logoBgRadius}" fill="${bgColor}" />\n`;
+    // We want a square cutout with rounded corners.
+    const bgPadding = logoPx * 0.15; 
+    const bgSize = logoPx + bgPadding * 2;
+    const bgXY = logoXY - bgPadding;
+    const bgRadius = bgSize * 0.2; // rounded corners
+    elements += `<rect x="${bgXY}" y="${bgXY}" width="${bgSize}" height="${bgSize}" rx="${bgRadius}" fill="${bgColor}" />\n`;
     elements += `<image href="${logoUrl}" x="${logoXY}" y="${logoXY}" width="${logoPx}" height="${logoPx}" preserveAspectRatio="xMidYMid meet" />\n`;
   }
 

@@ -1,5 +1,6 @@
 import React from 'react';
 import { Users2, CheckCircle2, MapPin, Clock, Target, Award } from 'lucide-react';
+import { SectionHeading } from './SectionHeading';
 
 export const WhatIsNova: React.FC = () => {
   return (
@@ -16,9 +17,9 @@ export const WhatIsNova: React.FC = () => {
               <span className="text-xs font-bold text-blue-700 uppercase tracking-wider bg-blue-100/70 px-2.5 py-0.5 rounded-full">
                 Ecosystem Vision
               </span>
-              <h2 className="text-2xl sm:text-3xl font-extrabold text-slate-900">
+              <SectionHeading id="what-is-nova" className="text-2xl sm:text-3xl font-extrabold text-slate-900">
                 What is NOVA?
-              </h2>
+              </SectionHeading>
               <p className="text-base sm:text-lg text-slate-700 leading-relaxed font-normal">
                 <strong>NOVA (Network for Owners, Vendors & Advisors)</strong> is an ecosystem for hospital projects. It connects hospital owners, vendors, and advisors to collaborate, share knowledge, and build better healthcare facilities.
               </p>
