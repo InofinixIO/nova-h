@@ -10,6 +10,7 @@ import { WhyJoinNova } from './components/WhyJoinNova';
 import { FutureFeatures } from './components/FutureFeatures';
 import { FinalCTA } from './components/FinalCTA';
 import { Footer } from './components/Footer';
+import { PamphletSection } from './components/PamphletSection';
 
 // Modals
 import { ToolkitModal } from './components/ToolkitModal';
@@ -18,7 +19,6 @@ import { VendorDetailModal } from './components/VendorDetailModal';
 import { AuthModal } from './components/AuthModal';
 import { AiConsultantModal } from './components/AiConsultantModal';
 import { CicdModal } from './components/CicdModal';
-import { PamphletQrModal } from './components/PamphletQrModal';
 
 import { UserRole, DirectoryItem, ProjectRequirement } from './types';
 import { CheckCircle2 } from 'lucide-react';
@@ -37,7 +37,6 @@ export default function App() {
 
   const [aiConsultantOpen, setAiConsultantOpen] = useState(false);
   const [cicdModalOpen, setCicdModalOpen] = useState(false);
-  const [pamphletQrOpen, setPamphletQrOpen] = useState(false);
   const [autoDetectTrigger, setAutoDetectTrigger] = useState<number>(0);
 
   // Success Toast notification
@@ -147,8 +146,19 @@ export default function App() {
         <DirectorySearch
           onSelectVendor={(v) => setSelectedVendor(v)}
           onPostRequirement={() => setRequirementModalOpen(true)}
-          onOpenPamphletQr={() => setPamphletQrOpen(true)}
+          onOpenPamphletQr={() => {
+            document.getElementById('pamphlet-section')?.scrollIntoView({ behavior: 'smooth' });
+          }}
           autoDetectTrigger={autoDetectTrigger}
+        />
+
+        {/* 6.5 PAMPHLET & QR SECTION */}
+        <PamphletSection
+          onSimulateScan={() => {
+            setAutoDetectTrigger(Date.now());
+            showToast('Simulating mobile pamphlet QR scan: Detecting location & filtering vendors only...');
+            scrollToDirectory();
+          }}
         />
 
         {/* 7. WHY JOIN NOVA? */}
@@ -173,7 +183,9 @@ export default function App() {
         onOpenAuth={handleOpenAuth}
         onOpenToolkit={() => handleOpenToolkit(0)}
         onOpenCicd={() => setCicdModalOpen(true)}
-        onOpenPamphletQr={() => setPamphletQrOpen(true)}
+        onOpenPamphletQr={() => {
+          document.getElementById('pamphlet-section')?.scrollIntoView({ behavior: 'smooth' });
+        }}
       />
 
       {/* MODALS */}
@@ -219,15 +231,6 @@ export default function App() {
       <CicdModal
         isOpen={cicdModalOpen}
         onClose={() => setCicdModalOpen(false)}
-      />
-
-      <PamphletQrModal
-        isOpen={pamphletQrOpen}
-        onClose={() => setPamphletQrOpen(false)}
-        onSimulateScan={() => {
-          setAutoDetectTrigger(Date.now());
-          showToast('Simulating mobile pamphlet QR scan: Detecting location & filtering vendors only...');
-        }}
       />
 
     </div>

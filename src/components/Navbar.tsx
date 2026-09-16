@@ -45,8 +45,13 @@ export const Navbar: React.FC<NavbarProps> = ({ onOpenAuth, onOpenCicd, onOpenTo
     >
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex items-center justify-between gap-3 xl:gap-6">
         {/* Brand Logo matching wireframe */}
-        <div 
-          onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
+        <a 
+          href="#hero-section"
+          onClick={(e) => {
+            e.preventDefault();
+            window.history.pushState(null, '', '#hero-section');
+            document.getElementById('hero-section')?.scrollIntoView({ behavior: 'smooth' });
+          }}
           className="flex items-center gap-2.5 cursor-pointer group shrink-0 select-none"
           id="nova-brand-logo"
         >
@@ -64,7 +69,7 @@ export const Navbar: React.FC<NavbarProps> = ({ onOpenAuth, onOpenCicd, onOpenTo
               Network for Owners, Vendors & Advisors
             </p>
           </div>
-        </div>
+        </a>
 
         {/* Desktop Navigation Links */}
         <nav className="hidden lg:flex items-center gap-4 xl:gap-6 shrink-0" id="desktop-nav">
