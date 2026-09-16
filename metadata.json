@@ -1,0 +1,6 @@
+{
+  "name": "NOVA - Hospital Project Network",
+  "description": "Network for Owners, Vendors & Advisors. Connecting hospital owners, vendors, and advisors to turn healthcare infrastructure projects into reality.",
+  "requestFramePermissions": ["geolocation"],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
