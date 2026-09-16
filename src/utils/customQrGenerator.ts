@@ -8,6 +8,8 @@ export interface ThemedQrOptions {
   dotScale?: number;        // Dot radius multiplier (default 0.44)
   errorCorrectionLevel?: 'L' | 'M' | 'Q' | 'H';
   width?: number;           // Target pixel width for PNG
+  logoUrl?: string;         // URL or Data URL for the centered logo (Data URL recommended for PNG generation)
+  logoSize?: number;        // Size of the logo as a fraction of QR size (default 0.25)
 }
 
 // Alignment pattern centers per QR version specification
@@ -46,8 +48,11 @@ export function generateThemedQrSvg(text: string, options: ThemedQrOptions = {})
     bgColor = '#ffffff',
     margin = 3,
     dotScale = 0.44,
-    errorCorrectionLevel = 'M'
+    logoUrl,
+    logoSize = 0.25
   } = options;
+
+  const errorCorrectionLevel = options.errorCorrectionLevel || (logoUrl ? 'H' : 'M');
 
   const qr = QRCode.create(text, { errorCorrectionLevel });
   const size = qr.modules.size;
@@ -112,6 +117,15 @@ export function generateThemedQrSvg(text: string, options: ThemedQrOptions = {})
     // Inner cyan dot: radius 0.65 modules
     elements += `<circle cx="${cx}" cy="${cy}" r="${cellSize * 0.65}" fill="${eyeCenterColor}" />\n`;
   });
+
+  // Centered Logo
+  if (logoUrl) {
+    const logoPx = totalSize * logoSize;
+    const logoXY = (totalSize - logoPx) / 2;
+    const logoBgRadius = (logoPx / 2) * 1.15; // Background for the logo to separate it from dots
+    elements += `<circle cx="${totalSize / 2}" cy="${totalSize / 2}" r="${logoBgRadius}" fill="${bgColor}" />\n`;
+    elements += `<image href="${logoUrl}" x="${logoXY}" y="${logoXY}" width="${logoPx}" height="${logoPx}" preserveAspectRatio="xMidYMid meet" />\n`;
+  }
 
   return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${totalSize} ${totalSize}" width="${totalSize}" height="${totalSize}">
   <rect width="100%" height="100%" fill="${bgColor}" />
