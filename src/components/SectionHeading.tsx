@@ -10,8 +10,9 @@ interface SectionHeadingProps {
 
 export const SectionHeading: React.FC<SectionHeadingProps> = ({ id, children, className = '', dark = false }) => {
   return (
-    <h2 className={`group inline-flex items-center gap-2 ${className}`}>
-      {children}
+    <h2 className={`group ${className}`}>
+      <span className="inline-flex items-center justify-center gap-2">
+        {children}
       <a 
         href={`#${id}`}
         className={`opacity-0 group-hover:opacity-100 transition-all focus:opacity-100 outline-none shrink-0 ${
@@ -22,6 +23,7 @@ export const SectionHeading: React.FC<SectionHeadingProps> = ({ id, children, cl
       >
         <Link2 className="w-5 h-5 md:w-6 md:h-6" />
       </a>
+      </span>
     </h2>
   );
 };
