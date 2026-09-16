@@ -28,7 +28,7 @@ export const PamphletSection: React.FC<PamphletSectionProps> = ({
 }) => {
   // Default directly to http://nova-h.in/directory as requested
   const [targetUrl, setTargetUrl] = useState('http://nova-h.in/directory');
-  const [includeScanParams, setIncludeScanParams] = useState(false);
+  const [includeScanParams, setIncludeScanParams] = useState(true);
   const [themeStyle, setThemeStyle] = useState<'attached-theme' | 'classic'>('attached-theme');
   const [qrPngUrl, setQrPngUrl] = useState<string>('');
   const [qrSvgString, setQrSvgString] = useState<string>('');
