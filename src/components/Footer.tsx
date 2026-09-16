@@ -54,7 +54,7 @@ export const Footer: React.FC<FooterProps> = ({ onOpenAuth, onOpenToolkit, onOpe
             </div>
 
             {/* Version control & CI/CD status button in footer */}
-            <div className="pt-2">
+            {/* <div className="pt-2">
               <button
                 onClick={onOpenCicd}
                 className="inline-flex items-center gap-2 px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-xs text-slate-300 border border-slate-700 cursor-pointer transition-colors"
@@ -63,7 +63,7 @@ export const Footer: React.FC<FooterProps> = ({ onOpenAuth, onOpenToolkit, onOpe
                 <span>Automated CI/CD Pipeline</span>
                 <span className="w-2 h-2 rounded-full bg-emerald-400"></span>
               </button>
-            </div>
+            </div> */}
           </div>
 
           {/* Col 3: Quick Links */}
@@ -103,7 +103,7 @@ export const Footer: React.FC<FooterProps> = ({ onOpenAuth, onOpenToolkit, onOpe
                   About NOVA
                 </button>
               </li>
-              {onOpenPamphletQr && (
+              {/* {onOpenPamphletQr && (
                 <li>
                   <button 
                     onClick={onOpenPamphletQr} 
@@ -113,7 +113,7 @@ export const Footer: React.FC<FooterProps> = ({ onOpenAuth, onOpenToolkit, onOpe
                     <span>Printable Pamphlet & QR Code</span>
                   </button>
                 </li>
-              )}
+              )} */}
             </ul>
           </div>
 
