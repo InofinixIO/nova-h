@@ -206,7 +206,7 @@ export const Footer: React.FC<FooterProps> = ({ onOpenAuth, onOpenToolkit, onOpe
 
         {/* Copyright */}
         <div className="pt-6 flex flex-col sm:flex-row items-center justify-between gap-4 text-xs text-slate-500">
-          <p>© 2024 NOVA. All rights reserved. <span className="text-slate-400">www.nova-h.in</span></p>
+          <p>&copy; {new Date().getFullYear()} NOVA. All rights reserved. <span className="text-slate-400">www.nova-h.in</span></p>
           <p>Plan Better. Connect Faster. Build Stronger.</p>
         </div>
 
