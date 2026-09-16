@@ -84,6 +84,11 @@ export const DirectorySearch: React.FC<DirectorySearchProps> = ({
       setRoleFilter('vendor');
       setIsPamphletScanActive(true);
       triggerLocationDetection();
+      
+      // Scroll to directory section
+      setTimeout(() => {
+        document.getElementById('directory-section')?.scrollIntoView({ behavior: 'smooth' });
+      }, 500);
     }
   }, []);
   
