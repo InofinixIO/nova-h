@@ -72,15 +72,15 @@ export const DirectorySearch: React.FC<DirectorySearchProps> = ({
     }
   }, [autoDetectTrigger]);
 
-  // Check URL parameters on mount: http://nova-h.in/directory?scan=true&role=vendor
+  // Check URL parameters on mount: http://nova-h.in/directory?scan=true&type=vendor
   useEffect(() => {
     if (typeof window === 'undefined') return;
     const urlParams = new URLSearchParams(window.location.search);
     const hash = window.location.hash;
     const isScan = urlParams.get('scan') === 'true' || urlParams.get('source') === 'pamphlet' || hash.includes('scan=true');
-    const roleParam = urlParams.get('role');
+    const typeParam = urlParams.get('type');
 
-    if (isScan || roleParam === 'vendor') {
+    if (isScan || typeParam === 'vendor') {
       setRoleFilter('vendor');
       setIsPamphletScanActive(true);
       triggerLocationDetection();

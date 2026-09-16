@@ -40,7 +40,7 @@ export const PamphletQrModal: React.FC<PamphletQrModalProps> = ({
 
   // Compute final effective URL
   const effectiveUrl = includeScanParams
-    ? (targetUrl.includes('?') ? `${targetUrl}&scan=true&role=vendor` : `${targetUrl}?scan=true&role=vendor`)
+    ? (targetUrl.includes('?') ? `${targetUrl}&scan=true&type=vendor` : `${targetUrl}?scan=true&type=vendor`)
     : targetUrl;
 
   // Generate QR code matching the attached design theme
