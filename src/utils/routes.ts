@@ -9,6 +9,7 @@ export type RouteSlug =
   | 'directory' 
   | 'about' 
   | 'pamphlet'
+  | 'compare'
   | 'admin'
   | 'dashboard'
   | 'whatsapp-flow'
@@ -36,6 +37,7 @@ export const getSlugFromPath = (): RouteSlug => {
     'directory',
     'about',
     'pamphlet',
+    'compare',
     'admin',
     'dashboard',
     'whatsapp-flow',

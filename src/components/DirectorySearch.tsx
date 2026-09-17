@@ -15,7 +15,9 @@ import {
   Unlock,
   Settings,
   UploadCloud,
-  PlusCircle
+  PlusCircle,
+  ArrowLeftRight,
+  ArrowRight
 } from 'lucide-react';
 import { SectionHeading } from './SectionHeading';
 import { DirectoryItem, AuthUser, UserRole } from '../types';
@@ -31,6 +33,10 @@ interface DirectorySearchProps {
   directoryItems: DirectoryItem[];
   onOpenAdminDirectory?: () => void;
   isStandalonePage?: boolean;
+  comparedIds?: string[];
+  onToggleCompare?: (id: string) => void;
+  onClearCompare?: () => void;
+  onOpenCompare?: () => void;
 }
 
 // Stage to categories mapping: Stages have different categories
@@ -121,7 +127,11 @@ export const DirectorySearch: React.FC<DirectorySearchProps> = ({
   onOpenAuth,
   directoryItems,
   onOpenAdminDirectory,
-  isStandalonePage = false
+  isStandalonePage = false,
+  comparedIds = [],
+  onToggleCompare,
+  onClearCompare,
+  onOpenCompare
 }) => {
   const [selectedLocation, setSelectedLocation] = useState<string>('All');
   const [selectedStage, setSelectedStage] = useState<string>('All');
@@ -343,6 +353,28 @@ export const DirectorySearch: React.FC<DirectorySearchProps> = ({
           </div>
 
           <div className="flex items-center gap-3 shrink-0">
+            {/* Compare Profiles button */}
+            {onOpenCompare && (
+              <button
+                id="header-compare-profiles-btn"
+                onClick={onOpenCompare}
+                className={`px-4 py-2.5 rounded-xl font-bold text-xs flex items-center gap-2 shadow-xs hover:shadow-md transition-all cursor-pointer whitespace-nowrap ${
+                  comparedIds.length > 0
+                    ? 'bg-blue-600 hover:bg-blue-700 text-white ring-2 ring-blue-300'
+                    : 'bg-white hover:bg-slate-50 text-slate-700 border border-slate-300'
+                }`}
+                title="Compare hospital partner profiles side-by-side"
+              >
+                <ArrowLeftRight className="w-4 h-4 text-blue-500 group-hover:text-white" />
+                <span>Compare Profiles</span>
+                {comparedIds.length > 0 && (
+                  <span className="w-5 h-5 rounded-full bg-white text-blue-700 text-[10px] font-black flex items-center justify-center">
+                    {comparedIds.length}
+                  </span>
+                )}
+              </button>
+            )}
+
             {/* Admin Directory Management Button (Only for authenticated admin) */}
             {currentUser?.role === 'admin' && (
               <button
@@ -699,7 +731,26 @@ export const DirectorySearch: React.FC<DirectorySearchProps> = ({
 
                 {/* Footer Action */}
                 <div className="pt-4 border-t border-slate-100 flex items-center justify-between">
-                  <div className="flex items-center gap-1.5">
+                  <div className="flex items-center gap-2">
+                    {onToggleCompare && (
+                      <label 
+                        className={`flex items-center gap-1.5 px-2 py-1 rounded-md text-[11px] font-bold cursor-pointer select-none transition-all ${
+                          comparedIds.includes(item.id)
+                            ? 'bg-blue-600 text-white shadow-2xs'
+                            : 'bg-slate-100 hover:bg-slate-200 text-slate-700 border border-slate-200/80'
+                        }`}
+                        title="Add to side-by-side comparison"
+                      >
+                        <input
+                          type="checkbox"
+                          checked={comparedIds.includes(item.id)}
+                          onChange={() => onToggleCompare(item.id)}
+                          className="rounded border-slate-300 text-blue-600 focus:ring-blue-500 cursor-pointer w-3.5 h-3.5"
+                        />
+                        <span>Compare</span>
+                      </label>
+                    )}
+
                     <span className="text-xs text-slate-500 font-medium">
                       {item.yearsOfExperience}+ yrs exp
                     </span>
@@ -747,6 +798,44 @@ export const DirectorySearch: React.FC<DirectorySearchProps> = ({
               >
                 {!currentUser && <Lock className="w-3.5 h-3.5 text-blue-200" />}
                 <span>{currentUser ? "Post Your Requirement" : "Sign In to Post Requirement"}</span>
+              </button>
+            </div>
+          </div>
+        )}
+
+        {/* Floating Compare Bar when items are selected */}
+        {comparedIds.length > 0 && onOpenCompare && (
+          <div className="fixed bottom-5 left-1/2 -translate-x-1/2 z-40 max-w-2xl w-[92%] bg-slate-900 text-white px-5 py-3.5 rounded-2xl shadow-2xl border border-slate-700 flex flex-wrap items-center justify-between gap-3 animate-slideUp">
+            <div className="flex items-center gap-3">
+              <div className="w-8 h-8 rounded-lg bg-blue-600 flex items-center justify-center text-white shrink-0 font-extrabold text-xs shadow-xs">
+                {comparedIds.length}
+              </div>
+              <div>
+                <p className="text-xs font-bold flex items-center gap-1.5">
+                  <span>{comparedIds.length} {comparedIds.length === 1 ? 'partner' : 'partners'} selected</span>
+                  <span className="text-[10px] text-blue-300 font-medium">(up to 4)</span>
+                </p>
+                <p className="text-[11px] text-slate-400 line-clamp-1">
+                  Compare verified track records, hospital projects &amp; capabilities
+                </p>
+              </div>
+            </div>
+
+            <div className="flex items-center gap-2">
+              {onClearCompare && (
+                <button
+                  onClick={onClearCompare}
+                  className="text-xs text-slate-400 hover:text-white px-2.5 py-1.5 rounded-lg hover:bg-slate-800 cursor-pointer transition-colors"
+                >
+                  Clear
+                </button>
+              )}
+              <button
+                onClick={onOpenCompare}
+                className="px-4 py-2 rounded-xl bg-blue-600 hover:bg-blue-500 text-white font-bold text-xs flex items-center gap-1.5 cursor-pointer shadow-md transition-all"
+              >
+                <span>Compare Profiles Now</span>
+                <ArrowRight className="w-3.5 h-3.5" />
               </button>
             </div>
           </div>

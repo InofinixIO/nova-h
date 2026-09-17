@@ -23,7 +23,8 @@ import {
   Sparkles,
   Layers,
   ChevronRight,
-  ExternalLink
+  ExternalLink,
+  ArrowLeftRight
 } from 'lucide-react';
 import { DirectoryItem, AuthUser, UserRole } from '../types';
 import { addEnquiry } from '../utils/enquiriesStorage';
@@ -34,6 +35,9 @@ interface VendorDetailModalProps {
   onPostRequirement: () => void;
   currentUser: AuthUser | null;
   onOpenAuth: (mode: 'signin' | 'signup', role?: UserRole) => void;
+  isCompared?: boolean;
+  onToggleCompare?: (id: string) => void;
+  onOpenCompare?: () => void;
 }
 
 export const VendorDetailModal: React.FC<VendorDetailModalProps> = ({
@@ -42,6 +46,9 @@ export const VendorDetailModal: React.FC<VendorDetailModalProps> = ({
   onPostRequirement,
   currentUser,
   onOpenAuth,
+  isCompared = false,
+  onToggleCompare,
+  onOpenCompare
 }) => {
   const [messageSent, setMessageSent] = useState(false);
   const [messageText, setMessageText] = useState('');
@@ -620,6 +627,30 @@ export const VendorDetailModal: React.FC<VendorDetailModalProps> = ({
             <span>NOVA Verified Healthcare Network</span>
           </div>
           <div className="flex items-center gap-3">
+            {onToggleCompare && (
+              <button
+                onClick={() => onToggleCompare(vendor.id)}
+                className={`px-3 py-1.5 rounded-lg font-semibold text-xs flex items-center gap-1.5 cursor-pointer transition-colors ${
+                  isCompared
+                    ? 'bg-blue-600 text-white hover:bg-blue-700 shadow-2xs'
+                    : 'bg-white border border-slate-300 text-slate-700 hover:bg-slate-100'
+                }`}
+              >
+                <ArrowLeftRight className="w-3.5 h-3.5" />
+                <span>{isCompared ? 'In Comparison (Remove)' : 'Add to Compare'}</span>
+              </button>
+            )}
+            {isCompared && onOpenCompare && (
+              <button
+                onClick={() => {
+                  onClose();
+                  onOpenCompare();
+                }}
+                className="px-3 py-1.5 rounded-lg bg-blue-50 text-blue-700 hover:bg-blue-100 font-bold text-xs flex items-center gap-1 cursor-pointer"
+              >
+                <span>View Comparison →</span>
+              </button>
+            )}
             <button
               onClick={onClose}
               className="px-3.5 py-1.5 rounded-lg border border-slate-300 hover:bg-slate-100 text-slate-700 font-semibold cursor-pointer"

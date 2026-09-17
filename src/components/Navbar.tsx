@@ -12,6 +12,7 @@ interface NavbarProps {
   onOpenAdminDirectory?: () => void;
   activeSlug?: RouteSlug;
   onNavigate: (slug: RouteSlug) => void;
+  comparedCount?: number;
 }
 
 export const Navbar: React.FC<NavbarProps> = ({ 
@@ -22,7 +23,8 @@ export const Navbar: React.FC<NavbarProps> = ({
   onLogout,
   onOpenAdminDirectory,
   activeSlug = '',
-  onNavigate
+  onNavigate,
+  comparedCount = 0
 }) => {
   const [scrolled, setScrolled] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
@@ -132,6 +134,20 @@ export const Navbar: React.FC<NavbarProps> = ({
             }`}
           >
             Directory
+          </button>
+          <button
+            id="nav-compare-profiles-link"
+            onClick={() => handleLinkClick('compare')}
+            className={`text-xs xl:text-sm font-semibold transition-colors cursor-pointer whitespace-nowrap flex items-center gap-1.5 ${
+              activeSlug === 'compare' ? 'text-blue-700 font-bold' : 'text-slate-600 hover:text-blue-700'
+            }`}
+          >
+            <span>Compare</span>
+            {comparedCount > 0 && (
+              <span className="w-4 h-4 rounded-full bg-blue-600 text-white text-[10px] font-bold flex items-center justify-center shadow-2xs">
+                {comparedCount}
+              </span>
+            )}
           </button>
           <button
             onClick={() => handleLinkClick('rfp')}
@@ -381,6 +397,20 @@ export const Navbar: React.FC<NavbarProps> = ({
               }`}
             >
               Directory
+            </button>
+            <button
+              id="mobile-nav-compare-profiles-link"
+              onClick={() => handleLinkClick('compare')}
+              className={`px-3 py-2 text-left text-sm font-semibold rounded-md flex items-center justify-between ${
+                activeSlug === 'compare' ? 'bg-blue-50 text-blue-700 font-bold' : 'text-slate-700 hover:bg-slate-50'
+              }`}
+            >
+              <span>Compare Profiles</span>
+              {comparedCount > 0 && (
+                <span className="w-5 h-5 rounded-full bg-blue-600 text-white text-xs font-bold flex items-center justify-center">
+                  {comparedCount}
+                </span>
+              )}
             </button>
             <button
               onClick={() => handleLinkClick('rfp')}

@@ -29,6 +29,7 @@ import { AdminConsoleView } from './components/AdminConsoleView';
 import { UserDashboard } from './components/UserDashboard';
 import { WhatsAppFlowBuilder } from './components/whatsapp/WhatsAppFlowBuilder';
 import { ProcurementWorkspace } from './components/procurement/ProcurementWorkspace';
+import { CompareProfilesView } from './components/CompareProfilesView';
 
 import { UserRole, DirectoryItem, ProjectRequirement, PaymentTransaction, AuthUser, StageItem } from './types';
 import { getStoredDirectory, saveStoredDirectory } from './utils/directoryStorage';
@@ -144,6 +145,35 @@ export default function App() {
     showToast('You have signed out. Directory is now in limited preview mode.');
   };
 
+  // Profile comparison state
+  const [comparedProfileIds, setComparedProfileIds] = useState<string[]>([]);
+
+  const handleToggleCompare = (id: string) => {
+    setComparedProfileIds(prev => {
+      if (prev.includes(id)) {
+        const remaining = prev.filter(x => x !== id);
+        showToast('Removed partner from comparison.');
+        return remaining;
+      }
+      if (prev.length >= 4) {
+        showToast('You can compare up to 4 partner profiles at a time.');
+        return prev;
+      }
+      const item = directoryItems.find(d => d.id === id);
+      showToast(`Added "${item?.name || 'Partner'}" to comparison (${prev.length + 1}/4)`);
+      return [...prev, id];
+    });
+  };
+
+  const handleClearCompare = () => {
+    setComparedProfileIds([]);
+    showToast('Comparison selection cleared.');
+  };
+
+  const handleOpenCompare = () => {
+    handleNavigate('compare');
+  };
+
   const handleOpenToolkit = (stageIndex: number = 0) => {
     setToolkitStageIndex(stageIndex);
     setToolkitModalOpen(true);
@@ -164,7 +194,12 @@ export default function App() {
         handleOpenRequirementModal();
         break;
       case 2:
+        handleNavigate('directory');
+        break;
       case 3:
+        // Step 3: Understand - Compare profiles, solutions and insights
+        handleNavigate('compare');
+        break;
       case 4:
         handleNavigate('directory');
         break;
@@ -477,6 +512,10 @@ export default function App() {
               onOpenAuth={handleOpenAuth}
               onOpenAdminDirectory={() => handleNavigate('admin')}
               isStandalonePage={true}
+              comparedIds={comparedProfileIds}
+              onToggleCompare={handleToggleCompare}
+              onClearCompare={handleClearCompare}
+              onOpenCompare={handleOpenCompare}
             />
           </div>
         );
@@ -514,6 +553,10 @@ export default function App() {
               onOpenAuth={handleOpenAuth}
               onOpenAdminDirectory={() => handleNavigate('admin')}
               isStandalonePage={true}
+              comparedIds={comparedProfileIds}
+              onToggleCompare={handleToggleCompare}
+              onClearCompare={handleClearCompare}
+              onOpenCompare={handleOpenCompare}
             />
           </div>
         );
@@ -567,8 +610,27 @@ export default function App() {
               onOpenAuth={handleOpenAuth}
               onOpenAdminDirectory={() => handleNavigate('admin')}
               isStandalonePage={true}
+              comparedIds={comparedProfileIds}
+              onToggleCompare={handleToggleCompare}
+              onClearCompare={handleClearCompare}
+              onOpenCompare={handleOpenCompare}
             />
           </div>
+        );
+
+      case 'compare':
+        return (
+          <CompareProfilesView
+            directoryItems={directoryItems}
+            comparedIds={comparedProfileIds}
+            onToggleCompare={handleToggleCompare}
+            onClearCompare={handleClearCompare}
+            onSelectVendor={(v) => setSelectedVendor(v)}
+            onPostRequirement={handleOpenRequirementModal}
+            onOpenAuth={handleOpenAuth}
+            currentUser={currentUser}
+            onNavigate={handleNavigate}
+          />
         );
 
       case 'about':
@@ -678,6 +740,10 @@ export default function App() {
               currentUser={currentUser}
               onOpenAuth={handleOpenAuth}
               onOpenAdminDirectory={() => handleNavigate('admin')}
+              comparedIds={comparedProfileIds}
+              onToggleCompare={handleToggleCompare}
+              onClearCompare={handleClearCompare}
+              onOpenCompare={handleOpenCompare}
             />
 
             {/* 6.7 NOVA-H MEMBERSHIP & PRICING MODEL WITH RAZORPAY & 100% COUPONS */}
@@ -726,6 +792,7 @@ export default function App() {
         onOpenAdminDirectory={() => handleNavigate('admin')}
         activeSlug={currentSlug}
         onNavigate={handleNavigate}
+        comparedCount={comparedProfileIds.length}
       />
 
       {/* Main Page Layout matching Route Slug */}
@@ -772,6 +839,9 @@ export default function App() {
         }}
         currentUser={currentUser}
         onOpenAuth={handleOpenAuth}
+        isCompared={selectedVendor ? comparedProfileIds.includes(selectedVendor.id) : false}
+        onToggleCompare={handleToggleCompare}
+        onOpenCompare={handleOpenCompare}
       />
 
       <AuthModal
