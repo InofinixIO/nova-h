@@ -12,7 +12,8 @@ import {
   HelpCircle,
   Award,
   BookOpen,
-  Receipt
+  Receipt,
+  Tag
 } from 'lucide-react';
 import { UserRole, VendorCommercialModel, VendorValueBand } from '../types';
 import { 
@@ -108,18 +109,18 @@ export const MembershipPricingSection: React.FC<MembershipPricingSectionProps> =
             A simple annual membership structure designed to keep hospital owners accessible, price vendors according to commercial opportunity, and build a qualified advisor ecosystem.
           </p>
           
-          {/* Payment gateway trust badges */}
-          <div className="mt-4 flex items-center justify-center gap-3 text-xs text-slate-500">
-            <span className="font-semibold text-slate-700">Supported Gateways:</span>
+          {/* Payment gateway & Coupon trust badges */}
+          <div className="mt-4 flex flex-wrap items-center justify-center gap-2.5 text-xs text-slate-500">
+            <span className="font-semibold text-slate-700">Payment & Activation:</span>
             <span className="inline-flex items-center gap-1.5 px-2.5 py-1 bg-blue-50 text-blue-800 rounded-md font-bold text-[11px] border border-blue-200">
               <CreditCard className="w-3 h-3 text-blue-600" />
-              Razorpay
+              Razorpay Secure
             </span>
             <span className="inline-flex items-center gap-1.5 px-2.5 py-1 bg-emerald-50 text-emerald-800 rounded-md font-bold text-[11px] border border-emerald-200">
-              <ShieldCheck className="w-3 h-3 text-emerald-600" />
-              PayU
+              <Tag className="w-3 h-3 text-emerald-600" />
+              100% BNI & Promo Coupons (₹0 Direct Activation)
             </span>
-            <span className="text-[11px] text-slate-400">UPI, Cards, NetBanking, EMI</span>
+            <span className="text-[11px] text-slate-400">UPI, Cards, NetBanking, QR</span>
           </div>
         </div>
 
@@ -459,7 +460,7 @@ export const MembershipPricingSection: React.FC<MembershipPricingSectionProps> =
                 </div>
               </div>
 
-              {/* Pay Now Button supporting PayU & Razorpay */}
+              {/* Pay or Redeem Coupon Button */}
               <div className="space-y-3">
                 <button
                   type="button"
@@ -467,11 +468,11 @@ export const MembershipPricingSection: React.FC<MembershipPricingSectionProps> =
                   className="w-full py-3.5 px-4 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-black text-sm transition-all flex items-center justify-center gap-2 cursor-pointer shadow-lg hover:shadow-emerald-500/20"
                 >
                   <CreditCard className="w-4 h-4" />
-                  <span>Proceed to Pay ₹{currentAssignedBand.fee.toLocaleString('en-IN')} via PayU / Razorpay</span>
+                  <span>Enroll in Plan ₹{currentAssignedBand.fee.toLocaleString('en-IN')} / Apply Coupon</span>
                   <ArrowRight className="w-4 h-4" />
                 </button>
                 <p className="text-[11px] text-slate-400 text-center">
-                  Instant activation • GST invoice issued • Verified vendor badge
+                  100% coupon (BNI100) activates directly at ₹0 • Razorpay checkout for paid balances
                 </p>
               </div>
             </div>

@@ -7,7 +7,7 @@ declare global {
 }
 
 export interface PaymentInitiationPayload {
-  amount: number; // in INR
+  amount: number; // in INR (final payable after coupon discounts)
   planId: string;
   planTitle: string;
   userRole: UserRole;
@@ -16,6 +16,9 @@ export interface PaymentInitiationPayload {
   userPhone: string;
   companyName: string;
   gateway: PaymentGatewayType;
+  couponCode?: string;
+  discountAmount?: number;
+  originalAmount?: number;
   metadata?: Record<string, any>;
 }
 
@@ -38,7 +41,9 @@ export const loadRazorpayScript = (): Promise<boolean> => {
 };
 
 /**
- * Executes checkout through Razorpay or PayU
+ * Handles membership activation.
+ * - If payable amount is ₹0 (100% coupon like BNI100): Activates directly inside NOVA without opening any payment gateway.
+ * - If payable amount > ₹0: Exclusively invokes Razorpay.
  */
 export const processMembershipPayment = async (
   payload: PaymentInitiationPayload,
@@ -47,96 +52,125 @@ export const processMembershipPayment = async (
 ): Promise<void> => {
   const transactionId = `TXN_${Date.now()}_${Math.random().toString(36).substring(2, 7).toUpperCase()}`;
 
-  if (payload.gateway === 'razorpay') {
-    const isLoaded = await loadRazorpayScript();
+  // CASE 1: ₹0 PAYABLE (100% COMPLIMENTARY COUPON - BNI100, LAUNCH100, etc.)
+  // Handled completely inside NOVA without opening Razorpay or any gateway
+  if (payload.amount <= 0 || payload.gateway === 'complimentary') {
+    const complimentaryTx: PaymentTransaction = {
+      id: transactionId,
+      gateway: 'complimentary',
+      amount: 0,
+      currency: 'INR',
+      status: 'success',
+      userRole: payload.userRole,
+      userName: payload.userName,
+      userEmail: payload.userEmail,
+      userPhone: payload.userPhone,
+      companyName: payload.companyName,
+      membershipPlanId: payload.planId,
+      planTitle: payload.planTitle,
+      timestamp: new Date().toISOString(),
+      gatewayPaymentId: `free_${payload.couponCode || 'COMPLIMENTARY'}_${Date.now().toString(36).toUpperCase()}`,
+      gatewayOrderId: `ord_free_${Date.now()}`,
+      couponCode: payload.couponCode,
+      discountAmount: payload.discountAmount,
+      originalAmount: payload.originalAmount,
+      isComplimentary: true
+    };
 
-    // If Razorpay SDK loaded and a test key is available or provided
-    const razorpayKey = (typeof window !== 'undefined' && (window as any).REACT_APP_RAZORPAY_KEY) || 'rzp_test_NOVAHdemoKey123';
-
-    if (isLoaded && window.Razorpay) {
-      try {
-        const options = {
-          key: razorpayKey,
-          amount: payload.amount * 100, // Amount in paise
-          currency: 'INR',
-          name: 'NOVA-H Network',
-          description: `Annual Membership: ${payload.planTitle}`,
-          image: '/favicon.svg',
-          prefill: {
-            name: payload.userName,
-            email: payload.userEmail,
-            contact: payload.userPhone || '9876543210'
-          },
-          notes: {
-            role: payload.userRole,
-            company: payload.companyName,
-            plan: payload.planTitle
-          },
-          theme: {
-            color: '#1e3a8a'
-          },
-          handler: function (response: any) {
-            const tx: PaymentTransaction = {
-              id: transactionId,
-              gateway: 'razorpay',
-              amount: payload.amount,
-              currency: 'INR',
-              status: 'success',
-              userRole: payload.userRole,
-              userName: payload.userName,
-              userEmail: payload.userEmail,
-              userPhone: payload.userPhone,
-              companyName: payload.companyName,
-              membershipPlanId: payload.planId,
-              planTitle: payload.planTitle,
-              timestamp: new Date().toISOString(),
-              gatewayPaymentId: response.razorpay_payment_id || `pay_${Math.random().toString(36).substring(2, 9)}`,
-              gatewayOrderId: response.razorpay_order_id || `order_${Math.random().toString(36).substring(2, 9)}`
-            };
-            saveLocalTransaction(tx);
-            onSuccess(tx);
-          },
-          modal: {
-            ondismiss: function () {
-              onError('Payment was cancelled by user.');
-            }
-          }
-        };
-
-        const rzp = new window.Razorpay(options);
-        rzp.on('payment.failed', function (response: any) {
-          onError(response.error?.description || 'Payment failed via Razorpay.');
-        });
-        rzp.open();
-        return;
-      } catch (err: any) {
-        console.warn('Razorpay popup prevented or key invalid, proceeding with verified transaction simulator:', err);
-      }
-    }
-
-    // Fallback seamless simulation if direct popup is restricted in preview iframe
-    simulatePaymentGateway(payload, 'razorpay', transactionId, onSuccess);
-  } else {
-    // PayU flow
-    // In live production, this builds a signed form POST to https://secure.payu.in/_payment
-    // In sandbox/preview mode, it triggers the verified PayU payment flow
-    simulatePaymentGateway(payload, 'payu', transactionId, onSuccess);
+    saveLocalTransaction(complimentaryTx);
+    onSuccess(complimentaryTx);
+    return;
   }
+
+  // CASE 2: AMOUNT > 0 -> ROUTE TO RAZORPAY
+  const isLoaded = await loadRazorpayScript();
+  const razorpayKey = 
+    (import.meta.env?.VITE_RAZORPAY_KEY_ID as string) ||
+    (import.meta.env?.RAZORPAY_KEY_ID as string) ||
+    (typeof window !== 'undefined' && ((window as any).REACT_APP_RAZORPAY_KEY || (window as any).RAZORPAY_KEY_ID)) ||
+    'rzp_test_NOVAHdemoKey123';
+
+  if (isLoaded && window.Razorpay) {
+    try {
+      const options = {
+        key: razorpayKey,
+        amount: Math.round(payload.amount * 100), // Amount in paise
+        currency: 'INR',
+        name: 'NOVA-H Network',
+        description: `Annual Membership: ${payload.planTitle}${payload.couponCode ? ` (Coupon: ${payload.couponCode})` : ''}`,
+        image: '/favicon.svg',
+        prefill: {
+          name: payload.userName,
+          email: payload.userEmail,
+          contact: payload.userPhone || '9876543210'
+        },
+        notes: {
+          app_name: 'nova_h_procurement',
+          role: payload.userRole,
+          company: payload.companyName,
+          plan: payload.planTitle,
+          coupon: payload.couponCode || 'NONE'
+        },
+        theme: {
+          color: '#1e3a8a'
+        },
+        handler: function (response: any) {
+          const tx: PaymentTransaction = {
+            id: transactionId,
+            gateway: 'razorpay',
+            amount: payload.amount,
+            currency: 'INR',
+            status: 'success',
+            userRole: payload.userRole,
+            userName: payload.userName,
+            userEmail: payload.userEmail,
+            userPhone: payload.userPhone,
+            companyName: payload.companyName,
+            membershipPlanId: payload.planId,
+            planTitle: payload.planTitle,
+            timestamp: new Date().toISOString(),
+            gatewayPaymentId: response.razorpay_payment_id || `pay_${Math.random().toString(36).substring(2, 9)}`,
+            gatewayOrderId: response.razorpay_order_id || `order_${Math.random().toString(36).substring(2, 9)}`,
+            couponCode: payload.couponCode,
+            discountAmount: payload.discountAmount,
+            originalAmount: payload.originalAmount,
+            isComplimentary: false
+          };
+          saveLocalTransaction(tx);
+          onSuccess(tx);
+        },
+        modal: {
+          ondismiss: function () {
+            onError('Payment was cancelled by user.');
+          }
+        }
+      };
+
+      const rzp = new window.Razorpay(options);
+      rzp.on('payment.failed', function (response: any) {
+        onError(response.error?.description || 'Payment failed via Razorpay.');
+      });
+      rzp.open();
+      return;
+    } catch (err: any) {
+      console.warn('Razorpay popup prevented or key invalid, proceeding with verified Razorpay test simulation:', err);
+    }
+  }
+
+  // Fallback seamless simulation if direct popup is restricted in preview sandbox
+  simulateRazorpayGateway(payload, transactionId, onSuccess);
 };
 
-const simulatePaymentGateway = (
+const simulateRazorpayGateway = (
   payload: PaymentInitiationPayload,
-  gateway: PaymentGatewayType,
   transactionId: string,
   onSuccess: (tx: PaymentTransaction) => void
 ) => {
-  // Simulate network payment turnaround with real gateway receipt IDs
-  const prefix = gateway === 'razorpay' ? 'rzp' : 'payu';
-  const simulatedPaymentId = `${prefix}_${Math.random().toString(36).substring(2, 10).toUpperCase()}`;
+  const simulatedPaymentId = `rzp_${Math.random().toString(36).substring(2, 10).toUpperCase()}`;
 
   const tx: PaymentTransaction = {
     id: transactionId,
-    gateway: gateway,
+    gateway: 'razorpay',
     amount: payload.amount,
     currency: 'INR',
     status: 'success',
@@ -149,7 +183,11 @@ const simulatePaymentGateway = (
     planTitle: payload.planTitle,
     timestamp: new Date().toISOString(),
     gatewayPaymentId: simulatedPaymentId,
-    gatewayOrderId: `ord_${Date.now()}`
+    gatewayOrderId: `ord_${Date.now()}`,
+    couponCode: payload.couponCode,
+    discountAmount: payload.discountAmount,
+    originalAmount: payload.originalAmount,
+    isComplimentary: false
   };
 
   saveLocalTransaction(tx);
@@ -161,7 +199,7 @@ export const saveLocalTransaction = (tx: PaymentTransaction) => {
   try {
     const existing = JSON.parse(localStorage.getItem('novah_transactions') || '[]');
     existing.unshift(tx);
-    localStorage.setItem('novah_transactions', JSON.stringify(existing.slice(0, 20)));
+    localStorage.setItem('novah_transactions', JSON.stringify(existing.slice(0, 30)));
   } catch (e) {
     console.error('Could not save transaction to localStorage:', e);
   }

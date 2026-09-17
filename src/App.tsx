@@ -27,12 +27,14 @@ import { AdminDirectoryModal } from './components/AdminDirectoryModal';
 import { AdminLoginForm } from './components/AdminLoginForm';
 import { AdminConsoleView } from './components/AdminConsoleView';
 import { UserDashboard } from './components/UserDashboard';
+import { WhatsAppFlowBuilder } from './components/whatsapp/WhatsAppFlowBuilder';
+import { ProcurementWorkspace } from './components/procurement/ProcurementWorkspace';
 
 import { UserRole, DirectoryItem, ProjectRequirement, PaymentTransaction, AuthUser, StageItem } from './types';
 import { getStoredDirectory, saveStoredDirectory } from './utils/directoryStorage';
 import { getStoredToolkitStages, saveStoredToolkitStages } from './utils/toolkitStorage';
 import { RouteSlug, getSlugFromPath, navigateToSlug } from './utils/routes';
-import { CheckCircle2, ArrowLeft, ShieldCheck, Sparkles, Building2, HardHat, UserCheck, LayoutDashboard } from 'lucide-react';
+import { CheckCircle2, ArrowLeft, ShieldCheck, Sparkles, Building2, HardHat, UserCheck, LayoutDashboard, FileText } from 'lucide-react';
 
 export default function App() {
   // Routing state based on URL slug
@@ -106,7 +108,7 @@ export default function App() {
   const [cicdModalOpen, setCicdModalOpen] = useState(false);
   const [autoDetectTrigger, setAutoDetectTrigger] = useState<number>(0);
 
-  // Checkout Modal states for PayU and Razorpay
+  // Checkout Modal states for Razorpay and 100% Coupon direct activations
   const [checkoutModalOpen, setCheckoutModalOpen] = useState(false);
   const [checkoutRole, setCheckoutRole] = useState<UserRole>('vendor');
   const [checkoutPlanDetails, setCheckoutPlanDetails] = useState<{
@@ -206,7 +208,11 @@ export default function App() {
         localStorage.setItem('nova_h_current_user', JSON.stringify(updatedUser));
       } catch (e) {}
     }
-    showToast(`Payment of ₹${tx.amount.toLocaleString('en-IN')} confirmed via ${tx.gateway.toUpperCase()}! Membership is now active.`);
+    if (tx.isComplimentary || tx.amount === 0) {
+      showToast(`Membership activated directly via 100% coupon ${tx.couponCode || 'waiver'} (₹0)! Profile is now active.`);
+    } else {
+      showToast(`Payment of ₹${tx.amount.toLocaleString('en-IN')} confirmed via Razorpay! Membership is now active.`);
+    }
   };
 
   // Helper for rendering specific page content based on currentSlug
@@ -225,6 +231,7 @@ export default function App() {
               currentUser={currentUser}
               onLogout={handleLogout}
               onBackToHome={() => handleNavigate('')}
+              onNavigate={handleNavigate}
             />
           );
         }
@@ -247,6 +254,82 @@ export default function App() {
               onCancel={() => handleNavigate('')}
             />
           </div>
+        );
+
+      case 'whatsapp-flow':
+      case 'flow-builder':
+        return (
+          <WhatsAppFlowBuilder
+            onBackToHome={() => handleNavigate('')}
+            onNotify={(msg) => showToast(msg)}
+          />
+        );
+
+      case 'rfp':
+      case 'procurement':
+        if (!currentUser) {
+          return (
+            <div className="py-16 px-4 max-w-7xl mx-auto flex flex-col items-center justify-center min-h-[70vh]">
+              <div className="mb-6 text-center max-w-lg">
+                <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-black uppercase tracking-wider bg-blue-100 text-blue-800 border border-blue-200 mb-3">
+                  <FileText className="w-3.5 h-3.5 text-blue-600" />
+                  Procurement &amp; RFP Management Hub
+                </span>
+                <h2 className="text-3xl font-black text-slate-900 tracking-tight">
+                  Sign In to Access RFP Hub
+                </h2>
+                <p className="text-slate-600 text-sm mt-2 leading-relaxed">
+                  The RFP Hub view and capabilities are strictly configured based on your verified login. Sign in as a <strong>Hospital Owner</strong>, <strong>Vendor Partner</strong>, or <strong>Biomedical Advisor</strong> to access your tailored procurement workspace.
+                </p>
+              </div>
+
+              <div className="flex flex-wrap items-center justify-center gap-3 mb-6">
+                <button
+                  onClick={() => {
+                    setAuthRole('owner');
+                    setAuthMode('signin');
+                    setAuthModalOpen(true);
+                  }}
+                  className="px-5 py-3 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs shadow-md cursor-pointer transition-all flex items-center gap-2"
+                >
+                  <span>🏥 Sign In as Hospital Owner</span>
+                </button>
+                <button
+                  onClick={() => {
+                    setAuthRole('vendor');
+                    setAuthMode('signin');
+                    setAuthModalOpen(true);
+                  }}
+                  className="px-5 py-3 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs shadow-md cursor-pointer transition-all flex items-center gap-2"
+                >
+                  <span>🏗️ Sign In as Vendor Partner</span>
+                </button>
+                <button
+                  onClick={() => {
+                    setAuthRole('advisor');
+                    setAuthMode('signin');
+                    setAuthModalOpen(true);
+                  }}
+                  className="px-5 py-3 rounded-xl bg-purple-600 hover:bg-purple-700 text-white font-bold text-xs shadow-md cursor-pointer transition-all flex items-center gap-2"
+                >
+                  <span>📋 Sign In as Biomedical Advisor</span>
+                </button>
+              </div>
+
+              <button
+                onClick={() => handleNavigate('')}
+                className="text-xs font-bold text-slate-500 hover:text-slate-800 underline cursor-pointer"
+              >
+                Return to Home
+              </button>
+            </div>
+          );
+        }
+        return (
+          <ProcurementWorkspace
+            currentUser={currentUser}
+            onNavigateHome={() => handleNavigate('')}
+          />
         );
 
       case 'dashboard':
@@ -442,7 +525,7 @@ export default function App() {
                 NOVA-H Annual Membership Plans
               </h1>
               <p className="text-slate-600 text-sm mt-2">
-                Order-value indexed tiers for vendors, flat ₹1,000 project access for promoters and specialist advisors. Complete integration with Razorpay and PayU.
+                Order-value indexed tiers for vendors, flat ₹1,000 project access for promoters and specialist advisors. Instant ₹0 activation via 100% BNI/promo coupons or secure Razorpay checkout.
               </p>
             </div>
             <MembershipPricingSection onSelectPlanForPayment={handleInitiatePayment} />
@@ -539,7 +622,7 @@ export default function App() {
               }}
             />
 
-            {/* 6.7 NOVA-H MEMBERSHIP & PRICING MODEL WITH PAYU & RAZORPAY */}
+            {/* 6.7 NOVA-H MEMBERSHIP & PRICING MODEL WITH RAZORPAY & 100% COUPONS */}
             <MembershipPricingSection
               onSelectPlanForPayment={handleInitiatePayment}
             />
@@ -593,13 +676,15 @@ export default function App() {
       </main>
 
       {/* FOOTER */}
-      <Footer
-        onOpenAuth={handleOpenAuth}
-        onOpenToolkit={() => handleOpenToolkit(0)}
-        onOpenCicd={() => setCicdModalOpen(true)}
-        onOpenPamphletQr={() => handleNavigate('pamphlet')}
-        onNavigate={handleNavigate}
-      />
+      {currentSlug !== 'whatsapp-flow' && currentSlug !== 'flow-builder' && (
+        <Footer
+          onOpenAuth={handleOpenAuth}
+          onOpenToolkit={() => handleOpenToolkit(0)}
+          onOpenCicd={() => setCicdModalOpen(true)}
+          onOpenPamphletQr={() => handleNavigate('pamphlet')}
+          onNavigate={handleNavigate}
+        />
+      )}
 
       {/* MODALS */}
       <ToolkitModal
@@ -661,7 +746,7 @@ export default function App() {
         onClose={() => setCicdModalOpen(false)}
       />
 
-      {/* RAZORPAY & PAYU CHECKOUT MODAL */}
+      {/* RAZORPAY & 100% COUPON CHECKOUT MODAL */}
       <CheckoutModal
         isOpen={checkoutModalOpen}
         onClose={() => setCheckoutModalOpen(false)}

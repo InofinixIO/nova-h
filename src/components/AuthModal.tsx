@@ -10,6 +10,7 @@ import {
   Phone 
 } from 'lucide-react';
 import { UserRole, AuthUser } from '../types';
+import { getSampleLogins } from '../utils/sampleLogins';
 
 interface AuthModalProps {
   isOpen: boolean;
@@ -48,6 +49,8 @@ export const AuthModal: React.FC<AuthModalProps> = ({
 
   if (!isOpen) return null;
 
+  const sampleAccounts = getSampleLogins();
+
   const handleRoleChange = (role: UserRole) => {
     setSelectedRole(role);
   };
@@ -56,7 +59,8 @@ export const AuthModal: React.FC<AuthModalProps> = ({
     e.preventDefault();
 
     const normalizedEmail = (email || '').trim().toLowerCase();
-    const isAdmin = normalizedEmail === 'admin@nova-h.in' || normalizedEmail.startsWith('admin') || selectedRole === 'admin';
+    const adminSample = sampleAccounts.find(a => a.role === 'admin');
+    const isAdmin = (adminSample && normalizedEmail === adminSample.email.toLowerCase()) || normalizedEmail === 'admin@nova-h.in' || normalizedEmail.startsWith('admin') || selectedRole === 'admin';
 
     const defaultName = mode === 'signin'
       ? (isAdmin ? 'NOVA System Administrator' : (email.includes('@') ? email.split('@')[0] : 'Healthcare User'))
@@ -311,75 +315,41 @@ export const AuthModal: React.FC<AuthModalProps> = ({
                 {selectedRole === 'advisor' && 'Annual platform membership. Eligible for Macula Healthcare project delivery.'}
               </p>
               <div className="pt-1.5 border-t border-slate-200/80 flex items-center justify-between text-[10px] text-slate-400">
-                <span>Supported Gateways:</span>
+                <span>Payment & Waivers:</span>
                 <span className="flex items-center gap-2 font-medium text-slate-600">
                   <span className="text-blue-700 font-bold">Razorpay</span>
                   <span>•</span>
-                  <span className="text-emerald-700 font-bold">PayU</span>
+                  <span className="text-emerald-700 font-bold">100% BNI/Promo Coupons (₹0)</span>
                 </span>
               </div>
             </div>
           )}
 
-          {/* Sample Logins for Restricted Views in Sign In Mode */}
-          {mode === 'signin' && (
+          {/* Sample Demo Logins - Only rendered if sample logic/login emails are configured in .env */}
+          {mode === 'signin' && sampleAccounts.length > 0 && (
             <div className="bg-slate-50 border border-slate-200 rounded-xl p-3 space-y-2">
               <div className="flex items-center justify-between text-[11px]">
                 <span className="font-bold text-slate-700">⚡ Sample Demo Logins:</span>
                 <span className="text-[10px] text-slate-400">Click to fill</span>
               </div>
-              <div className="grid grid-cols-2 gap-1.5">
-                <button
-                  type="button"
-                  onClick={() => {
-                    setEmail('admin@nova-h.in');
-                    setPassword('admin123');
-                    setSelectedRole('admin');
-                  }}
-                  className="p-1.5 rounded-lg border border-purple-200 bg-purple-50/80 hover:bg-purple-100 text-purple-900 text-[11px] font-bold text-left transition-colors cursor-pointer flex flex-col"
-                >
-                  <span className="text-purple-700">🛡️ Admin Console</span>
-                  <span className="font-normal text-[10px] text-purple-600 font-mono">admin@nova-h.in</span>
-                </button>
-
-                <button
-                  type="button"
-                  onClick={() => {
-                    setEmail('owner@nova-h.in');
-                    setPassword('owner123');
-                    setSelectedRole('owner');
-                  }}
-                  className="p-1.5 rounded-lg border border-blue-200 bg-blue-50/80 hover:bg-blue-100 text-blue-900 text-[11px] font-bold text-left transition-colors cursor-pointer flex flex-col"
-                >
-                  <span className="text-blue-700">🏥 Hospital Owner</span>
-                  <span className="font-normal text-[10px] text-blue-600 font-mono">owner@nova-h.in</span>
-                </button>
-
-                <button
-                  type="button"
-                  onClick={() => {
-                    setEmail('vendor@nova-h.in');
-                    setPassword('vendor123');
-                    setSelectedRole('vendor');
-                  }}
-                  className="p-1.5 rounded-lg border border-indigo-200 bg-indigo-50/80 hover:bg-indigo-100 text-indigo-900 text-[11px] font-bold text-left transition-colors cursor-pointer flex flex-col"
-                >
-                  <span className="text-indigo-700">🏗️ Vendor Partner</span>
-                  <span className="font-normal text-[10px] text-indigo-600 font-mono">vendor@nova-h.in</span>
-                </button>
-
-                <button
-                  type="button"
-                  onClick={() => {
-                    setEmail('advisor@nova-h.in');
-                    setPassword('advisor123');
-                    setSelectedRole('advisor');
-                  }}
-                  className="p-1.5 rounded-lg border border-sky-200 bg-sky-50/80 hover:bg-sky-100 text-sky-900 text-[11px] font-bold text-left transition-colors cursor-pointer flex flex-col"
-                >
-                  <span className="text-sky-700">📋 Healthcare Advisor</span>
-                  <span className="font-normal text-[10px] text-sky-600 font-mono">advisor@nova-h.in</span>
-                </button>
+              <div className={`grid ${sampleAccounts.length > 1 ? 'grid-cols-2' : 'grid-cols-1'} gap-1.5`}>
+                {sampleAccounts.map((account) => (
+                  <button
+                    key={account.role}
+                    type="button"
+                    onClick={() => {
+                      setEmail(account.email);
+                      setPassword(account.password || 'password123');
+                      setSelectedRole(account.role);
+                    }}
+                    className={`p-1.5 rounded-lg border ${account.styling.border} ${account.styling.bg} ${account.styling.hoverBg} ${account.styling.text} text-[11px] font-bold text-left transition-colors cursor-pointer flex flex-col`}
+                  >
+                    <span className={account.styling.titleColor}>{account.icon} {account.label}</span>
+                    <span className={`font-normal text-[10px] ${account.styling.emailColor} font-mono truncate max-w-full`}>
+                      {account.email}
+                    </span>
+                  </button>
+                ))}
               </div>
             </div>
           )}

@@ -10,7 +10,11 @@ export type RouteSlug =
   | 'about' 
   | 'pamphlet'
   | 'admin'
-  | 'dashboard';
+  | 'dashboard'
+  | 'whatsapp-flow'
+  | 'flow-builder'
+  | 'rfp'
+  | 'procurement';
 
 export const getSlugFromPath = (): RouteSlug => {
   if (typeof window === 'undefined') return '';
@@ -33,7 +37,11 @@ export const getSlugFromPath = (): RouteSlug => {
     'about',
     'pamphlet',
     'admin',
-    'dashboard'
+    'dashboard',
+    'whatsapp-flow',
+    'flow-builder',
+    'rfp',
+    'procurement'
   ];
 
   if (validSlugs.includes(path as RouteSlug)) {

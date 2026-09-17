@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Menu, X, ShieldCheck, UserCheck, LogOut, Settings, LayoutDashboard } from 'lucide-react';
+import { Menu, X, ShieldCheck, UserCheck, LogOut, Settings, LayoutDashboard, Bot, FileText } from 'lucide-react';
 import { UserRole, AuthUser } from '../types';
 import { RouteSlug } from '../utils/routes';
 
@@ -134,6 +134,17 @@ export const Navbar: React.FC<NavbarProps> = ({
             Directory
           </button>
           <button
+            onClick={() => handleLinkClick('rfp')}
+            className={`text-xs xl:text-sm font-bold transition-all cursor-pointer whitespace-nowrap flex items-center gap-1.5 px-2.5 py-1 rounded-lg border ${
+              activeSlug === 'rfp' || activeSlug === 'procurement'
+                ? 'bg-blue-600 text-white border-blue-700 shadow-xs'
+                : 'bg-blue-50 text-blue-800 border-blue-200 hover:bg-blue-100'
+            }`}
+          >
+            <FileText className="w-3.5 h-3.5 text-blue-600" />
+            <span>RFP Hub</span>
+          </button>
+          <button
             onClick={() => handleLinkClick('about')}
             className={`text-xs xl:text-sm font-semibold transition-colors cursor-pointer whitespace-nowrap ${
               activeSlug === 'about' ? 'text-blue-700 font-bold' : 'text-slate-600 hover:text-blue-700'
@@ -141,6 +152,19 @@ export const Navbar: React.FC<NavbarProps> = ({
           >
             About
           </button>
+          {/* 
+          <button
+            onClick={() => handleLinkClick('whatsapp-flow')}
+            className={`text-xs xl:text-sm font-bold transition-all cursor-pointer whitespace-nowrap flex items-center gap-1.5 px-2.5 py-1 rounded-lg border ${
+              activeSlug === 'whatsapp-flow' || activeSlug === 'flow-builder'
+                ? 'bg-emerald-600 text-white border-emerald-700 shadow-xs'
+                : 'bg-emerald-50 text-emerald-800 border-emerald-200 hover:bg-emerald-100'
+            }`}
+          >
+            <Bot className="w-3.5 h-3.5 text-emerald-600" />
+            <span>WhatsApp Flow</span>
+          </button> 
+          */}
         </nav>
 
         {/* Action Buttons: Sign In / Profile status & Dedicated Admin Slug */}
@@ -359,12 +383,34 @@ export const Navbar: React.FC<NavbarProps> = ({
               Directory
             </button>
             <button
+              onClick={() => handleLinkClick('rfp')}
+              className={`px-3 py-2.5 text-left text-sm font-bold rounded-xl flex items-center gap-2 ${
+                activeSlug === 'rfp' || activeSlug === 'procurement'
+                  ? 'bg-blue-600 text-white'
+                  : 'bg-blue-50 text-blue-800 border border-blue-200'
+              }`}
+            >
+              <FileText className="w-4 h-4 text-blue-600" />
+              <span>RFP &amp; Procurement Hub</span>
+            </button>
+            <button
               onClick={() => handleLinkClick('about')}
               className={`px-3 py-2 text-left text-sm font-semibold rounded-md ${
                 activeSlug === 'about' ? 'bg-blue-50 text-blue-700' : 'text-slate-700 hover:bg-slate-50'
               }`}
             >
               About
+            </button>
+            <button
+              onClick={() => handleLinkClick('whatsapp-flow')}
+              className={`px-3 py-2.5 text-left text-sm font-bold rounded-xl flex items-center gap-2 ${
+                activeSlug === 'whatsapp-flow' || activeSlug === 'flow-builder'
+                  ? 'bg-emerald-600 text-white'
+                  : 'bg-emerald-50 text-emerald-800 border border-emerald-200'
+              }`}
+            >
+              <Bot className="w-4 h-4 text-emerald-600" />
+              <span>WhatsApp Flow Builder</span>
             </button>
           </div>
 

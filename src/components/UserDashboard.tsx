@@ -24,7 +24,8 @@ import {
   ChevronRight,
   TrendingUp,
   Inbox,
-  SendHorizontal
+  SendHorizontal,
+  Bot
 } from 'lucide-react';
 import { AuthUser, EnquiryItem, EnquiryStatus, ProjectRequirement, DirectoryItem } from '../types';
 import { 
@@ -241,13 +242,21 @@ export const UserDashboard: React.FC<UserDashboardProps> = ({
           </div>
 
           <div className="flex flex-wrap items-center gap-2.5 shrink-0">
+            <button
+              onClick={() => onNavigate('rfp')}
+              className="px-4 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-500 text-white font-bold text-xs flex items-center gap-2 shadow-md transition-all cursor-pointer"
+            >
+              <FileText className="w-4 h-4" />
+              <span>RFP &amp; Procurement Hub</span>
+            </button>
+
             {userRole === 'owner' ? (
               <button
                 onClick={onOpenRequirementModal}
-                className="px-4 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-500 text-white font-bold text-xs flex items-center gap-2 shadow-md transition-all cursor-pointer"
+                className="px-4 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-xs flex items-center gap-2 shadow-md transition-all cursor-pointer"
               >
                 <Plus className="w-4 h-4" />
-                <span>Post New Hospital Requirement</span>
+                <span>Post Hospital Requirement</span>
               </button>
             ) : (
               <button
@@ -264,6 +273,14 @@ export const UserDashboard: React.FC<UserDashboardProps> = ({
               className="px-4 py-2.5 rounded-xl bg-white/10 hover:bg-white/20 text-white font-bold text-xs border border-white/20 transition-all cursor-pointer"
             >
               Search Directory
+            </button>
+
+            <button
+              onClick={() => onNavigate('whatsapp-flow')}
+              className="px-4 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs flex items-center gap-1.5 shadow-sm transition-all cursor-pointer"
+            >
+              <Bot className="w-3.5 h-3.5" />
+              <span>WhatsApp Bot Builder</span>
             </button>
           </div>
         </div>
