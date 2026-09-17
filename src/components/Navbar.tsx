@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Menu, X, ShieldCheck, UserCheck, LogOut, Settings } from 'lucide-react';
+import { Menu, X, ShieldCheck, UserCheck, LogOut, Settings, LayoutDashboard } from 'lucide-react';
 import { UserRole, AuthUser } from '../types';
 import { RouteSlug } from '../utils/routes';
 
@@ -159,7 +159,19 @@ export const Navbar: React.FC<NavbarProps> = ({
                   <Settings className="w-3.5 h-3.5" />
                   <span>Admin Console</span>
                 </button>
-              ) : null}
+              ) : (
+                <button
+                  onClick={() => handleLinkClick('dashboard')}
+                  className={`px-3 py-1.5 rounded-lg border text-xs font-bold flex items-center gap-1.5 transition-colors cursor-pointer ${
+                    activeSlug === 'dashboard'
+                      ? 'bg-blue-700 text-white border-blue-800 shadow-sm'
+                      : 'bg-blue-50 hover:bg-blue-100 text-blue-800 border-blue-300'
+                  }`}
+                >
+                  <LayoutDashboard className="w-3.5 h-3.5" />
+                  <span>Dashboard</span>
+                </button>
+              )}
 
               <div className="flex items-center gap-2 px-3 py-1.5 bg-slate-100 rounded-lg border border-slate-200 text-xs">
                 <div className={`w-5 h-5 rounded-full text-white flex items-center justify-center font-bold text-[10px] ${
@@ -267,6 +279,29 @@ export const Navbar: React.FC<NavbarProps> = ({
           )}
 
           <div className="flex flex-col space-y-1">
+            {currentUser && (
+              currentUser.role === 'admin' ? (
+                <button
+                  onClick={() => handleLinkClick('admin')}
+                  className={`px-3 py-2.5 text-left text-sm font-bold rounded-xl flex items-center gap-2 ${
+                    activeSlug === 'admin' ? 'bg-purple-100 text-purple-900' : 'bg-purple-50 text-purple-800'
+                  }`}
+                >
+                  <Settings className="w-4 h-4 text-purple-700" />
+                  <span>Admin Console Portal</span>
+                </button>
+              ) : (
+                <button
+                  onClick={() => handleLinkClick('dashboard')}
+                  className={`px-3 py-2.5 text-left text-sm font-bold rounded-xl flex items-center gap-2 ${
+                    activeSlug === 'dashboard' ? 'bg-blue-100 text-blue-900' : 'bg-blue-50 text-blue-800'
+                  }`}
+                >
+                  <LayoutDashboard className="w-4 h-4 text-blue-700" />
+                  <span>Role Workspace Dashboard</span>
+                </button>
+              )
+            )}
             <button
               onClick={() => handleLinkClick('owners')}
               className={`px-3 py-2 text-left text-sm font-semibold rounded-md ${

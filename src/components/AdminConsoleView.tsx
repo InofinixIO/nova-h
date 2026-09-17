@@ -20,19 +20,25 @@ import {
   MapPin,
   Check,
   ArrowLeft,
-  LogOut
+  LogOut,
+  BookOpen
 } from 'lucide-react';
-import { DirectoryItem, AuthUser } from '../types';
+import { DirectoryItem, AuthUser, StageItem, ProjectRequirement } from '../types';
 import { 
   parseDirectoryCSV, 
   generateSampleDirectoryCSV, 
   saveStoredDirectory, 
   resetDirectoryToDefault 
 } from '../utils/directoryStorage';
+import { getStoredRequirements } from '../utils/requirementsStorage';
+import { AdminToolkitEditor } from './AdminToolkitEditor';
+import { AdminRequirementsManager } from './AdminRequirementsManager';
 
 interface AdminConsoleViewProps {
   directoryItems: DirectoryItem[];
   onUpdateDirectory: (updatedList: DirectoryItem[]) => void;
+  toolkitStages: StageItem[];
+  onUpdateToolkitStages: (updatedStages: StageItem[]) => void;
   onNotify: (msg: string) => void;
   currentUser: AuthUser | null;
   onLogout?: () => void;
@@ -42,12 +48,15 @@ interface AdminConsoleViewProps {
 export const AdminConsoleView: React.FC<AdminConsoleViewProps> = ({
   directoryItems,
   onUpdateDirectory,
+  toolkitStages,
+  onUpdateToolkitStages,
   onNotify,
   currentUser,
   onLogout,
   onBackToHome
 }) => {
-  const [activeTab, setActiveTab] = useState<'manage' | 'import_csv' | 'add_vendor'>('manage');
+  const [activeTab, setActiveTab] = useState<'manage' | 'requirements' | 'import_csv' | 'add_vendor' | 'toolkit_stages'>('manage');
+  const [requirements, setRequirements] = useState<ProjectRequirement[]>(() => getStoredRequirements());
   const [searchQuery, setSearchQuery] = useState('');
   const [filterRole, setFilterRole] = useState<'all' | 'vendor' | 'advisor'>('all');
 
@@ -305,6 +314,18 @@ export const AdminConsoleView: React.FC<AdminConsoleViewProps> = ({
           </button>
 
           <button
+            onClick={() => { setActiveTab('requirements'); setEditingItemId(null); }}
+            className={`px-4 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer flex items-center gap-2 whitespace-nowrap ${
+              activeTab === 'requirements'
+                ? 'bg-purple-600 text-white shadow-md'
+                : 'text-slate-300 hover:text-white hover:bg-slate-800'
+            }`}
+          >
+            <Building2 className="w-4 h-4" />
+            <span>Submitted Requirements ({requirements.length})</span>
+          </button>
+
+          <button
             onClick={() => { setActiveTab('import_csv'); setEditingItemId(null); }}
             className={`px-4 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer flex items-center gap-2 whitespace-nowrap ${
               activeTab === 'import_csv'
@@ -354,6 +375,21 @@ export const AdminConsoleView: React.FC<AdminConsoleViewProps> = ({
           >
             <Plus className="w-4 h-4" />
             <span>{editingItemId ? 'Edit Listing' : 'Add New Listing'}</span>
+          </button>
+
+          <button
+            onClick={() => {
+              setActiveTab('toolkit_stages');
+              setEditingItemId(null);
+            }}
+            className={`px-4 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer flex items-center gap-2 whitespace-nowrap ${
+              activeTab === 'toolkit_stages'
+                ? 'bg-blue-600 text-white shadow-md'
+                : 'text-slate-300 hover:text-white hover:bg-slate-800'
+            }`}
+          >
+            <BookOpen className="w-4 h-4" />
+            <span>15 Stages Toolkit Editor ({toolkitStages.length})</span>
           </button>
         </div>
       </div>
@@ -807,6 +843,29 @@ export const AdminConsoleView: React.FC<AdminConsoleViewProps> = ({
               </button>
             </div>
           </form>
+        )}
+
+        {/* TAB 4: TOOLKIT 15 STAGES EDITOR */}
+        {activeTab === 'toolkit_stages' && (
+          <div className="p-6 sm:p-8">
+            <AdminToolkitEditor
+              stages={toolkitStages}
+              onUpdateStages={onUpdateToolkitStages}
+              onNotify={onNotify}
+            />
+          </div>
+        )}
+
+        {/* TAB 5: SUBMITTED PROJECT REQUIREMENTS MANAGEMENT */}
+        {activeTab === 'requirements' && (
+          <div className="p-6 sm:p-8">
+            <AdminRequirementsManager
+              requirements={requirements}
+              onUpdateRequirements={(updated) => setRequirements(updated)}
+              directoryItems={directoryItems}
+              onNotify={onNotify}
+            />
+          </div>
         )}
       </div>
     </div>

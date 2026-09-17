@@ -88,7 +88,7 @@ Explore our **Statutory Approvals Advisors** in the NOVA directory to fast-track
   - 1 Cath Lab or Daycare procedure suite
 • **Air Handling:** Minimum 20 - 25 Air Changes per Hour (ACH) with positive air pressure gradient relative to dirty corridors.
 
-You can inspect our 15-stage toolkit Stage 9 for complete modular theatre specifications!`;
+You can inspect our 15-stage toolkit Stage 7 (MEP / Engineering) and Stage 8 (Interiors) for complete modular theatre and cleanroom specifications!`;
     }
 
     return `Thank you for your project query regarding "${query}". 

@@ -26,11 +26,13 @@ import { AdminDirectoryModal } from './components/AdminDirectoryModal';
 // Dedicated Admin Components
 import { AdminLoginForm } from './components/AdminLoginForm';
 import { AdminConsoleView } from './components/AdminConsoleView';
+import { UserDashboard } from './components/UserDashboard';
 
-import { UserRole, DirectoryItem, ProjectRequirement, PaymentTransaction, AuthUser } from './types';
+import { UserRole, DirectoryItem, ProjectRequirement, PaymentTransaction, AuthUser, StageItem } from './types';
 import { getStoredDirectory, saveStoredDirectory } from './utils/directoryStorage';
+import { getStoredToolkitStages, saveStoredToolkitStages } from './utils/toolkitStorage';
 import { RouteSlug, getSlugFromPath, navigateToSlug } from './utils/routes';
-import { CheckCircle2, ArrowLeft, ShieldCheck, Sparkles, Building2, HardHat, UserCheck } from 'lucide-react';
+import { CheckCircle2, ArrowLeft, ShieldCheck, Sparkles, Building2, HardHat, UserCheck, LayoutDashboard } from 'lucide-react';
 
 export default function App() {
   // Routing state based on URL slug
@@ -65,6 +67,27 @@ export default function App() {
   const [directoryItems, setDirectoryItems] = useState<DirectoryItem[]>(() => {
     return getStoredDirectory();
   });
+
+  // Dynamic 15 Toolkit stages state loaded from local storage / seed defaults
+  const [toolkitStages, setToolkitStages] = useState<StageItem[]>(() => {
+    return getStoredToolkitStages();
+  });
+
+  const handleUpdateToolkitStages = (updatedStages: StageItem[]) => {
+    setToolkitStages(updatedStages);
+    saveStoredToolkitStages(updatedStages);
+  };
+
+  useEffect(() => {
+    const handleToolkitSync = (e: Event) => {
+      const customEvent = e as CustomEvent<StageItem[]>;
+      if (customEvent.detail && Array.isArray(customEvent.detail)) {
+        setToolkitStages(customEvent.detail);
+      }
+    };
+    window.addEventListener('nova_toolkit_updated', handleToolkitSync);
+    return () => window.removeEventListener('nova_toolkit_updated', handleToolkitSync);
+  }, []);
 
   // Modal states
   const [toolkitModalOpen, setToolkitModalOpen] = useState(false);
@@ -155,7 +178,8 @@ export default function App() {
       showToast(`Welcome Administrator ${user.name}! Administrative controls unlocked.`);
       handleNavigate('admin');
     } else {
-      showToast(`Welcome ${user.name}! Logged in as ${user.role.toUpperCase()}. Full directory details unlocked!`);
+      showToast(`Welcome ${user.name}! Logged in as ${user.role.toUpperCase()}. Workspace dashboard unlocked!`);
+      handleNavigate('dashboard');
     }
   };
 
@@ -195,6 +219,8 @@ export default function App() {
             <AdminConsoleView
               directoryItems={directoryItems}
               onUpdateDirectory={(updated) => setDirectoryItems(updated)}
+              toolkitStages={toolkitStages}
+              onUpdateToolkitStages={handleUpdateToolkitStages}
               onNotify={(msg) => showToast(msg)}
               currentUser={currentUser}
               onLogout={handleLogout}
@@ -220,6 +246,49 @@ export default function App() {
               onSuccess={handleAuthSuccess}
               onCancel={() => handleNavigate('')}
             />
+          </div>
+        );
+
+      case 'dashboard':
+        if (currentUser) {
+          return (
+            <UserDashboard
+              currentUser={currentUser}
+              directoryItems={directoryItems}
+              onOpenRequirementModal={() => setRequirementModalOpen(true)}
+              onNavigate={handleNavigate}
+              onNotify={(msg) => showToast(msg)}
+            />
+          );
+        }
+        return (
+          <div className="py-16 px-4 max-w-7xl mx-auto flex flex-col items-center justify-center min-h-[70vh]">
+            <div className="mb-6 text-center">
+              <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-black uppercase tracking-wider bg-blue-100 text-blue-800 border border-blue-200 mb-3">
+                <LayoutDashboard className="w-3.5 h-3.5" />
+                Network Workspace Portal
+              </span>
+              <h2 className="text-3xl font-black text-slate-900 tracking-tight">
+                Role Dashboard Access
+              </h2>
+              <p className="text-slate-600 text-sm mt-1 max-w-md mx-auto">
+                Sign in as a Hospital Owner, Healthcare Vendor, or Empanelled Advisor to manage received enquiries, track project RFQs, and respond to clients.
+              </p>
+            </div>
+            <div className="flex gap-3">
+              <button
+                onClick={() => setAuthModalOpen(true)}
+                className="px-6 py-3 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-bold text-sm shadow-md cursor-pointer transition-all"
+              >
+                Sign In to Dashboard
+              </button>
+              <button
+                onClick={() => handleNavigate('')}
+                className="px-6 py-3 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-sm cursor-pointer transition-all"
+              >
+                Return to Home
+              </button>
+            </div>
           </div>
         );
 
@@ -263,7 +332,7 @@ export default function App() {
               onSelectRole={(role) => handleOpenAuth('signup', role)}
               onPostRequirement={() => setRequirementModalOpen(true)}
             />
-            <HospitalToolkit onOpenFullToolkit={handleOpenToolkit} />
+            <HospitalToolkit onOpenFullToolkit={handleOpenToolkit} stages={toolkitStages} />
           </div>
         );
 
@@ -350,7 +419,7 @@ export default function App() {
       case 'toolkit':
         return (
           <div className="py-8 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-8">
-            <HospitalToolkit onOpenFullToolkit={handleOpenToolkit} />
+            <HospitalToolkit onOpenFullToolkit={handleOpenToolkit} stages={toolkitStages} />
           </div>
         );
 
@@ -446,6 +515,7 @@ export default function App() {
             {/* 5. HOSPITAL OWNERS TOOLKIT */}
             <HospitalToolkit
               onOpenFullToolkit={handleOpenToolkit}
+              stages={toolkitStages}
             />
 
             {/* 6. LOCATION-BASED SEARCH / DIRECTORY */}
@@ -536,6 +606,7 @@ export default function App() {
         isOpen={toolkitModalOpen}
         onClose={() => setToolkitModalOpen(false)}
         initialStageIndex={toolkitStageIndex}
+        stages={toolkitStages}
       />
 
       <RequirementModal
@@ -571,6 +642,8 @@ export default function App() {
         onClose={() => setAdminDirectoryOpen(false)}
         directoryItems={directoryItems}
         onUpdateDirectory={(updated) => setDirectoryItems(updated)}
+        toolkitStages={toolkitStages}
+        onUpdateToolkitStages={handleUpdateToolkitStages}
         onNotify={(msg) => showToast(msg)}
       />
 

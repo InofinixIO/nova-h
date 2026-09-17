@@ -2,23 +2,28 @@ import React, { useState } from 'react';
 import { BookOpen, CheckCircle, ChevronLeft, ChevronRight, Sparkles, Layers, ArrowRight, ShieldCheck, Download } from 'lucide-react';
 import { SectionHeading } from './SectionHeading';
 import { TOOLKIT_15_STAGES } from '../data/mockData';
+import { StageItem } from '../types';
 
 interface HospitalToolkitProps {
   onOpenFullToolkit: (stageIndex?: number) => void;
+  stages?: StageItem[];
 }
 
-export const HospitalToolkit: React.FC<HospitalToolkitProps> = ({ onOpenFullToolkit }) => {
+export const HospitalToolkit: React.FC<HospitalToolkitProps> = ({ onOpenFullToolkit, stages }) => {
+  const stagesList = stages && stages.length > 0 ? stages : TOOLKIT_15_STAGES;
   const [currentSlide, setCurrentSlide] = useState(0);
 
+  const safeSlideIndex = currentSlide < stagesList.length ? currentSlide : 0;
+
   const nextSlide = () => {
-    setCurrentSlide((prev) => (prev + 1) % TOOLKIT_15_STAGES.length);
+    setCurrentSlide((prev) => (prev + 1) % stagesList.length);
   };
 
   const prevSlide = () => {
-    setCurrentSlide((prev) => (prev - 1 + TOOLKIT_15_STAGES.length) % TOOLKIT_15_STAGES.length);
+    setCurrentSlide((prev) => (prev - 1 + stagesList.length) % stagesList.length);
   };
 
-  const activeStage = TOOLKIT_15_STAGES[currentSlide];
+  const activeStage = stagesList[safeSlideIndex];
 
   return (
     <section className="py-16 sm:py-24 bg-slate-50 border-y border-slate-200">
@@ -53,7 +58,7 @@ export const HospitalToolkit: React.FC<HospitalToolkitProps> = ({ onOpenFullTool
                   <span className="ml-2 font-mono text-[11px] text-slate-400">Canva Interactive Reader: Hospital Owners Toolkit</span>
                 </div>
                 <div className="text-slate-400 font-medium">
-                  Stage {activeStage.stageNumber} of 15
+                  Stage {activeStage?.stageNumber || safeSlideIndex + 1} of {stagesList.length}
                 </div>
               </div>
 
@@ -103,19 +108,18 @@ export const HospitalToolkit: React.FC<HospitalToolkitProps> = ({ onOpenFullTool
                     <span className="hidden sm:inline">Prev Stage</span>
                   </button>
 
-                  {/* Stage indicator dots (previewing stages) */}
-                  <div className="flex items-center gap-1.5">
-                    {TOOLKIT_15_STAGES.slice(0, 8).map((_, idx) => (
+                  {/* Stage indicator dots */}
+                  <div className="flex items-center gap-1">
+                    {stagesList.map((s, idx) => (
                       <button
                         key={idx}
                         onClick={() => setCurrentSlide(idx)}
                         className={`h-2 rounded-full transition-all cursor-pointer ${
-                          currentSlide === idx ? 'w-6 bg-blue-500' : 'w-2 bg-slate-700 hover:bg-slate-500'
+                          safeSlideIndex === idx ? 'w-5 bg-blue-500' : 'w-1.5 sm:w-2 bg-slate-700 hover:bg-slate-500'
                         }`}
-                        title={`Stage ${idx + 1}`}
+                        title={`Stage ${s.stageNumber}: ${s.title}`}
                       />
                     ))}
-                    <span className="text-[10px] text-slate-400 ml-1">...+7 more</span>
                   </div>
 
                   <button

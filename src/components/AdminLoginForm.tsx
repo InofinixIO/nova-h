@@ -131,15 +131,29 @@ export const AdminLoginForm: React.FC<AdminLoginFormProps> = ({ onSuccess, onCan
           </div>
         </div>
 
-        {/* Demo Helper Box */}
-        <div className="p-3 bg-purple-50/70 border border-purple-200/80 rounded-xl text-xs text-purple-900 space-y-1">
-          <p className="font-bold flex items-center gap-1.5 text-purple-800">
-            <CheckCircle2 className="w-3.5 h-3.5 text-purple-700" />
-            <span>Default Demo Credentials:</span>
-          </p>
-          <p className="text-[11px] font-mono text-purple-700">
-            Email: <span className="font-bold">admin@nova-h.in</span> | Password: <span className="font-bold">admin123</span>
-          </p>
+        {/* Demo Helper Box with 1-click login */}
+        <div className="p-3.5 bg-purple-50/80 border border-purple-200/90 rounded-xl text-xs text-purple-900 space-y-2">
+          <div className="flex items-center justify-between">
+            <p className="font-bold flex items-center gap-1.5 text-purple-800">
+              <CheckCircle2 className="w-3.5 h-3.5 text-purple-700" />
+              <span>Sample Admin Credentials:</span>
+            </p>
+            <button
+              type="button"
+              onClick={() => {
+                setEmail('admin@nova-h.in');
+                setPassword('admin123');
+                setAdminKey('NOVA-ADMIN-2026');
+              }}
+              className="text-[11px] font-bold text-purple-700 hover:text-purple-900 underline cursor-pointer"
+            >
+              Fill Credentials
+            </button>
+          </div>
+          <div className="p-2 bg-white/80 rounded-lg border border-purple-100 font-mono text-[11px] text-purple-800 space-y-0.5">
+            <div>Email: <span className="font-bold select-all">admin@nova-h.in</span></div>
+            <div>Password: <span className="font-bold select-all">admin123</span></div>
+          </div>
         </div>
 
         <button

@@ -7,19 +7,23 @@ interface ToolkitModalProps {
   isOpen: boolean;
   onClose: () => void;
   initialStageIndex?: number;
+  stages?: StageItem[];
 }
 
 export const ToolkitModal: React.FC<ToolkitModalProps> = ({
   isOpen,
   onClose,
   initialStageIndex = 0,
+  stages
 }) => {
+  const stagesList = stages && stages.length > 0 ? stages : TOOLKIT_15_STAGES;
   const [activeStageIndex, setActiveStageIndex] = useState(initialStageIndex);
   const [completedItems, setCompletedItems] = useState<{ [key: string]: boolean }>({});
 
   if (!isOpen) return null;
 
-  const stage: StageItem = TOOLKIT_15_STAGES[activeStageIndex];
+  const safeIndex = activeStageIndex < stagesList.length ? activeStageIndex : 0;
+  const stage: StageItem = stagesList[safeIndex];
 
   const toggleCheck = (itemKey: string) => {
     setCompletedItems(prev => ({
@@ -56,7 +60,7 @@ export const ToolkitModal: React.FC<ToolkitModalProps> = ({
 
           <div className="flex items-center gap-3">
             <span className="hidden sm:inline-block px-3 py-1 rounded-full bg-slate-800 text-xs text-blue-300 font-mono">
-              Stage {stage.stageNumber} of 15
+              Stage {stage.stageNumber} of {stagesList.length}
             </span>
             <button
               onClick={onClose}
@@ -73,20 +77,20 @@ export const ToolkitModal: React.FC<ToolkitModalProps> = ({
           {/* Left Stages List (Sidebar) */}
           <div className="w-full md:w-72 bg-slate-50 border-r border-slate-200 overflow-y-auto p-3 space-y-1 shrink-0">
             <p className="text-[11px] font-bold text-slate-400 uppercase tracking-wider px-3 py-2">
-              The 15 Developmental Stages
+              The {stagesList.length} Developmental Stages
             </p>
-            {TOOLKIT_15_STAGES.map((s, idx) => (
+            {stagesList.map((s, idx) => (
               <button
                 key={s.stageNumber}
                 onClick={() => setActiveStageIndex(idx)}
                 className={`w-full text-left px-3 py-2.5 rounded-lg text-xs font-semibold flex items-center gap-2.5 transition-all cursor-pointer ${
-                  activeStageIndex === idx
+                  safeIndex === idx
                     ? 'bg-blue-600 text-white shadow-xs'
                     : 'text-slate-700 hover:bg-slate-200/70'
                 }`}
               >
                 <span className={`w-5 h-5 rounded-full flex items-center justify-center text-[10px] shrink-0 ${
-                  activeStageIndex === idx ? 'bg-white text-blue-700 font-bold' : 'bg-slate-200 text-slate-600'
+                  safeIndex === idx ? 'bg-white text-blue-700 font-bold' : 'bg-slate-200 text-slate-600'
                 }`}>
                   {s.stageNumber}
                 </span>
@@ -204,7 +208,7 @@ export const ToolkitModal: React.FC<ToolkitModalProps> = ({
         <div className="px-6 py-4 bg-slate-50 border-t border-slate-200 flex items-center justify-between shrink-0">
           <button
             onClick={() => setActiveStageIndex((prev) => Math.max(0, prev - 1))}
-            disabled={activeStageIndex === 0}
+            disabled={safeIndex === 0}
             className="px-4 py-2 rounded-lg bg-white border border-slate-300 text-slate-700 hover:bg-slate-100 disabled:opacity-40 disabled:cursor-not-allowed font-semibold text-xs flex items-center gap-1.5 cursor-pointer"
           >
             <ChevronLeft className="w-4 h-4" />
@@ -212,12 +216,12 @@ export const ToolkitModal: React.FC<ToolkitModalProps> = ({
           </button>
 
           <span className="text-xs text-slate-500 font-medium hidden sm:inline">
-            Step {stage.stageNumber} of 15
+            Step {stage.stageNumber} of {stagesList.length}
           </span>
 
           <button
-            onClick={() => setActiveStageIndex((prev) => Math.min(TOOLKIT_15_STAGES.length - 1, prev + 1))}
-            disabled={activeStageIndex === TOOLKIT_15_STAGES.length - 1}
+            onClick={() => setActiveStageIndex((prev) => Math.min(stagesList.length - 1, prev + 1))}
+            disabled={safeIndex >= stagesList.length - 1}
             className="px-4 py-2 rounded-lg bg-blue-600 text-white hover:bg-blue-700 disabled:opacity-40 disabled:cursor-not-allowed font-semibold text-xs flex items-center gap-1.5 cursor-pointer shadow-xs"
           >
             <span>Next Stage</span>

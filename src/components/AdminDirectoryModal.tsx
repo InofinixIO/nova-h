@@ -19,21 +19,27 @@ import {
   Phone,
   Mail,
   MapPin,
-  Check
+  Check,
+  BookOpen
 } from 'lucide-react';
-import { DirectoryItem } from '../types';
+import { DirectoryItem, StageItem, ProjectRequirement } from '../types';
 import { 
   parseDirectoryCSV, 
   generateSampleDirectoryCSV, 
   saveStoredDirectory, 
   resetDirectoryToDefault 
 } from '../utils/directoryStorage';
+import { getStoredRequirements } from '../utils/requirementsStorage';
+import { AdminToolkitEditor } from './AdminToolkitEditor';
+import { AdminRequirementsManager } from './AdminRequirementsManager';
 
 interface AdminDirectoryModalProps {
   isOpen: boolean;
   onClose: () => void;
   directoryItems: DirectoryItem[];
   onUpdateDirectory: (updatedList: DirectoryItem[]) => void;
+  toolkitStages?: StageItem[];
+  onUpdateToolkitStages?: (updatedStages: StageItem[]) => void;
   onNotify: (msg: string) => void;
 }
 
@@ -42,9 +48,12 @@ export const AdminDirectoryModal: React.FC<AdminDirectoryModalProps> = ({
   onClose,
   directoryItems,
   onUpdateDirectory,
+  toolkitStages = [],
+  onUpdateToolkitStages,
   onNotify
 }) => {
-  const [activeTab, setActiveTab] = useState<'manage' | 'import_csv' | 'add_vendor'>('manage');
+  const [activeTab, setActiveTab] = useState<'manage' | 'requirements' | 'import_csv' | 'add_vendor' | 'toolkit_stages'>('manage');
+  const [requirements, setRequirements] = useState<ProjectRequirement[]>(() => getStoredRequirements());
   const [searchQuery, setSearchQuery] = useState('');
   const [filterRole, setFilterRole] = useState<'all' | 'vendor' | 'advisor'>('all');
 
@@ -288,6 +297,18 @@ export const AdminDirectoryModal: React.FC<AdminDirectoryModalProps> = ({
           </button>
 
           <button
+            onClick={() => { setActiveTab('requirements'); setEditingItemId(null); }}
+            className={`pb-3 px-3 text-xs font-bold border-b-2 transition-all cursor-pointer flex items-center gap-1.5 whitespace-nowrap ${
+              activeTab === 'requirements'
+                ? 'border-blue-600 text-blue-800'
+                : 'border-transparent text-slate-600 hover:text-slate-900'
+            }`}
+          >
+            <FileText className="w-4 h-4 text-purple-600" />
+            <span>Submitted Requirements ({requirements.length})</span>
+          </button>
+
+          <button
             onClick={() => setActiveTab('import_csv')}
             className={`pb-3 px-3 text-xs font-bold border-b-2 transition-all cursor-pointer flex items-center gap-1.5 whitespace-nowrap ${
               activeTab === 'import_csv'
@@ -335,6 +356,18 @@ export const AdminDirectoryModal: React.FC<AdminDirectoryModalProps> = ({
           >
             <Plus className="w-4 h-4 text-emerald-600" />
             <span>{editingItemId ? 'Edit Listing' : 'Add New Listing'}</span>
+          </button>
+
+          <button
+            onClick={() => setActiveTab('toolkit_stages')}
+            className={`pb-3 px-3 text-xs font-bold border-b-2 transition-all cursor-pointer flex items-center gap-1.5 whitespace-nowrap ${
+              activeTab === 'toolkit_stages'
+                ? 'border-blue-600 text-blue-800'
+                : 'border-transparent text-slate-600 hover:text-slate-900'
+            }`}
+          >
+            <BookOpen className="w-4 h-4 text-blue-600" />
+            <span>Toolkit Stages ({toolkitStages.length})</span>
           </button>
         </div>
 
@@ -837,6 +870,29 @@ export const AdminDirectoryModal: React.FC<AdminDirectoryModalProps> = ({
                 </button>
               </div>
             </form>
+          )}
+
+          {/* TAB 4: TOOLKIT 15 STAGES EDITOR */}
+          {activeTab === 'toolkit_stages' && (
+            <div className="py-2">
+              <AdminToolkitEditor
+                stages={toolkitStages}
+                onUpdateStages={onUpdateToolkitStages || (() => {})}
+                onNotify={onNotify}
+              />
+            </div>
+          )}
+
+          {/* TAB 5: SUBMITTED REQUIREMENTS MANAGEMENT */}
+          {activeTab === 'requirements' && (
+            <div className="py-2">
+              <AdminRequirementsManager
+                requirements={requirements}
+                onUpdateRequirements={(updated) => setRequirements(updated)}
+                directoryItems={directoryItems}
+                onNotify={onNotify}
+              />
+            </div>
           )}
 
         </div>

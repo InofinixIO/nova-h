@@ -26,6 +26,7 @@ import {
   ExternalLink
 } from 'lucide-react';
 import { DirectoryItem, AuthUser, UserRole } from '../types';
+import { addEnquiry } from '../utils/enquiriesStorage';
 
 interface VendorDetailModalProps {
   vendor: DirectoryItem | null;
@@ -55,10 +56,26 @@ export const VendorDetailModal: React.FC<VendorDetailModalProps> = ({
 
   const handleSendMessage = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!isLoggedIn) {
+    if (!isLoggedIn || !currentUser) {
       onOpenAuth('signin');
       return;
     }
+    
+    addEnquiry({
+      targetId: vendor.id,
+      targetName: vendor.name,
+      targetEmail: vendor.contactEmail,
+      targetRole: vendor.role,
+      senderName: currentUser.name,
+      senderEmail: currentUser.email,
+      senderPhone: currentUser.phone,
+      senderRole: currentUser.role,
+      senderCompany: currentUser.company,
+      subject: rfqSubject || `Inquiry regarding ${vendor.category}`,
+      message: messageText,
+      projectLocation: vendor.location
+    });
+
     setMessageSent(true);
     setTimeout(() => {
       setMessageSent(false);

@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { X, Send, CheckCircle, Building, MapPin, Layers, Phone, Mail, User } from 'lucide-react';
 import { ProjectRequirement } from '../types';
+import { addRequirement } from '../utils/requirementsStorage';
 
 interface RequirementModalProps {
   isOpen: boolean;
@@ -31,8 +32,7 @@ export const RequirementModal: React.FC<RequirementModalProps> = ({
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    const newReq: ProjectRequirement = {
-      id: `REQ-${Date.now()}`,
+    const savedReq = addRequirement({
       hospitalName: formData.hospitalName || 'Upcoming Hospital Project',
       location: formData.location,
       bedCapacity: formData.bedCapacity,
@@ -42,12 +42,12 @@ export const RequirementModal: React.FC<RequirementModalProps> = ({
       contactPerson: formData.contactPerson,
       email: formData.email,
       phone: formData.phone,
-      createdAt: new Date().toLocaleDateString(),
-    };
+      status: 'pending_review'
+    });
 
     setSubmitted(true);
     setTimeout(() => {
-      onSubmitSuccess(newReq);
+      onSubmitSuccess(savedReq);
       setSubmitted(false);
       onClose();
     }, 1500);

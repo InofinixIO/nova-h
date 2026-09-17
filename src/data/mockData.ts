@@ -41,228 +41,228 @@ export const HOW_IT_WORKS_STEPS: HowItWorksStep[] = [
 export const TOOLKIT_15_STAGES: StageItem[] = [
   {
     stageNumber: 1,
-    title: "Concept & Market Feasibility",
+    title: "Concept & Feasibility",
     category: "Feasibility & Strategy",
-    summary: "Identify healthcare catchment area demographics, competitor analysis, bed requirement projections, and financial viability model.",
-    keyDeliverables: ["Market Demand Survey", "Catchment Demographics Study", "Clinical Speciality Mix Matrix", "Financial Projections & ROI"],
+    summary: "Healthcare demand assessment, catchment demographics study, clinical specialty mix planning, and project financial viability modeling.",
+    keyDeliverables: ["Market Demand & Catchment Study", "Clinical Specialty Mix Matrix", "Bed Requirement Projections", "10-Year Financial Model & ROI"],
     checklist: [
-      "Analyze 15 km primary and secondary catchment demographics",
-      "Survey existing public & private hospital bed availability",
-      "Determine core clinical specialties (Cardio, Onco, Ortho, Mother & Child)",
-      "Prepare 10-year financial model with Capex/Opex estimates"
+      "Analyze 15 km primary and secondary catchment demographics and disease profiles",
+      "Survey existing public and private hospital bed availability and occupancy rates",
+      "Determine core clinical specialties (Cardiac, Ortho, Neuro, Mother & Child, Oncology)",
+      "Formulate 10-year Capex, Opex, and operational breakeven projections"
     ],
     typicalTimeline: "1 - 2 Months",
     keyStakeholders: ["Hospital Promoters", "Healthcare Feasibility Consultants", "Financial Analysts"]
   },
   {
     stageNumber: 2,
-    title: "Land Acquisition & Zoning Due Diligence",
-    category: "Real Estate & Zoning",
-    summary: "Selecting strategic land parcels, verifying clear titles, road accessibility, and healthcare municipal zoning bylaws.",
-    keyDeliverables: ["Title Clearance Certificate", "Zoning Clearance / CLU (Change of Land Use)", "Topographical & Soil Testing Report"],
+    title: "Funding",
+    category: "Capital & Project Finance",
+    summary: "Structuring promoter equity, senior debt term loans, institutional investor partnerships, subsidies, and credit syndication.",
+    keyDeliverables: ["Detailed Project Report (DPR)", "Techno-Economic Viability (TEV) Report", "Bank Loan Sanction Letter", "Escrow & Disbursement Schedule"],
     checklist: [
-      "Ensure minimum road width for fire tender movement (typically 12m - 18m+)",
-      "Verify non-agricultural (NA) and institutional zoning permissions",
-      "Conduct geo-technical soil bearing capacity and water table testing",
-      "Check municipal water, electrical substation, and drainage connectivity"
+      "Prepare comprehensive DPR and TEV assessment report for commercial lenders",
+      "Negotiate moratorium period covering construction plus initial 6 months of operations",
+      "Structure optimal debt-to-equity ratio (typically 65:35 or 70:30) with lead banks",
+      "Secure state industrial capital investment subsidies and project escrow accounts"
     ],
     typicalTimeline: "2 - 4 Months",
-    keyStakeholders: ["Legal Advisors", "Civil Surveyors", "Local Municipal Authorities"]
+    keyStakeholders: ["Investment Bankers", "Commercial Bank Lenders", "CFO & Financial Advisors"]
   },
   {
     stageNumber: 3,
-    title: "Architecture & Healthcare Facility Planning",
-    category: "Design & Master Planning",
-    summary: "Creating functional departmental layouts, infection-control zoning, patient flow separation, and AERB-compliant bunkers.",
-    keyDeliverables: ["Master Concept Layout", "Departmental Space Allocation Schedule", "AERB / Radiation Safety Layout", "3D Architectural Renderings"],
+    title: "Land / Building Identification",
+    category: "Real Estate & Site Due Diligence",
+    summary: "Selecting strategic land parcel or building structure for healthcare conversion, verifying clear titles, road accessibility, and zoning bylaws.",
+    keyDeliverables: ["Title Clearance Certificate", "Zoning Clearance / CLU (Change of Land Use)", "Topographical & Soil Testing Report", "Building Structural Audit (for Brownfield)"],
     checklist: [
-      "Separate clean and dirty corridors (CSSD, OT, Laundry, Waste)",
-      "Establish segregated patient, visitor, ambulance, and mortuary flows",
-      "Design AERB-compliant shielded bunker layouts for Cath Lab, CT, MRI, Linac",
-      "Optimize bed-to-square-foot ratios (typically 650 - 1000 sq ft per bed)"
+      "Verify minimum road frontage width (typically 12m - 18m+) for fire tender movement",
+      "Confirm institutional / non-agricultural (NA) zoning and municipal master plan compliance",
+      "Conduct geo-technical soil bearing capacity and groundwater table testing",
+      "Assess municipal water supply, HT electrical grid proximity, and sewage outfall connection"
     ],
-    typicalTimeline: "3 - 5 Months",
-    keyStakeholders: ["Hospital Architects", "Clinical Planners", "Structural Engineers"]
+    typicalTimeline: "2 - 4 Months",
+    keyStakeholders: ["Legal Advisors", "Civil Surveyors", "Local Municipal Authorities", "Real Estate Partners"]
   },
   {
     stageNumber: 4,
-    title: "Statutory & Environmental Approvals",
-    category: "Regulatory & Compliance",
-    summary: "Securing mandatory central, state, and local licenses before and during construction commencement.",
-    keyDeliverables: ["Building Plan Sanction", "State Pollution Control Board CTE (Consent to Establish)", "Fire Department Provisional NOC", "AERB Site Clearance"],
+    title: "Architecture & Designs",
+    category: "Hospital Architecture & Space Planning",
+    summary: "Developing clinical departmental zoning, patient and visitor circulation flows, AERB radiation bunkers, clean/dirty segregation, and 3D architectural schematics.",
+    keyDeliverables: ["Master Concept Layout", "Departmental Space Allocation Schedule", "AERB / Radiation Safety Shielding Layout", "3D Architectural & BIM Renderings"],
     checklist: [
-      "Submit municipal building permit sanction with fire safety drawings",
-      "Obtain State Pollution Control Board CTE for ETP/STP design",
-      "Procure provisional Fire Safety NOC including setback and staircase widths",
-      "Apply for environmental clearance if built-up area exceeds statutory threshold"
+      "Establish strict segregation for patient, visitor, emergency ambulance, and mortuary flows",
+      "Separate sterile and contaminated corridor traffic across CSSD, Operating Theatres, and Laundry",
+      "Design AERB-compliant concrete shielded bunkers for Cath Lab, CT Scan, MRI, and LINAC",
+      "Optimize bed-to-square-foot ratios (typically 650 - 1,000 sq ft per bed for multispecialty)"
     ],
-    typicalTimeline: "3 - 6 Months",
-    keyStakeholders: ["Liaison Officers", "Environmental Consultants", "Statutory Advisors"]
+    typicalTimeline: "3 - 5 Months",
+    keyStakeholders: ["Healthcare Architects", "Clinical Facility Planners", "Structural Engineers"]
   },
   {
     stageNumber: 5,
-    title: "Project Financing & Capital Structuring",
-    category: "Finance & Banking",
-    summary: "Structuring promoter equity, senior debt term loans, subsidies, and managing multi-tranche lender drawdowns.",
-    keyDeliverables: ["Detailed Project Report (DPR)", "Bank Loan Sanction Letter", "Escrow & Disbursement Schedule"],
+    title: "Statutory Approvals",
+    category: "Statutory Licensing & Compliance",
+    summary: "Securing mandatory municipal building sanctions, environmental clearances, provisional fire department NOCs, and atomic energy site approvals.",
+    keyDeliverables: ["Municipal Building Plan Sanction", "State Pollution Control Board CTE (Consent to Establish)", "Provisional Fire Department NOC", "AERB Site Clearance"],
     checklist: [
-      "Finalize TEV (Techno-Economic Viability) assessment report",
-      "Negotiate moratorium period covering construction and initial 6 months ops",
-      "Structure equipment lease financing versus direct capital purchase",
-      "Set up project debt monitoring and statutory escrow accounts"
+      "Submit architectural drawings for municipal building sanction and Floor Area Ratio (FAR) approval",
+      "Obtain State Pollution Control Board CTE for dedicated Effluent and Sewage Treatment Plants (ETP/STP)",
+      "Procure provisional Fire Safety NOC confirming setback distances, staircase widths, and refuge areas",
+      "Secure AERB clearance for radiodiagnostic room layouts and bunker structural shielding"
     ],
-    typicalTimeline: "2 - 4 Months",
-    keyStakeholders: ["Investment Bankers", "Commercial Bank Lenders", "CFO & Finance Advisors"]
+    typicalTimeline: "3 - 6 Months",
+    keyStakeholders: ["Liaison Officers", "Environmental Consultants", "Fire Safety Advisors", "Municipal Authorities"]
   },
   {
     stageNumber: 6,
-    title: "Civil Construction & Structural Engineering",
-    category: "Construction & Civil",
-    summary: "Execution of structural shell, seismic load balancing, waterproofing, and heavy equipment slab reinforcement.",
-    keyDeliverables: ["BOQ (Bill of Quantities)", "Structural RCC Milestones", "Quality Inspection Reports"],
+    title: "Civil Constructions",
+    category: "Civil Construction & Structural Engineering",
+    summary: "Execution of reinforced concrete cement (RCC) structural shell, vibration dampening foundations, specialized waterproofing, and heavy equipment floor slabs.",
+    keyDeliverables: ["Civil Bill of Quantities (BOQ)", "Structural RCC Milestones & Certifications", "Third-Party QA / Cube Testing Logs", "Specialized Waterproofing Warranties"],
     checklist: [
-      "Enforce vibration dampening foundations for radiology equipment",
-      "Ensure proper floor-to-floor heights (minimum 4.2m - 4.5m for OT/MEP ducting)",
-      "Execute specialized waterproofing for basements, wet areas, and terraces",
-      "Conduct regular concrete cube compression tests and third-party QA"
+      "Ensure generous floor-to-floor heights (minimum 4.2m - 4.5m) to accommodate MEP ducting and ceiling pendants",
+      "Cast vibration-isolated foundations and heavy reinforced floor slabs for MRI and CT scanners",
+      "Execute specialized crystalline waterproofing for basements, wet areas, and terraces",
+      "Perform routine concrete cube compression testing and independent third-party QA audits"
     ],
     typicalTimeline: "12 - 18 Months",
     keyStakeholders: ["Civil Contractors", "Project Management Consultants (PMC)", "Structural Engineers"]
   },
   {
     stageNumber: 7,
-    title: "MEP, HVAC & Infection Control Air Handling",
-    category: "MEP Engineering",
-    summary: "Engineering precision HVAC with laminar airflow, HEPA filtration, differential pressure gradients, and backup power grids.",
-    keyDeliverables: ["MEP Detailed Engineering Drawings", "HVAC Air Balance Schematics", "Electrical SLD & DG Redundancy Plan"],
+    title: "MEP / Engineering",
+    category: "MEP, HVAC & Critical Utilities",
+    summary: "Engineering precision HVAC with laminar airflow and HEPA filtration, electrical substations with dual DG backup, plumbing, and Medical Gas Pipeline Systems (MGPS).",
+    keyDeliverables: ["MEP Detailed Engineering Schematics", "HVAC Air Flow & Pressure Gradient Balance Plan", "Electrical Single Line Diagram (SLD) & DG Redundancy Plan", "MGPS Master Layout & Gas Plant Specification"],
     checklist: [
-      "Implement positive pressure in OTs / ICUs and negative pressure in Isolation wards",
-      "Install minimum 20 - 25 air changes per hour (ACH) in Modular Operating Theatres",
-      "Deploy dual redundant DG power backup with N+1 UPS for life-support systems",
-      "Install specialized earthing grids for cath labs and surgical consoles"
+      "Implement positive pressure in Operating Theatres and negative pressure in infectious isolation wards",
+      "Install minimum 20 - 25 air changes per hour (ACH) with 99.97% HEPA filters in modular OTs",
+      "Deploy dual redundant diesel generator backup with seamless N+1 online UPS for life-support circuits",
+      "Install medical-grade degreased copper MGPS pipelines, Liquid Medical Oxygen (LMO) bulk tank, and digital alarms"
     ],
     typicalTimeline: "6 - 9 Months",
-    keyStakeholders: ["MEP Consultants", "HVAC Contractors", "Electrical Engineers"]
+    keyStakeholders: ["MEP Consultants", "HVAC Contractors", "Electrical Engineers", "MGPS Specialists"]
   },
   {
     stageNumber: 8,
-    title: "Medical Gas Pipeline System (MGPS)",
-    category: "Specialized Infrastructure",
-    summary: "Designing HTM 02-01 / NFPA 99 compliant central medical gas plant, copper distribution manifolds, and emergency shutoff valves.",
-    keyDeliverables: ["MGPS Master Layout", "Liquid Medical Oxygen (LMO) Storage Tank Plan", "Gas Flow Pressure Validation Report"],
+    title: "Interiors",
+    category: "Hospital Interiors & Healing Architecture",
+    summary: "Designing anti-microbial healthcare interior finishes, acoustic ceiling systems, anti-static conductive vinyl flooring, wall crash guards, and patient-centric healing environments.",
+    keyDeliverables: ["Interior Finishes Schedule", "Signage & Wayfinding Masterplan", "Acoustic & Lighting Design Plan", "Modular Wall Paneling Specifications"],
     checklist: [
-      "Install bulk cryogenic Liquid Medical Oxygen (LMO) tank + 2x cylinder manifold backups",
-      "Ensure medical vacuum, compressed air (4 bar / 7 bar), and nitrous oxide piping",
-      "Place area alarm panels and master emergency shutoff valves outside ICU/OTs",
-      "Perform degreased medical-grade copper pipe hydrostatic and leak testing"
+      "Install seamless, anti-microbial, anti-static conductive vinyl flooring with coved skirting in OTs & ICUs",
+      "Apply heavy-duty PVC crash rails, corner guards, and handrails along patient corridors",
+      "Implement circadian rhythm LED lighting and acoustic ceiling tiles for sound dampening in patient rooms",
+      "Design bilingual, high-contrast, universally accessible signage and digital wayfinding"
     ],
     typicalTimeline: "3 - 5 Months",
-    keyStakeholders: ["MGPS Specialists", "Safety Officers", "Biomedical Engineers"]
+    keyStakeholders: ["Healthcare Interior Designers", "Modular Wall Specialists", "Wayfinding & Signage Vendors"]
   },
   {
     stageNumber: 9,
-    title: "Modular Operation Theatres & ICU Setup",
-    category: "Specialized Healthcare Areas",
-    summary: "Fabrication of seamless anti-microbial wall panels, surgical pendants, laminar air ceilings, and hermetic sliding doors.",
-    keyDeliverables: ["OT Modular Wall & Ceiling Layout", "Surgical Pendant Integration Plan", "Cleanroom Air Velocity Report"],
+    title: "IT and Softwares",
+    category: "Digital Healthcare & IT Systems",
+    summary: "Deployment of Hospital Information System (HIS), Electronic Medical Records (EMR), Enterprise PACS imaging archives, LIMS pathology integration, and ABDM compliance.",
+    keyDeliverables: ["HIS / EMR System Architecture Blueprint", "PACS & DICOM Server Specification", "ABDM / Ayushman Bharat Milestone 1-3 Certification", "Network & Cybersecurity Audit Report"],
     checklist: [
-      "Install antimicrobial anti-static conductive vinyl flooring (<10^6 ohms)",
-      "Set up stainless steel / powder-coated GI modular antibacterial wall paneling",
-      "Install motorized ceiling pendants for anesthesia, surgical monitors, and gas supply",
-      "Ensure touchless hermetic automatic sliding lead-lined radiation doors"
+      "Deploy core HIS modules: OPD registration, IPD billing, nursing workbenches, pharmacy inventory, and OT scheduling",
+      "Integrate Enterprise PACS with diagnostic radiological workstations and zero-footprint web viewers",
+      "Achieve ABDM (Ayushman Bharat Digital Mission) compliance for ABHA creation and digital health records exchange",
+      "Set up structured fiber network cabling, Wi-Fi 6 access points, firewall cybersecurity, and automated data backups"
     ],
-    typicalTimeline: "3 - 4 Months",
-    keyStakeholders: ["Modular OT Vendors", "Infection Control Officers", "Chief Surgeon Advisory"]
+    typicalTimeline: "3 - 6 Months",
+    keyStakeholders: ["HIS Software Vendors", "Chief Information Officer (CIO)", "PACS & Network Engineers"]
   },
   {
     stageNumber: 10,
-    title: "Medical Equipment Planning & Procurement",
-    category: "Medical Technology",
-    summary: "Specification, tender evaluation, negotiation, warranty structuring, and turnkey installation of diagnostic and life-support assets.",
-    keyDeliverables: ["Medical Equipment Master Schedule (Room-by-Room)", "Vendor Tender Comparative Matrix", "CMC/AMC Service Contracts"],
+    title: "Equipment Procurement",
+    category: "Medical Technology & Life Support",
+    summary: "Specification, comparative tender evaluation, vendor negotiation, and turnkey commissioning of diagnostic imaging, surgical consoles, and life-support assets.",
+    keyDeliverables: ["Room-by-Room Medical Equipment Master Schedule", "Vendor Tender Comparative Matrix", "Turnkey Installation & Uptime SLA Contracts", "5-Year Comprehensive Maintenance Contracts (CMC)"],
     checklist: [
-      "Schedule procurement for heavy diagnostics (MRI, CT, Cath Lab, X-Ray, Ultrasound)",
-      "Procure ICU monitors, ventilators, defibrillators, anesthesia workstations",
-      "Negotiate comprehensive 5-year warranty + 5-year CMC uptime commitments (>98%)",
-      "Verify power supply conditioning, RF cages, and chiller requirements"
+      "Procure heavy imaging modalities (MRI, CT Scanner, Cath Lab, Digital X-Ray, Color Doppler Ultrasound)",
+      "Equip ICU suites with multi-parameter monitors, invasive ventilators, syringe pumps, and defibrillators",
+      "Outfit Operating Theatres with anesthesia workstations, LED surgical lights, electro-cautery, and laparoscopy towers",
+      "Negotiate 5-year warranty + 5-year CMC contracts with guaranteed uptime (>98%) and penalty clauses"
     ],
     typicalTimeline: "4 - 8 Months",
-    keyStakeholders: ["Biomedical Equipment Vendors", "Procurement Committee", "Radiologists / Specialists"]
+    keyStakeholders: ["Biomedical Equipment Vendors", "Procurement Advisory Committee", "Clinical Specialists"]
   },
   {
     stageNumber: 11,
-    title: "Healthcare IT, HIS, EMR & Digital Infrastructure",
-    category: "Digital Healthcare",
-    summary: "Implementation of Hospital Information System (HIS), PACS imaging archive, LIMS pathology integration, and ABHA/NDHM compliance.",
-    keyDeliverables: ["HIS System Architecture Blueprint", "PACS & DICOM Server Specification", "ABHA / ABDM Milestone Certification"],
+    title: "Recruitment",
+    category: "Clinical & Administrative Talent",
+    summary: "Talent acquisition for medical leadership, department heads, senior consultants, resident medical officers (RMOs), nursing teams, and hospital administrative staff.",
+    keyDeliverables: ["Organization Structure & Manpower Budget", "Doctor Credentialing & Privileging Matrix", "Standard Operating Procedures (SOPs)", "Staff Training & Code Blue Certification Logs"],
     checklist: [
-      "Deploy core HIS modules: OPD registration, IPD billing, nursing station, pharmacy",
-      "Integrate Enterprise PACS with diagnostic workstations and web-based DICOM viewers",
-      "Ensure ABDM (Ayushman Bharat Digital Mission) M1/M2/M3 compliance and ABDM gateway",
-      "Implement structured network cabling, Wi-Fi 6 access points, and server failover"
+      "Recruit Chief of Medical Services, Nursing Superintendent, and Head of Hospital Operations",
+      "Contract senior clinical specialists across OPD/IPD with defined fee-for-service or minimum guarantee structures",
+      "Hire licensed nursing cadres maintaining 1:1 nurse-to-patient ratio in ICU and 1:4 in inpatient wards",
+      "Conduct comprehensive hospital orientation covering BLS/ACLS protocols, fire safety drills, and patient etiquette"
     ],
     typicalTimeline: "3 - 6 Months",
-    keyStakeholders: ["HIS Software Vendors", "Chief Information Officer", "PACS Engineers"]
+    keyStakeholders: ["Healthcare HR Consultants", "Medical Director", "Nursing Superintendent", "Department Heads"]
   },
   {
     stageNumber: 12,
-    title: "Clinical & Non-Clinical Talent Recruitment",
-    category: "Human Resources",
-    summary: "Hiring department heads, senior consultants, resident medical officers (RMOs), nursing superintendents, and administrative teams.",
-    keyDeliverables: ["Organization Structure & Manpower Budget", "Standard Operating Procedures (SOPs)", "Doctor Credentialing & Privileging Matrix"],
+    title: "Pre-Opening / Commissioning",
+    category: "Testing, Commissioning & Dry Runs",
+    summary: "End-to-end rehearsal of emergency trauma reception, patient journeys, medical equipment calibration, statutory operating licenses, and soft-launch trial operations.",
+    keyDeliverables: ["Clinical Establishment Act Registration", "Final Fire Safety Certificate", "State Pollution Control Board CTO (Consent to Operate)", "Dry Run & Simulation Audit Report"],
     checklist: [
-      "Recruit Chief of Medical Services, Nursing Superintendent, and Head of Operations",
-      "Establish full-time vs visiting consultant revenue-sharing and guarantee contracts",
-      "Recruit licensed nursing staff maintaining 1:1 ICU and 1:4 ward nurse-patient ratio",
-      "Conduct BLS/ACLS training, code blue drills, and patient safety orientation"
+      "Secure Clinical Establishments Act registration from the district health authorities",
+      "Procure final Fire Safety Certificate, Atomic Energy AERB operating licenses, and Retail/Bulk Pharmacy licenses",
+      "Conduct sterile particle count validation in OTs to confirm ISO 14644 Class 5/7 cleanroom standards",
+      "Execute mock emergency drills (Code Blue, Code Red, disaster response) and full clinical patient flow dry runs"
     ],
-    typicalTimeline: "3 - 6 Months",
-    keyStakeholders: ["Healthcare HR Consultants", "Medical Director", "Nursing Head"]
+    typicalTimeline: "1 - 3 Months",
+    keyStakeholders: ["Medical Superintendent", "Quality & Infection Control Team", "Statutory Compliance Officers"]
   },
   {
     stageNumber: 13,
-    title: "Licensing, Statutory Registrations & Final NOCs",
-    category: "Operational Legalities",
-    summary: "Securing operational licenses including Clinical Establishments Act registration, final Fire NOC, Pharmacy license, and AERB operating license.",
-    keyDeliverables: ["Clinical Establishment Registration Certificate", "Final Fire Safety Certificate", "State Pollution Control Board CTO (Consent to Operate)", "Retail & Bulk Drug Licenses"],
+    title: "Branding / Marketing",
+    category: "Marketing, Outreach & Community Connect",
+    summary: "Building hospital brand identity, public awareness campaigns, physician referral outreach, corporate empanelment, and community health camp launches.",
+    keyDeliverables: ["Brand Identity & Visual Guidelines", "Hospital Website & Patient Mobile App", "Corporate & TPA Empanelment Dossiers", "Catchment Outreach & CME Program Calendar"],
     checklist: [
-      "Secure Clinical Establishment Act registration from district health authorities",
-      "Obtain AERB operating license (RSO certification & TLD badge clearance)",
-      "Secure Drug Control Dept license for in-house retail and IPD pharmacy",
-      "Procure Bio-Medical Waste Management authorization and barcoded bag manifest"
+      "Design unified hospital signage, brand collaterals, digital website, and appointment booking portal",
+      "Organize Continuing Medical Education (CME) seminars and outreach meetings with local general practitioners",
+      "Submit empanelment applications to key health insurance TPAs, private corporates, and Government schemes",
+      "Launch pre-opening community health checkup camps and specialty clinic awareness initiatives"
     ],
     typicalTimeline: "2 - 4 Months",
-    keyStakeholders: ["Hospital Administrator", "Legal Compliance Officer", "District Health Officials"]
+    keyStakeholders: ["Healthcare Marketing Agency", "Public Relations Officer", "Corporate Empanelment Head"]
   },
   {
     stageNumber: 14,
-    title: "Dry Runs, Simulation Drills & Soft Launch",
-    category: "Quality & Testing",
-    summary: "End-to-end rehearsal of patient journey, emergency trauma reception, disaster mock drills, and electrical load testing.",
-    keyDeliverables: ["Dry Run Audit Report", "Emergency Simulation Log", "HVAC / OT Validation Certificate"],
+    title: "Post Opening Operations",
+    category: "Operations, Clinical Audits & NABH Journey",
+    summary: "Day-to-day inpatient and outpatient workflow management, clinical quality indicator tracking, patient feedback systems, and NABH accreditation initiation.",
+    keyDeliverables: ["Daily Hospital Operations Dashboard (Occupancy, ALOS, ARPOB)", "Patient Satisfaction (CSAT/NPS) Reports", "Clinical Indicator Dashboard", "NABH Pre-Entry Assessment Dossier"],
     checklist: [
-      "Simulate code blue, fire evacuation, and power outage switchover drills",
-      "Validate pharmacy inventory batching, pricing barcodes, and insurance TPA desks",
-      "Conduct particulate particle count tests in OTs to achieve ISO 14644 Class 5/7",
-      "Run mock patient journeys from registration through triage, diagnostics, and discharge"
+      "Track daily key performance metrics: Average Length of Stay (ALOS), Bed Occupancy Rate, and Emergency wait times",
+      "Monitor mandatory clinical quality indicators: hospital-acquired infection (HAI) rates, surgical site infections, medication errors",
+      "Implement digital patient feedback kiosks and grievance redressal workflows",
+      "Initiate preparation and documentation for NABH Pre-Entry Level or Full Hospital Accreditation"
     ],
-    typicalTimeline: "3 - 4 Weeks",
-    keyStakeholders: ["Quality Team", "Medical Operations", "Clinical Heads"]
+    typicalTimeline: "Ongoing (First 6 - 12 Months)",
+    keyStakeholders: ["Hospital CEO / COO", "Quality Assurance Manager", "NABH Consultants", "Department Heads"]
   },
   {
     stageNumber: 15,
-    title: "Commercial Launch & NABH / JCI Quality Journey",
-    category: "Operations & Accreditation",
-    summary: "Grand opening, physician outreach, empaneled corporate/TPA insurance tie-ups, and initiating NABH Pre-Entry Level accreditation.",
-    keyDeliverables: ["Commercial Opening Ceremony", "NABH Readiness Assessment", "TPA / Insurance Empanelment Agreements"],
+    title: "Maintenance / AMC",
+    category: "Facility Management & Equipment AMC",
+    summary: "Long-term facility preventive maintenance, Annual Maintenance Contracts (AMC/CMC) for biomedical and MEP assets, equipment recalibration, and infrastructure upkeep.",
+    keyDeliverables: ["Comprehensive AMC / CMC Register", "Planned Preventive Maintenance (PPM) Schedule", "Biomedical Equipment Calibration Certificates", "Facility Safety Audit Reports"],
     checklist: [
-      "Inaugurate outpatient, diagnostic, emergency, and elective surgery departments",
-      "Submit empanelment dossiers to major health insurers and Government schemes",
-      "Begin daily monitoring of clinical indicators (infection rates, fall rates, medication errors)",
-      "Apply for NABH Pre-Entry or Full Accreditation within 6 - 12 months of operations"
+      "Maintain unified register of all active warranties, AMCs, and Comprehensive Maintenance Contracts (CMCs)",
+      "Enforce strict Planned Preventive Maintenance (PPM) calendars for HVAC chillers, DGs, elevators, and MGPS manifolds",
+      "Conduct periodic biomedical calibration, electrical safety testing, and radiation survey audits",
+      "Establish 24/7 facility engineering emergency breakdown response protocols with guaranteed SLAs"
     ],
-    typicalTimeline: "Ongoing",
-    keyStakeholders: ["Promoters", "Hospital CEO", "NABH Accreditation Consultants"]
+    typicalTimeline: "Ongoing Lifecycle Management",
+    keyStakeholders: ["Head of Facility & Engineering", "Biomedical Engineering Team", "Equipment AMC Vendors", "Safety Officers"]
   }
 ];
 

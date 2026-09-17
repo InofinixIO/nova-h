@@ -98,6 +98,8 @@ export interface HowItWorksStep {
   actionText: string;
 }
 
+export type ProjectRequirementStatus = 'pending_review' | 'approved' | 'matched' | 'closed';
+
 export interface ProjectRequirement {
   id: string;
   hospitalName: string;
@@ -110,4 +112,35 @@ export interface ProjectRequirement {
   email: string;
   phone: string;
   createdAt: string;
+  status?: ProjectRequirementStatus;
+  estimatedBudget?: string;
+  adminNotes?: string;
+  assignedVendors?: string[];
+}
+
+export type EnquiryStatus = 'new' | 'in_review' | 'contacted' | 'proposal_sent' | 'closed';
+
+export interface EnquiryItem {
+  id: string;
+  targetId: string;
+  targetName: string;
+  targetEmail: string;
+  targetRole: 'vendor' | 'advisor' | 'owner';
+  
+  senderName: string;
+  senderEmail: string;
+  senderPhone?: string;
+  senderRole: UserRole;
+  senderCompany?: string;
+
+  subject: string;
+  message: string;
+  projectLocation?: string;
+  hospitalName?: string;
+  bedCapacity?: string;
+  projectStage?: string;
+  
+  status: EnquiryStatus;
+  createdAt: string;
+  replyNote?: string;
 }
