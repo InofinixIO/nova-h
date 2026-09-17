@@ -1,4 +1,4 @@
-export type UserRole = 'owner' | 'vendor' | 'advisor';
+export type UserRole = 'owner' | 'vendor' | 'advisor' | 'admin';
 
 export type PaymentGatewayType = 'razorpay' | 'payu';
 

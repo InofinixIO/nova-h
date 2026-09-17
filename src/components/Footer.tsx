@@ -6,9 +6,19 @@ interface FooterProps {
   onOpenToolkit: () => void;
   onOpenCicd: () => void;
   onOpenPamphletQr?: () => void;
+  onNavigate?: (slug: 'owners' | 'vendors' | 'advisors' | 'toolkit' | 'how-it-works' | 'pricing' | 'directory' | 'about' | 'admin') => void;
 }
 
-export const Footer: React.FC<FooterProps> = ({ onOpenAuth, onOpenToolkit, onOpenCicd, onOpenPamphletQr }) => {
+export const Footer: React.FC<FooterProps> = ({ onOpenAuth, onOpenToolkit, onOpenCicd, onOpenPamphletQr, onNavigate }) => {
+  const handleNav = (slug: 'owners' | 'vendors' | 'advisors' | 'toolkit' | 'how-it-works' | 'pricing' | 'directory' | 'about' | 'admin', fallbackId: string) => {
+    if (onNavigate) {
+      onNavigate(slug);
+    } else {
+      const el = document.getElementById(fallbackId);
+      if (el) el.scrollIntoView({ behavior: 'smooth' });
+    }
+  };
+
   const scrollTo = (id: string) => {
     const el = document.getElementById(id);
     if (el) {
@@ -73,52 +83,40 @@ export const Footer: React.FC<FooterProps> = ({ onOpenAuth, onOpenToolkit, onOpe
             </h4>
             <ul className="space-y-2.5 text-sm text-slate-400">
               <li>
-                <button onClick={() => scrollTo('three-groups')} className="hover:text-white transition-colors cursor-pointer">
+                <button onClick={() => handleNav('owners', 'three-groups')} className="hover:text-white transition-colors cursor-pointer">
                   For Owners
                 </button>
               </li>
               <li>
-                <button onClick={() => scrollTo('three-groups')} className="hover:text-white transition-colors cursor-pointer">
+                <button onClick={() => handleNav('vendors', 'three-groups')} className="hover:text-white transition-colors cursor-pointer">
                   For Vendors
                 </button>
               </li>
               <li>
-                <button onClick={() => scrollTo('three-groups')} className="hover:text-white transition-colors cursor-pointer">
+                <button onClick={() => handleNav('advisors', 'three-groups')} className="hover:text-white transition-colors cursor-pointer">
                   For Advisors
                 </button>
               </li>
               <li>
-                <button onClick={onOpenToolkit} className="hover:text-white transition-colors cursor-pointer flex items-center gap-1">
-                  <span>Hospital Owners Toolkit</span>
-                  <span className="text-[10px] text-blue-400 font-mono">(15 Stages)</span>
+                <button onClick={() => handleNav('toolkit', 'toolkit-section')} className="hover:text-white transition-colors cursor-pointer">
+                  Hospital Owners Toolkit
                 </button>
               </li>
               <li>
-                <button onClick={() => scrollTo('how-it-works-section')} className="hover:text-white transition-colors cursor-pointer">
+                <button onClick={() => handleNav('how-it-works', 'how-it-works-section')} className="hover:text-white transition-colors cursor-pointer">
                   How It Works
                 </button>
               </li>
               <li>
-                <button onClick={() => scrollTo('pricing-section')} className="hover:text-white transition-colors cursor-pointer text-blue-400 font-semibold">
+                <button onClick={() => handleNav('pricing', 'pricing-section')} className="hover:text-white transition-colors cursor-pointer text-blue-400 font-semibold">
                   Membership &amp; Pricing
                 </button>
               </li>
               <li>
-                <button onClick={() => scrollTo('what-is-nova')} className="hover:text-white transition-colors cursor-pointer">
+                <button onClick={() => handleNav('about', 'what-is-nova')} className="hover:text-white transition-colors cursor-pointer">
                   About NOVA
                 </button>
               </li>
-              {/* {onOpenPamphletQr && (
-                <li>
-                  <button 
-                    onClick={onOpenPamphletQr} 
-                    className="hover:text-white transition-colors cursor-pointer flex items-center gap-1.5 text-blue-400 font-semibold"
-                  >
-                    <QrCode className="w-3.5 h-3.5 text-blue-400" />
-                    <span>Printable Pamphlet & QR Code</span>
-                  </button>
-                </li>
-              )} */}
             </ul>
           </div>
 
