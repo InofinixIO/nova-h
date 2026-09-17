@@ -284,7 +284,14 @@ export const DIRECTORY_DATA: DirectoryItem[] = [
     contactEmail: "projects@medcraft-infra.in",
     phone: "+91 22 4982 1100",
     website: "https://www.medcraft-infra.in",
-    featuredProject: "150-bed Superspecialty Cardiac Institute, Navi Mumbai"
+    featuredProject: "150-bed Superspecialty Cardiac Institute, Navi Mumbai",
+    clientPortfolio: ["Kokilaben Ambani Affiliate", "Jupiter Hospital Wing", "Sahyadri Specialty Clinic", "Lilavati Cardiac Annexe"],
+    gstin: "27AAACM4821K1Z5",
+    priceRange: "₹180 - ₹350 / sq. ft (Consultancy & Arch)",
+    turnaroundTime: "30 - 45 Days Concept Blueprint",
+    certifications: ["Council of Architecture (CoA)", "IGBC Green Healthcare Fellow", "AERB Qualified Planner"],
+    headquartersAddress: "Suite 402, Signature Towers, BKC, Bandra East, Mumbai, MH 400051",
+    complianceBadges: ["AERB Compliant Layouts", "NABH Standard Arch", "IGBC Gold Certified"]
   },
   {
     id: "dir-2",
@@ -303,7 +310,14 @@ export const DIRECTORY_DATA: DirectoryItem[] = [
     contactEmail: "advisory@apexhealthgroup.com",
     phone: "+91 11 4109 8833",
     website: "https://www.apexhealthgroup.com",
-    featuredProject: "300-bed Multispecialty Hospital, Gurugram"
+    featuredProject: "300-bed Multispecialty Hospital, Gurugram",
+    clientPortfolio: ["Max Healthcare Group Partner", "Fortis Escorts Expansion", "Medanta Sister Trust", "Sarvodaya Hospital"],
+    gstin: "07AAHCA9920F1ZX",
+    priceRange: "Milestone-linked (₹15L - ₹45L per DPR & Launch)",
+    turnaroundTime: "60 Days Comprehensive DPR & TEV",
+    certifications: ["QCI Certified Consultant", "NABH Empanelled Advisor", "ICRA Hospital Rating Valuer"],
+    headquartersAddress: "Tower B, 9th Floor, Cyber City, DLF Phase 2, Gurugram, HR 122002",
+    complianceBadges: ["Bankable TEV Reports", "NABH 5th Edition Ready", "ABHA Gateway Partner"]
   },
   {
     id: "dir-3",
@@ -322,7 +336,14 @@ export const DIRECTORY_DATA: DirectoryItem[] = [
     contactEmail: "sales@aerolifemed.com",
     phone: "+91 80 2839 5521",
     website: "https://www.aerolifemed.com",
-    featuredProject: "Central MGPS & 8 Modular OTs for Regional Cancer Centre"
+    featuredProject: "Central MGPS & 8 Modular OTs for Regional Cancer Centre",
+    clientPortfolio: ["Manipal Hospitals", "Aster CMI Hospital", "Narayana Health City", "KIMS Hyderabad"],
+    gstin: "29AABCA7732D1Z8",
+    priceRange: "₹28 Lakhs - ₹75 Lakhs per Modular OT Suite",
+    turnaroundTime: "4 - 6 Weeks On-Site Commissioning",
+    certifications: ["ISO 13485:2016", "CE 0123 Certified", "HTM 02-01 Standards", "Class 100 Laminar Cleanroom"],
+    headquartersAddress: "Plot 84-B, Peenya Industrial Area Phase III, Bengaluru, KA 560058",
+    complianceBadges: ["NFPA 99 Compliant", "ISO 14644 Class 5 OT", "PESO Approved Vessel"]
   },
   {
     id: "dir-4",
@@ -341,7 +362,14 @@ export const DIRECTORY_DATA: DirectoryItem[] = [
     contactEmail: "partners@synapsehealthtech.io",
     phone: "+91 40 6720 9944",
     website: "https://www.synapsehealthtech.io",
-    featuredProject: "Enterprise HIS deployment across 4-unit hospital network"
+    featuredProject: "Enterprise HIS deployment across 4-unit hospital network",
+    clientPortfolio: ["Yashoda Hospitals", "Care Hospitals Group", "Rainbow Children's Hospital", "Medicover India"],
+    gstin: "36AAACS4102N1Z4",
+    priceRange: "₹1,200 - ₹2,500 / bed / month (or One-Time Enterprise License)",
+    turnaroundTime: "2 - 3 Weeks Go-Live Deployment",
+    certifications: ["ABDM Certified M1, M2 & M3", "HL7 FHIR compliant", "HIPAA Security Audited", "ISO 27001:2022"],
+    headquartersAddress: "Floor 5, Mindspace IT Park, HITEC City, Hyderabad, TG 500081",
+    complianceBadges: ["ABHA Direct Gateway", "NDHM Certified", "DICOM 3.0 Ready"]
   },
   {
     id: "dir-5",
@@ -360,7 +388,14 @@ export const DIRECTORY_DATA: DirectoryItem[] = [
     contactEmail: "connect@qualicareaccredit.org",
     phone: "+91 44 2499 1080",
     website: "https://www.qualicareaccredit.org",
-    featuredProject: "Fast-track NABH 5th edition compliance for 200-bed hospital"
+    featuredProject: "Fast-track NABH 5th edition compliance for 200-bed hospital",
+    clientPortfolio: ["Apollo Reach Hospitals", "Kauvery Hospital", "MIOT International", "Gleneagles Global"],
+    gstin: "33AAATQ5829H1Z2",
+    priceRange: "₹3.5L - ₹8.5L (Full NABH Journey Mentorship)",
+    turnaroundTime: "4 - 6 Months End-to-End Handholding",
+    certifications: ["NABH Empanelled Lead Assessor", "QCI Accredited Body", "Six Sigma Black Belt Healthcare"],
+    headquartersAddress: "Old No 48, New No 112, Anna Salai, Guindy, Chennai, TN 600032",
+    complianceBadges: ["100% First-Pass NABH", "NABH 5th Edition Ready", "ISQua Member"]
   },
   {
     id: "dir-6",
@@ -379,7 +414,14 @@ export const DIRECTORY_DATA: DirectoryItem[] = [
     contactEmail: "sales@vanguardbiomed.com",
     phone: "+91 11 2680 7711",
     website: "https://www.vanguardbiomed.com",
-    featuredProject: "Turnkey diagnostic radiology wing setup in Tier-2 city"
+    featuredProject: "Turnkey diagnostic radiology wing setup in Tier-2 city",
+    clientPortfolio: ["BLK-Max Super Specialty", "Artemis Hospital", "Metro Heart Institute", "Narayana Superspecialty"],
+    gstin: "07AABCV8941P1ZW",
+    priceRange: "₹45L - ₹3.8 Cr (Turnkey Radiology Wing Solutions)",
+    turnaroundTime: "30 Days Delivery & Lead Bunker Installation",
+    certifications: ["AERB Type Approved", "ISO 9001:2015", "FDA / CE Cleared Modalities"],
+    headquartersAddress: "Okhla Industrial Area, Phase II, New Delhi, DL 110020",
+    complianceBadges: ["AERB Certified Equipment", "24x7 AMC Network", "Cold-Head Helium Service"]
   },
   {
     id: "dir-7",
@@ -398,7 +440,14 @@ export const DIRECTORY_DATA: DirectoryItem[] = [
     contactEmail: "epc@structurahealth.com",
     phone: "+91 20 2567 4400",
     website: "https://www.structurahealth.com",
-    featuredProject: "Fast-track 250-bed general hospital delivered in 14 months"
+    featuredProject: "Fast-track 250-bed general hospital delivered in 14 months",
+    clientPortfolio: ["Ruby Hall Clinic Expansion", "Deenanath Mangeshkar Hospital", "Jehangir Hospital", "Symbiosis University Hospital"],
+    gstin: "27AALCS9940L1Z9",
+    priceRange: "₹2,200 - ₹3,800 / sq. ft Built-up EPC Area",
+    turnaroundTime: "12 - 18 Months Turnkey Delivery",
+    certifications: ["Class 1 PWD Contractor", "ISO 14001 & 45001", "LEED AP Certified Builder"],
+    headquartersAddress: "ICC Trade Tower, Senapati Bapat Road, Pune, MH 411016",
+    complianceBadges: ["AERB Shielding Audit Pass", "Seismic Zone IV Compliant", "NFPA Fire Certified"]
   },
   {
     id: "dir-8",
@@ -417,7 +466,14 @@ export const DIRECTORY_DATA: DirectoryItem[] = [
     contactEmail: "inquiry@capitalbridge-hc.com",
     phone: "+91 33 2287 9090",
     website: "https://www.capitalbridge-hc.com",
-    featuredProject: "₹85 Cr project term loan syndication for oncology center"
+    featuredProject: "₹85 Cr project term loan syndication for oncology center",
+    clientPortfolio: ["Peerless Hospital Sister Group", "AMRI Hospitals Syndicate", "Medica Superspecialty Trust", "Mission Hospital Durgapur"],
+    gstin: "19AABCC6654G1Z3",
+    priceRange: "Success-fee linked (1.0% - 2.5% of Syndicated Capex)",
+    turnaroundTime: "45 Days Term Sheet Sanction",
+    certifications: ["SEBI Registered Cat-1 Merchant Banker Partner", "Insolvency & Valuation Council Member"],
+    headquartersAddress: "Chowringhee Road, Kolkata, WB 700071",
+    complianceBadges: ["SBI / PNB / HDFC Empanelled", "TEV Viability Certified", "Govt Subsidy Specialist"]
   }
 ];
 

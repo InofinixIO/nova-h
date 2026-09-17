@@ -99,6 +99,11 @@ export const Footer: React.FC<FooterProps> = ({ onOpenAuth, onOpenToolkit, onOpe
                 </button>
               </li>
               <li>
+                <button onClick={() => scrollTo('pricing-section')} className="hover:text-white transition-colors cursor-pointer text-blue-400 font-semibold">
+                  Membership &amp; Pricing
+                </button>
+              </li>
+              <li>
                 <button onClick={() => scrollTo('what-is-nova')} className="hover:text-white transition-colors cursor-pointer">
                   About NOVA
                 </button>
