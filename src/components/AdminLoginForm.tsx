@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { ShieldCheck, Lock, Mail, KeyRound, AlertCircle, ArrowLeft, CheckCircle2 } from 'lucide-react';
+import { ShieldCheck, Lock, Mail, KeyRound, AlertCircle, ArrowLeft } from 'lucide-react';
 import { AuthUser } from '../types';
 import { getAdminSampleLogin } from '../utils/sampleLogins';
 
@@ -136,33 +136,6 @@ export const AdminLoginForm: React.FC<AdminLoginFormProps> = ({ onSuccess, onCan
             />
           </div>
         </div>
-
-        {/* Demo Helper Box with 1-click login - only shown if sample admin email is defined in .env */}
-        {adminSample && (
-          <div className="p-3.5 bg-purple-50/80 border border-purple-200/90 rounded-xl text-xs text-purple-900 space-y-2">
-            <div className="flex items-center justify-between">
-              <p className="font-bold flex items-center gap-1.5 text-purple-800">
-                <CheckCircle2 className="w-3.5 h-3.5 text-purple-700" />
-                <span>Sample Admin Credentials:</span>
-              </p>
-              <button
-                type="button"
-                onClick={() => {
-                  setEmail(adminSample.email);
-                  setPassword(adminSample.password || 'admin123');
-                  if (adminSample.adminKey) setAdminKey(adminSample.adminKey);
-                }}
-                className="text-[11px] font-bold text-purple-700 hover:text-purple-900 underline cursor-pointer"
-              >
-                Fill Credentials
-              </button>
-            </div>
-            <div className="p-2 bg-white/80 rounded-lg border border-purple-100 font-mono text-[11px] text-purple-800 space-y-0.5">
-              <div>Email: <span className="font-bold select-all">{adminSample.email}</span></div>
-              <div>Password: <span className="font-bold select-all">{adminSample.password || 'admin123'}</span></div>
-            </div>
-          </div>
-        )}
 
         <button
           type="submit"

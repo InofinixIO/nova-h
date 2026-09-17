@@ -27,7 +27,8 @@ import {
   Gift,
   Sparkles,
   CreditCard,
-  Users
+  Users,
+  QrCode
 } from 'lucide-react';
 import { DirectoryItem, AuthUser, StageItem, ProjectRequirement, Coupon, CouponRedemption } from '../types';
 import { 
@@ -41,6 +42,7 @@ import { getStoredCouponRedemptions, PRESET_COUPONS } from '../utils/couponServi
 import { AdminToolkitEditor } from './AdminToolkitEditor';
 import { AdminRequirementsManager } from './AdminRequirementsManager';
 import { AdminUsersManager } from './AdminUsersManager';
+import { PamphletSection } from './PamphletSection';
 import { getAllUsers } from '../utils/userManagement';
 
 interface AdminConsoleViewProps {
@@ -68,7 +70,7 @@ export const AdminConsoleView: React.FC<AdminConsoleViewProps> = ({
   onNavigate,
   onImpersonateUser
 }) => {
-  const [activeTab, setActiveTab] = useState<'users' | 'manage' | 'requirements' | 'import_csv' | 'add_vendor' | 'toolkit_stages' | 'coupons'>('users');
+  const [activeTab, setActiveTab] = useState<'users' | 'manage' | 'requirements' | 'import_csv' | 'add_vendor' | 'toolkit_stages' | 'coupons' | 'pamphlet'>('users');
   const [requirements, setRequirements] = useState<ProjectRequirement[]>(() => getStoredRequirements());
   const [couponRedemptions, setCouponRedemptions] = useState<CouponRedemption[]>(() => getStoredCouponRedemptions());
   const [customCoupons, setCustomCoupons] = useState<Coupon[]>(() => {
@@ -462,6 +464,21 @@ export const AdminConsoleView: React.FC<AdminConsoleViewProps> = ({
           >
             <Tag className="w-4 h-4" />
             <span>Coupons &amp; Free Redemptions ({couponRedemptions.length})</span>
+          </button>
+
+          <button
+            onClick={() => {
+              setActiveTab('pamphlet');
+              setEditingItemId(null);
+            }}
+            className={`px-4 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer flex items-center gap-2 whitespace-nowrap ${
+              activeTab === 'pamphlet'
+                ? 'bg-purple-600 text-white shadow-md'
+                : 'text-slate-300 hover:text-white hover:bg-slate-800'
+            }`}
+          >
+            <QrCode className="w-4 h-4" />
+            <span>Printable Pamphlet &amp; QR</span>
           </button>
         </div>
       </div>
@@ -1281,6 +1298,34 @@ export const AdminConsoleView: React.FC<AdminConsoleViewProps> = ({
               )}
             </div>
 
+          </div>
+        )}
+
+        {/* TAB 7: PRINTABLE PAMPHLET & SMART QR CODE (ADMIN ONLY) */}
+        {activeTab === 'pamphlet' && (
+          <div className="p-6 sm:p-8 space-y-6">
+            <div className="bg-purple-50/80 border border-purple-200/90 rounded-2xl p-4 sm:p-5 flex flex-wrap items-center justify-between gap-4">
+              <div>
+                <span className="px-2.5 py-0.5 rounded-full text-[10px] font-extrabold uppercase tracking-wider bg-purple-700 text-white">
+                  Admin Exclusive Asset
+                </span>
+                <h3 className="text-base sm:text-lg font-bold text-slate-900 mt-1">
+                  Printable Pamphlet &amp; Smart Geo-Location QR Code
+                </h3>
+                <p className="text-xs text-slate-600 mt-0.5">
+                  Generate, preview, print, or download vector QR codes and marketing pamphlets for physical distribution and hospital events.
+                </p>
+              </div>
+            </div>
+
+            <PamphletSection
+              isDirectPage={true}
+              onNavigate={onNavigate}
+              onSimulateScan={() => {
+                if (onNavigate) onNavigate('directory');
+                onNotify('Redirecting to directory in scan simulation mode...');
+              }}
+            />
           </div>
         )}
       </div>

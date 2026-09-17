@@ -24,13 +24,93 @@ import { detectUserCity } from '../utils/geoUtils';
 interface DirectorySearchProps {
   onSelectVendor: (vendor: DirectoryItem) => void;
   onPostRequirement: () => void;
-  onOpenPamphletQr: () => void;
+  onOpenPamphletQr?: () => void;
   autoDetectTrigger?: number;
   currentUser?: AuthUser | null;
   onOpenAuth?: (mode: 'signin' | 'signup', role?: UserRole) => void;
   directoryItems: DirectoryItem[];
   onOpenAdminDirectory?: () => void;
+  isStandalonePage?: boolean;
 }
+
+// Stage to categories mapping: Stages have different categories
+const STAGE_CATEGORY_MAP: Record<string, string[]> = {
+  'Planning & Feasibility': [
+    'Feasibility & Strategy',
+    'Hospital Consulting',
+    'Detailed Project Reports (DPR)',
+    'Financial Modeling & Debt Syndication',
+    'Catchment & Market Demand'
+  ],
+  'Design & Architecture': [
+    'Hospital Architecture & Space Planning',
+    'AERB Radiation Bunker Design',
+    'Clinical Circulation & Zoning',
+    'Healthcare Architecture'
+  ],
+  'Statutory Approvals': [
+    'Statutory Licensing & Compliance',
+    'AERB Radiation Safety Clearance',
+    'Pollution Control Board CTE/CTO',
+    'Fire Safety & Municipal Approvals'
+  ],
+  'Civil Construction & MEP': [
+    'Civil Construction & Structural Engineering',
+    'MEP, HVAC & Critical Utilities',
+    'Cleanroom & Modular OT Infrastructure',
+    'Medical Gas Pipeline Systems (MGPS)',
+    'Effluent & Sewage Treatment (ETP/STP)',
+    'Equipment & Engineering'
+  ],
+  'Interiors & Cleanrooms': [
+    'Hospital Interiors & Healing Architecture',
+    'Antimicrobial Conductive Flooring',
+    'Acoustic Ceilings & Wall Paneling',
+    'Wayfinding & Hospital Signage'
+  ],
+  'IT, HIS & Softwares': [
+    'Digital Healthcare & IT Systems',
+    'Hospital Information System (HIS)',
+    'Cloud PACS & DICOM Imaging',
+    'ABDM Ayushman Bharat Integration',
+    'Healthcare IT & Software'
+  ],
+  'Equipment Procurement': [
+    'Medical Technology & Life Support',
+    'Diagnostic Imaging (MRI, CT, X-Ray)',
+    'Operating Theatre & Surgical Consoles',
+    'Critical Care & ICU Life Support',
+    'Biomedical Engineering & Turnkey'
+  ],
+  'Recruitment & Staffing': [
+    'Clinical & Administrative Talent',
+    'Healthcare HR & Doctor Credentialing',
+    'Nursing Cadre & Staff Training'
+  ],
+  'Commissioning & Pre-op': [
+    'Testing, Commissioning & Dry Runs',
+    'NABH Quality Accreditation Support',
+    'OT Particle Count & Validation',
+    'Hospital Pre-opening Simulation'
+  ],
+  'Branding & Marketing': [
+    'Marketing, Outreach & Community Connect',
+    'Hospital Branding & Digital PR',
+    'TPA & Corporate Health Empanelment'
+  ],
+  'Operational Expansion': [
+    'Operations, Clinical Audits & NABH Journey',
+    'Hospital Management Consulting',
+    'Specialist Consultation',
+    'Hospital Expansion Advisory'
+  ],
+  'Maintenance & AMC': [
+    'Facility Management & Equipment AMC',
+    'Biomedical Equipment Calibration',
+    'HVAC, Chiller & DG Maintenance',
+    'Turnkey Comprehensive AMC / CMC'
+  ]
+};
 
 export const DirectorySearch: React.FC<DirectorySearchProps> = ({ 
   onSelectVendor, 
@@ -40,11 +120,12 @@ export const DirectorySearch: React.FC<DirectorySearchProps> = ({
   currentUser,
   onOpenAuth,
   directoryItems,
-  onOpenAdminDirectory
+  onOpenAdminDirectory,
+  isStandalonePage = false
 }) => {
   const [selectedLocation, setSelectedLocation] = useState<string>('All');
-  const [selectedCategory, setSelectedCategory] = useState<string>('All');
   const [selectedStage, setSelectedStage] = useState<string>('All');
+  const [selectedCategory, setSelectedCategory] = useState<string>('All');
   const [searchQuery, setSearchQuery] = useState<string>('');
   const [roleFilter, setRoleFilter] = useState<'all' | 'vendor' | 'advisor'>('all');
 
@@ -116,24 +197,78 @@ export const DirectorySearch: React.FC<DirectorySearchProps> = ({
     }
   }, []);
   
-  // Extract categories dynamically
-  const categories = useMemo(() => {
-    const catSet = new Set<string>();
+  // Stages list covering the complete hospital project lifecycle
+  const stages = useMemo(() => {
+    const stageSet = new Set<string>();
+    [
+      'Planning & Feasibility',
+      'Design & Architecture',
+      'Statutory Approvals',
+      'Civil Construction & MEP',
+      'Interiors & Cleanrooms',
+      'IT, HIS & Softwares',
+      'Equipment Procurement',
+      'Recruitment & Staffing',
+      'Commissioning & Pre-op',
+      'Branding & Marketing',
+      'Operational Expansion',
+      'Maintenance & AMC'
+    ].forEach(s => stageSet.add(s));
+
     directoryItems.forEach(item => {
-      if (item.category) catSet.add(item.category);
+      item.projectStages?.forEach(s => {
+        if (s) stageSet.add(s);
+      });
     });
-    return ['All', ...Array.from(catSet)];
+
+    return ['All', ...Array.from(stageSet)];
   }, [directoryItems]);
 
-  const stages = [
-    'All',
-    'Planning & Feasibility',
-    'Design & Architecture',
-    'Civil Construction & MEP',
-    'Equipment Procurement',
-    'Commissioning & Pre-op',
-    'Operational Expansion'
-  ];
+  // Extract categories dynamically:
+  // "Stages will have different category."
+  const categories = useMemo(() => {
+    if (selectedStage === 'All') {
+      const catSet = new Set<string>();
+      directoryItems.forEach(item => {
+        if (item.category) catSet.add(item.category);
+      });
+      Object.values(STAGE_CATEGORY_MAP).forEach(cats => {
+        cats.forEach(c => catSet.add(c));
+      });
+      return ['All', ...Array.from(catSet)];
+    }
+
+    // Specific stage selected: stages will have different category!
+    const stageCats = new Set<string>();
+
+    // 1. Check mapped categories for this stage
+    Object.entries(STAGE_CATEGORY_MAP).forEach(([stgKey, cats]) => {
+      if (
+        stgKey.toLowerCase().includes(selectedStage.toLowerCase()) ||
+        selectedStage.toLowerCase().includes(stgKey.toLowerCase())
+      ) {
+        cats.forEach(c => stageCats.add(c));
+      }
+    });
+
+    // 2. Extract categories from directory items matching this stage
+    directoryItems.forEach(item => {
+      const matchesStage = item.projectStages?.some(s =>
+        s.toLowerCase().includes(selectedStage.toLowerCase()) ||
+        selectedStage.toLowerCase().includes(s.toLowerCase())
+      );
+      if (matchesStage && item.category) {
+        stageCats.add(item.category);
+      }
+    });
+
+    return ['All', ...Array.from(stageCats)];
+  }, [directoryItems, selectedStage]);
+
+  const handleStageChange = (newStage: string) => {
+    setSelectedStage(newStage);
+    setSelectedCategory('All');
+  };
 
   // Filtering logic
   const filteredBusinesses = useMemo(() => {
@@ -183,18 +318,18 @@ export const DirectorySearch: React.FC<DirectorySearchProps> = ({
 
   const resetFilters = () => {
     setSelectedLocation('All');
-    setSelectedCategory('All');
     setSelectedStage('All');
+    setSelectedCategory('All');
     setSearchQuery('');
     setRoleFilter('all');
   };
 
   return (
-    <section id="directory-section" className="py-16 sm:py-24 bg-white">
+    <section id="directory-section" className={`${isStandalonePage ? 'pt-2 sm:pt-4 pb-16' : 'py-12 sm:py-16'} bg-white`}>
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         
         {/* Section Header */}
-        <div className="flex flex-col md:flex-row items-center justify-between gap-6 mb-10">
+        <div className="flex flex-col md:flex-row items-center justify-between gap-6 mb-8">
           <div className="text-center md:text-left max-w-2xl">
             <span className="text-xs font-bold uppercase tracking-wider text-blue-700 bg-blue-50 px-3 py-1 rounded-full border border-blue-200">
               Location-Based Search / Directory
@@ -218,16 +353,6 @@ export const DirectorySearch: React.FC<DirectorySearchProps> = ({
                 <span>Manage Directory &amp; CSV</span>
               </button>
             )}
-
-            <button
-              id="open-pamphlet-qr-btn"
-              onClick={onOpenPamphletQr}
-              className="px-4 py-2.5 rounded-xl bg-slate-900 hover:bg-blue-700 text-white font-bold text-xs flex items-center gap-2 shadow-xs hover:shadow-md transition-all cursor-pointer whitespace-nowrap"
-              title="Generate printable pamphlet with smart QR code"
-            >
-              <QrCode className="w-4 h-4 text-blue-400" />
-              <span>Pamphlet &amp; QR Code</span>
-            </button>
           </div>
         </div>
 
@@ -311,7 +436,24 @@ export const DirectorySearch: React.FC<DirectorySearchProps> = ({
               </div>
             </div>
 
-            {/* Category Select */}
+            {/* 2. Hospital Project Stage Select (Comes BEFORE Specialty / Category) */}
+            <div className="lg:col-span-3">
+              <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">
+                Hospital Project Stage
+              </label>
+              <select
+                id="directory-stage-select"
+                value={selectedStage}
+                onChange={(e) => handleStageChange(e.target.value)}
+                className="w-full px-3 py-2.5 bg-white border border-slate-300 rounded-xl text-xs font-medium text-slate-800 focus:outline-hidden focus:ring-2 focus:ring-blue-500 cursor-pointer shadow-2xs"
+              >
+                {stages.map((stage) => (
+                  <option key={stage} value={stage}>{stage}</option>
+                ))}
+              </select>
+            </div>
+
+            {/* 3. Specialty / Category Select (Stages have different categories) */}
             <div className="lg:col-span-3">
               <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">
                 Specialty / Category
@@ -324,23 +466,6 @@ export const DirectorySearch: React.FC<DirectorySearchProps> = ({
               >
                 {categories.map((cat) => (
                   <option key={cat} value={cat}>{cat}</option>
-                ))}
-              </select>
-            </div>
-
-            {/* Project Stage Select */}
-            <div className="lg:col-span-3">
-              <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">
-                Hospital Project Stage
-              </label>
-              <select
-                id="directory-stage-select"
-                value={selectedStage}
-                onChange={(e) => setSelectedStage(e.target.value)}
-                className="w-full px-3 py-2.5 bg-white border border-slate-300 rounded-xl text-xs font-medium text-slate-800 focus:outline-hidden focus:ring-2 focus:ring-blue-500 cursor-pointer shadow-2xs"
-              >
-                {stages.map((stage) => (
-                  <option key={stage} value={stage}>{stage}</option>
                 ))}
               </select>
             </div>
@@ -503,9 +628,35 @@ export const DirectorySearch: React.FC<DirectorySearchProps> = ({
                         <CheckCircle2 className="w-4 h-4 text-blue-600 shrink-0" title="Verified Partner by NOVA" />
                       )}
                     </div>
-                    <span className="text-xs font-medium text-blue-600 mt-0.5 block">
-                      {item.category}
-                    </span>
+
+                    {/* Project Stages come BEFORE Specialty / Category */}
+                    <div className="mt-1.5 space-y-1">
+                      {item.projectStages && item.projectStages.length > 0 && (
+                        <div className="flex flex-wrap items-center gap-1">
+                          <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Stage:</span>
+                          {item.projectStages.slice(0, 2).map((stg, sIdx) => (
+                            <span
+                              key={sIdx}
+                              className="px-2 py-0.5 rounded-md bg-amber-50 text-amber-900 border border-amber-200/80 text-[10px] font-semibold"
+                            >
+                              {stg}
+                            </span>
+                          ))}
+                          {item.projectStages.length > 2 && (
+                            <span className="text-[10px] text-amber-700 font-medium">
+                              +{item.projectStages.length - 2}
+                            </span>
+                          )}
+                        </div>
+                      )}
+
+                      <div className="flex items-center gap-1.5">
+                        <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Category:</span>
+                        <span className="text-xs font-semibold text-blue-600">
+                          {item.category}
+                        </span>
+                      </div>
+                    </div>
                   </div>
 
                   {/* Rating & Review Count */}

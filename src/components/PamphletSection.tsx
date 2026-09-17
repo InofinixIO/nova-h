@@ -20,11 +20,17 @@ import { generateThemedQrSvg, generateThemedQrPng, ThemedQrOptions } from '../ut
 import { SectionHeading } from './SectionHeading';
 
 interface PamphletSectionProps {
-  onSimulateScan: () => void;
+  onSimulateScan?: () => void;
+  onOpenAuth?: (mode: 'signin' | 'signup') => void;
+  onNavigate?: (slug: any) => void;
+  isDirectPage?: boolean;
 }
 
 export const PamphletSection: React.FC<PamphletSectionProps> = ({
-  onSimulateScan
+  onSimulateScan,
+  onOpenAuth,
+  onNavigate,
+  isDirectPage = false
 }) => {
   // Default directly to http://nova-h.in/directory as requested
   const [targetUrl, setTargetUrl] = useState('http://nova-h.in/directory');
@@ -361,7 +367,11 @@ export const PamphletSection: React.FC<PamphletSectionProps> = ({
           <div className="flex items-center gap-2">
             <button
               onClick={() => {
-                onSimulateScan();
+                if (onSimulateScan) {
+                  onSimulateScan();
+                } else if (onNavigate) {
+                  onNavigate('directory');
+                }
               }}
               className="px-4 py-2 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs flex items-center gap-1.5 cursor-pointer shadow-xs transition-colors"
             >

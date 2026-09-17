@@ -354,35 +354,6 @@ export const AuthModal: React.FC<AuthModalProps> = ({
             </div>
           )}
 
-          {/* Sample Demo Logins - Only rendered if sample logic/login emails are configured in .env */}
-          {mode === 'signin' && sampleAccounts.length > 0 && (
-            <div className="bg-slate-50 border border-slate-200 rounded-xl p-3 space-y-2">
-              <div className="flex items-center justify-between text-[11px]">
-                <span className="font-bold text-slate-700">⚡ Sample Demo Logins:</span>
-                <span className="text-[10px] text-slate-400">Click to fill</span>
-              </div>
-              <div className={`grid ${sampleAccounts.length > 1 ? 'grid-cols-2' : 'grid-cols-1'} gap-1.5`}>
-                {sampleAccounts.map((account) => (
-                  <button
-                    key={account.role}
-                    type="button"
-                    onClick={() => {
-                      setEmail(account.email);
-                      setPassword(account.password || 'password123');
-                      setSelectedRole(account.role);
-                    }}
-                    className={`p-1.5 rounded-lg border ${account.styling.border} ${account.styling.bg} ${account.styling.hoverBg} ${account.styling.text} text-[11px] font-bold text-left transition-colors cursor-pointer flex flex-col`}
-                  >
-                    <span className={account.styling.titleColor}>{account.icon} {account.label}</span>
-                    <span className={`font-normal text-[10px] ${account.styling.emailColor} font-mono truncate max-w-full`}>
-                      {account.email}
-                    </span>
-                  </button>
-                ))}
-              </div>
-            </div>
-          )}
-
           <button
             type="submit"
             className="w-full py-2.5 px-4 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs transition-colors cursor-pointer shadow-md mt-2 flex items-center justify-center gap-1.5"

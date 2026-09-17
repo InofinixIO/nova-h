@@ -472,11 +472,11 @@ export default function App() {
               directoryItems={directoryItems.filter(i => i.role === 'vendor')}
               onSelectVendor={(v) => setSelectedVendor(v)}
               onPostRequirement={handleOpenRequirementModal}
-              onOpenPamphletQr={() => handleNavigate('pamphlet')}
               autoDetectTrigger={autoDetectTrigger}
               currentUser={currentUser}
               onOpenAuth={handleOpenAuth}
               onOpenAdminDirectory={() => handleNavigate('admin')}
+              isStandalonePage={true}
             />
           </div>
         );
@@ -509,11 +509,11 @@ export default function App() {
               directoryItems={directoryItems.filter(i => i.role === 'advisor')}
               onSelectVendor={(v) => setSelectedVendor(v)}
               onPostRequirement={handleOpenRequirementModal}
-              onOpenPamphletQr={() => handleNavigate('pamphlet')}
               autoDetectTrigger={autoDetectTrigger}
               currentUser={currentUser}
               onOpenAuth={handleOpenAuth}
               onOpenAdminDirectory={() => handleNavigate('admin')}
+              isStandalonePage={true}
             />
           </div>
         );
@@ -531,8 +531,8 @@ export default function App() {
 
       case 'how-it-works':
         return (
-          <div className="py-8 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-12">
-            <HowNovaWorks onStepAction={handleStepAction} />
+          <div className="pt-2 sm:pt-4 pb-8 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-10">
+            <HowNovaWorks onStepAction={handleStepAction} isStandalonePage={true} />
             <WhatIsNova />
           </div>
         );
@@ -557,16 +557,16 @@ export default function App() {
 
       case 'directory':
         return (
-          <div className="py-8 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-8">
+          <div className="pt-2 sm:pt-4 pb-8 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-6">
             <DirectorySearch
               directoryItems={directoryItems}
               onSelectVendor={(v) => setSelectedVendor(v)}
               onPostRequirement={handleOpenRequirementModal}
-              onOpenPamphletQr={() => handleNavigate('pamphlet')}
               autoDetectTrigger={autoDetectTrigger}
               currentUser={currentUser}
               onOpenAuth={handleOpenAuth}
               onOpenAdminDirectory={() => handleNavigate('admin')}
+              isStandalonePage={true}
             />
           </div>
         );
@@ -581,15 +581,60 @@ export default function App() {
         );
 
       case 'pamphlet':
+        if (currentUser?.role === 'admin') {
+          return (
+            <div className="pt-4 pb-8 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-6">
+              <div className="bg-slate-900 text-white p-5 rounded-2xl flex flex-wrap items-center justify-between gap-4 border border-slate-800 shadow-md">
+                <div>
+                  <span className="text-[10px] font-extrabold uppercase tracking-wider bg-purple-600 px-2.5 py-0.5 rounded-full">
+                    Admin Asset Management
+                  </span>
+                  <h2 className="text-xl font-bold mt-1.5">Printable Pamphlet &amp; Smart QR Code Generator</h2>
+                  <p className="text-xs text-slate-300 mt-0.5">Generate high-res vector graphics, PDFs, and customized QR codes for offline marketing.</p>
+                </div>
+                <button
+                  onClick={() => handleNavigate('admin')}
+                  className="px-4 py-2 rounded-xl bg-purple-600 hover:bg-purple-500 text-white text-xs font-bold transition-all cursor-pointer shadow-sm"
+                >
+                  Go to Full Admin Dashboard
+                </button>
+              </div>
+              <PamphletSection
+                isDirectPage={true}
+                onNavigate={handleNavigate}
+                onSimulateScan={() => {
+                  setAutoDetectTrigger(Date.now());
+                  showToast('Simulating mobile pamphlet QR scan: Detecting location & filtering vendors only...');
+                  handleNavigate('directory');
+                }}
+              />
+            </div>
+          );
+        }
+
         return (
-          <div className="py-8 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-8">
-            <PamphletSection
-              onSimulateScan={() => {
-                setAutoDetectTrigger(Date.now());
-                showToast('Simulating mobile pamphlet QR scan: Detecting location & filtering vendors only...');
-                handleNavigate('directory');
-              }}
-            />
+          <div className="py-20 max-w-md mx-auto px-4 text-center">
+            <div className="w-16 h-16 rounded-2xl bg-purple-50 text-purple-700 flex items-center justify-center mx-auto mb-4 border border-purple-200 shadow-xs">
+              <ShieldCheck className="w-8 h-8" />
+            </div>
+            <h2 className="text-2xl font-black text-slate-900">Admin Only Feature</h2>
+            <p className="text-slate-600 text-sm mt-2 leading-relaxed">
+              The Printable Pamphlet &amp; Smart QR Code generator has been moved to the Administrator dashboard and is restricted to authenticated admins.
+            </p>
+            <div className="mt-6 flex items-center justify-center gap-3">
+              <button
+                onClick={() => handleOpenAuth('signin')}
+                className="px-5 py-2.5 rounded-xl bg-purple-700 hover:bg-purple-800 text-white text-xs font-bold transition-all cursor-pointer shadow-xs"
+              >
+                Admin Sign In
+              </button>
+              <button
+                onClick={() => handleNavigate('')}
+                className="px-5 py-2.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold transition-all cursor-pointer"
+              >
+                Back to Home
+              </button>
+            </div>
           </div>
         );
 
@@ -629,20 +674,10 @@ export default function App() {
               directoryItems={directoryItems}
               onSelectVendor={(v) => setSelectedVendor(v)}
               onPostRequirement={handleOpenRequirementModal}
-              onOpenPamphletQr={() => handleNavigate('pamphlet')}
               autoDetectTrigger={autoDetectTrigger}
               currentUser={currentUser}
               onOpenAuth={handleOpenAuth}
               onOpenAdminDirectory={() => handleNavigate('admin')}
-            />
-
-            {/* 6.5 PAMPHLET & QR SECTION */}
-            <PamphletSection
-              onSimulateScan={() => {
-                setAutoDetectTrigger(Date.now());
-                showToast('Simulating mobile pamphlet QR scan: Detecting location & filtering vendors only...');
-                handleNavigate('directory');
-              }}
             />
 
             {/* 6.7 NOVA-H MEMBERSHIP & PRICING MODEL WITH RAZORPAY & 100% COUPONS */}

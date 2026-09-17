@@ -5,9 +5,10 @@ import { HOW_IT_WORKS_STEPS } from '../data/mockData';
 
 interface HowNovaWorksProps {
   onStepAction: (stepNumber: number) => void;
+  isStandalonePage?: boolean;
 }
 
-export const HowNovaWorks: React.FC<HowNovaWorksProps> = ({ onStepAction }) => {
+export const HowNovaWorks: React.FC<HowNovaWorksProps> = ({ onStepAction, isStandalonePage = false }) => {
   const getStepIcon = (num: number) => {
     switch (num) {
       case 1:
@@ -26,7 +27,7 @@ export const HowNovaWorks: React.FC<HowNovaWorksProps> = ({ onStepAction }) => {
   };
 
   return (
-    <section id="how-it-works-section" className="py-16 sm:py-20 bg-white">
+    <section id="how-it-works-section" className={`${isStandalonePage ? 'pt-2 sm:pt-4 pb-12' : 'py-12 sm:py-16'} bg-white`}>
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         
         {/* Section Header */}
