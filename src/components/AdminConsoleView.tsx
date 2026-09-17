@@ -22,7 +22,6 @@ import {
   ArrowLeft,
   LogOut,
   BookOpen,
-  Bot,
   Tag,
   Gift,
   Sparkles,
@@ -301,16 +300,6 @@ export const AdminConsoleView: React.FC<AdminConsoleViewProps> = ({
               >
                 <FileText className="w-4 h-4" />
                 <span>RFP &amp; Procurement Hub</span>
-              </button>
-            )}
-
-            {onNavigate && (
-              <button
-                onClick={() => onNavigate('whatsapp-flow')}
-                className="px-4 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold flex items-center gap-1.5 transition-all cursor-pointer shadow-md"
-              >
-                <Bot className="w-4 h-4" />
-                <span>WhatsApp Flow Builder</span>
               </button>
             )}
 
