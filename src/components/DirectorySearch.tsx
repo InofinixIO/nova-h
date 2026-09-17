@@ -459,9 +459,10 @@ export const DirectorySearch: React.FC<DirectorySearchProps> = ({
             )}
             <button
               onClick={onPostRequirement}
-              className="text-xs font-bold text-blue-600 hover:text-blue-800 underline cursor-pointer"
+              className="text-xs font-bold text-blue-600 hover:text-blue-800 underline cursor-pointer flex items-center gap-1"
             >
-              Can&apos;t find what you need? Post a requirement &rarr;
+              {!currentUser && <Lock className="w-3 h-3 text-slate-400" />}
+              <span>{currentUser ? "Can't find what you need? Post a requirement →" : "Can't find what you need? Sign in to post requirement →"}</span>
             </button>
           </div>
         </div>
@@ -591,9 +592,10 @@ export const DirectorySearch: React.FC<DirectorySearchProps> = ({
               </button>
               <button
                 onClick={onPostRequirement}
-                className="px-4 py-2 rounded-lg bg-blue-600 text-white text-sm font-semibold hover:bg-blue-700 cursor-pointer"
+                className="px-4 py-2 rounded-lg bg-blue-600 text-white text-sm font-semibold hover:bg-blue-700 cursor-pointer flex items-center gap-1.5"
               >
-                Post Your Requirement
+                {!currentUser && <Lock className="w-3.5 h-3.5 text-blue-200" />}
+                <span>{currentUser ? "Post Your Requirement" : "Sign In to Post Requirement"}</span>
               </button>
             </div>
           </div>

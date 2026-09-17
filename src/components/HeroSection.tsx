@@ -12,7 +12,7 @@ export const HeroSection: React.FC<HeroSectionProps> = ({ onExplore, onSignUp, o
   const [activeNode, setActiveNode] = useState<'owner' | 'vendor' | 'advisor'>('owner');
 
   return (
-    <section id="hero-section" className="relative pt-28 pb-16 md:pt-36 md:pb-24 overflow-hidden bg-gradient-to-b from-slate-50 via-white to-slate-50/50">
+    <section id="hero-section" className="relative pt-8 sm:pt-12 md:pt-16 pb-14 md:pb-20 overflow-hidden bg-gradient-to-b from-slate-50 via-white to-slate-50/50">
       {/* Subtle grid background pattern */}
       <div className="absolute inset-0 bg-[linear-gradient(to_right,#e2e8f015_1px,transparent_1px),linear-gradient(to_bottom,#e2e8f015_1px,transparent_1px)] bg-[size:32px_32px] pointer-events-none" />
 

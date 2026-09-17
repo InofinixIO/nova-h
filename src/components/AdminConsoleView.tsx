@@ -26,7 +26,8 @@ import {
   Tag,
   Gift,
   Sparkles,
-  CreditCard
+  CreditCard,
+  Users
 } from 'lucide-react';
 import { DirectoryItem, AuthUser, StageItem, ProjectRequirement, Coupon, CouponRedemption } from '../types';
 import { 
@@ -39,6 +40,8 @@ import { getStoredRequirements } from '../utils/requirementsStorage';
 import { getStoredCouponRedemptions, PRESET_COUPONS } from '../utils/couponService';
 import { AdminToolkitEditor } from './AdminToolkitEditor';
 import { AdminRequirementsManager } from './AdminRequirementsManager';
+import { AdminUsersManager } from './AdminUsersManager';
+import { getAllUsers } from '../utils/userManagement';
 
 interface AdminConsoleViewProps {
   directoryItems: DirectoryItem[];
@@ -50,6 +53,7 @@ interface AdminConsoleViewProps {
   onLogout?: () => void;
   onBackToHome?: () => void;
   onNavigate?: (slug: any) => void;
+  onImpersonateUser?: (user: AuthUser) => void;
 }
 
 export const AdminConsoleView: React.FC<AdminConsoleViewProps> = ({
@@ -61,9 +65,10 @@ export const AdminConsoleView: React.FC<AdminConsoleViewProps> = ({
   currentUser,
   onLogout,
   onBackToHome,
-  onNavigate
+  onNavigate,
+  onImpersonateUser
 }) => {
-  const [activeTab, setActiveTab] = useState<'manage' | 'requirements' | 'import_csv' | 'add_vendor' | 'toolkit_stages' | 'coupons'>('manage');
+  const [activeTab, setActiveTab] = useState<'users' | 'manage' | 'requirements' | 'import_csv' | 'add_vendor' | 'toolkit_stages' | 'coupons'>('users');
   const [requirements, setRequirements] = useState<ProjectRequirement[]>(() => getStoredRequirements());
   const [couponRedemptions, setCouponRedemptions] = useState<CouponRedemption[]>(() => getStoredCouponRedemptions());
   const [customCoupons, setCustomCoupons] = useState<Coupon[]>(() => {
@@ -341,6 +346,18 @@ export const AdminConsoleView: React.FC<AdminConsoleViewProps> = ({
         {/* Quick Tab Switcher */}
         <div className="mt-8 pt-4 border-t border-slate-800 flex items-center gap-3 overflow-x-auto">
           <button
+            onClick={() => { setActiveTab('users'); setEditingItemId(null); }}
+            className={`px-4 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer flex items-center gap-2 whitespace-nowrap ${
+              activeTab === 'users'
+                ? 'bg-purple-600 text-white shadow-md'
+                : 'text-slate-300 hover:text-white hover:bg-slate-800'
+            }`}
+          >
+            <Users className="w-4 h-4" />
+            <span>Users &amp; Plans ({getAllUsers().length})</span>
+          </button>
+
+          <button
             onClick={() => { setActiveTab('manage'); setEditingItemId(null); }}
             className={`px-4 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer flex items-center gap-2 whitespace-nowrap ${
               activeTab === 'manage'
@@ -451,6 +468,17 @@ export const AdminConsoleView: React.FC<AdminConsoleViewProps> = ({
 
       {/* Main Content Area */}
       <div className="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
+        {/* TAB 0: USERS & MEMBERSHIP PLANS */}
+        {activeTab === 'users' && (
+          <div className="p-6 sm:p-8">
+            <AdminUsersManager
+              currentUser={currentUser}
+              onImpersonate={onImpersonateUser}
+              onNotify={onNotify}
+            />
+          </div>
+        )}
+
         {/* TAB 1: MANAGE LISTINGS */}
         {activeTab === 'manage' && (
           <div className="p-6 sm:p-8 space-y-6">

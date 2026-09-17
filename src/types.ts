@@ -88,12 +88,17 @@ export interface StageItem {
 }
 
 export interface AuthUser {
+  id?: string;
   name: string;
   role: UserRole;
   email: string;
   phone?: string;
   company?: string;
   isSubscribed?: boolean;
+  plan?: string;
+  status?: 'active' | 'disabled';
+  createdAt?: string;
+  lastLoginAt?: string;
 }
 
 export interface DirectoryItem {

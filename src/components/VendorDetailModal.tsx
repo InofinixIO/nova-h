@@ -188,9 +188,10 @@ export const VendorDetailModal: React.FC<VendorDetailModalProps> = ({
             <div className="flex items-center gap-2 shrink-0">
               <button
                 onClick={onPostRequirement}
-                className="px-3.5 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-800 font-bold text-xs transition-colors cursor-pointer"
+                className="px-3.5 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-800 font-bold text-xs transition-colors cursor-pointer flex items-center gap-1.5"
               >
-                Post Hospital RFQ
+                {!isLoggedIn && <Lock className="w-3.5 h-3.5 text-slate-500" />}
+                <span>{isLoggedIn ? "Post Hospital RFQ" : "Sign In to Post RFQ"}</span>
               </button>
             </div>
           </div>
@@ -630,9 +631,10 @@ export const VendorDetailModal: React.FC<VendorDetailModalProps> = ({
                 onClose();
                 onPostRequirement();
               }}
-              className="px-3.5 py-1.5 rounded-lg bg-blue-600 hover:bg-blue-700 text-white font-semibold cursor-pointer shadow-2xs"
+              className="px-3.5 py-1.5 rounded-lg bg-blue-600 hover:bg-blue-700 text-white font-semibold cursor-pointer shadow-2xs flex items-center gap-1.5 text-xs"
             >
-              Post Project Requirement
+              {!isLoggedIn && <Lock className="w-3.5 h-3.5 text-blue-200" />}
+              <span>{isLoggedIn ? "Post Project Requirement" : "Sign In to Post Requirement"}</span>
             </button>
           </div>
         </div>

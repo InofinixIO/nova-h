@@ -1,18 +1,22 @@
-import React, { useState } from 'react';
-import { X, Send, CheckCircle, Building, MapPin, Layers, Phone, Mail, User } from 'lucide-react';
-import { ProjectRequirement } from '../types';
+import React, { useState, useEffect } from 'react';
+import { X, Send, CheckCircle, Building, MapPin, Layers, Phone, Mail, User, Lock, ShieldCheck, AlertCircle } from 'lucide-react';
+import { ProjectRequirement, AuthUser, UserRole } from '../types';
 import { addRequirement } from '../utils/requirementsStorage';
 
 interface RequirementModalProps {
   isOpen: boolean;
   onClose: () => void;
   onSubmitSuccess: (req: ProjectRequirement) => void;
+  currentUser?: AuthUser | null;
+  onOpenAuth?: (mode: 'signin' | 'signup', role?: UserRole) => void;
 }
 
 export const RequirementModal: React.FC<RequirementModalProps> = ({
   isOpen,
   onClose,
   onSubmitSuccess,
+  currentUser,
+  onOpenAuth,
 }) => {
   const [formData, setFormData] = useState({
     hospitalName: '',
@@ -28,20 +32,44 @@ export const RequirementModal: React.FC<RequirementModalProps> = ({
 
   const [submitted, setSubmitted] = useState(false);
 
+  // Pre-fill form fields based on logged-in user profile
+  useEffect(() => {
+    if (isOpen) {
+      setSubmitted(false);
+      if (currentUser) {
+        setFormData(prev => ({
+          ...prev,
+          hospitalName: prev.hospitalName.trim() ? prev.hospitalName : (currentUser.company || 'Apex Multispecialty Hospital'),
+          contactPerson: currentUser.name || prev.contactPerson || 'Dr. Rajesh / Promoter',
+          email: currentUser.email || prev.email || '',
+          phone: currentUser.phone || prev.phone || '+91 98765 43210',
+        }));
+      }
+    }
+  }, [isOpen, currentUser]);
+
   if (!isOpen) return null;
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+
+    // Guard: Submission requires authentication
+    if (!currentUser) {
+      onClose();
+      onOpenAuth?.('signin', 'owner');
+      return;
+    }
+
     const savedReq = addRequirement({
-      hospitalName: formData.hospitalName || 'Upcoming Hospital Project',
+      hospitalName: formData.hospitalName || currentUser?.company || 'Upcoming Hospital Project',
       location: formData.location,
       bedCapacity: formData.bedCapacity,
       stage: formData.stage,
       categoryNeeded: formData.categoryNeeded,
       description: formData.description,
-      contactPerson: formData.contactPerson,
-      email: formData.email,
-      phone: formData.phone,
+      contactPerson: formData.contactPerson || currentUser.name,
+      email: formData.email || currentUser.email,
+      phone: formData.phone || currentUser.phone || '',
       status: 'pending_review'
     });
 
@@ -75,7 +103,7 @@ export const RequirementModal: React.FC<RequirementModalProps> = ({
           </div>
         ) : (
           <div>
-            <div className="mb-6">
+            <div className="mb-4">
               <span className="text-[11px] font-bold tracking-wider uppercase text-blue-700 bg-blue-50 px-2.5 py-1 rounded-full">
                 Step 1: Tell Us What You Need
               </span>
@@ -86,6 +114,50 @@ export const RequirementModal: React.FC<RequirementModalProps> = ({
                 Help verified advisors and suppliers understand your specifications.
               </p>
             </div>
+
+            {/* Authenticated User Status Strip */}
+            {currentUser ? (
+              <div className="mb-4 p-3 bg-blue-50/70 border border-blue-200/80 rounded-xl flex items-center justify-between text-xs text-blue-950 shadow-2xs">
+                <div className="flex items-center gap-2.5 min-w-0">
+                  <div className="w-8 h-8 rounded-lg bg-blue-600 text-white font-black text-xs flex items-center justify-center shrink-0">
+                    {currentUser.name.charAt(0).toUpperCase()}
+                  </div>
+                  <div className="truncate">
+                    <div className="flex items-center gap-2">
+                      <span className="font-bold text-slate-900 truncate">{currentUser.name}</span>
+                      <span className="text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-md bg-blue-100 text-blue-800 shrink-0">
+                        {currentUser.role === 'owner' ? 'Hospital Owner' : currentUser.role === 'vendor' ? 'Vendor Partner' : 'Biomedical Advisor'}
+                      </span>
+                    </div>
+                    <p className="text-[11px] text-slate-600 truncate">{currentUser.email}</p>
+                  </div>
+                </div>
+                <span className="text-[10px] font-bold text-emerald-700 bg-emerald-100/80 px-2 py-1 rounded-md shrink-0 flex items-center gap-1 border border-emerald-200">
+                  <ShieldCheck className="w-3 h-3" />
+                  Auto-filled
+                </span>
+              </div>
+            ) : (
+              <div className="mb-4 p-3.5 bg-amber-50 border border-amber-200 rounded-xl flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 text-amber-950 text-xs">
+                <div className="flex items-start gap-2.5">
+                  <Lock className="w-4 h-4 text-amber-600 shrink-0 mt-0.5" />
+                  <div>
+                    <p className="font-bold text-amber-900">Sign in required to submit requirements</p>
+                    <p className="text-[11px] text-amber-800">Please sign in as a verified promoter, vendor, or advisor to post your requirement.</p>
+                  </div>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => {
+                    onClose();
+                    onOpenAuth?.('signin', 'owner');
+                  }}
+                  className="px-3 py-1.5 rounded-lg bg-amber-600 hover:bg-amber-700 text-white font-bold text-xs shrink-0 cursor-pointer shadow-2xs"
+                >
+                  Sign In Now
+                </button>
+              </div>
+            )}
 
             <form onSubmit={handleSubmit} className="space-y-4">
               <div>
@@ -243,13 +315,27 @@ export const RequirementModal: React.FC<RequirementModalProps> = ({
                 >
                   Cancel
                 </button>
-                <button
-                  type="submit"
-                  className="px-6 py-2.5 rounded-lg bg-blue-600 hover:bg-blue-700 text-white font-semibold text-xs transition-colors flex items-center gap-1.5 cursor-pointer shadow-xs"
-                >
-                  <Send className="w-3.5 h-3.5" />
-                  <span>Submit Requirement</span>
-                </button>
+                {currentUser ? (
+                  <button
+                    type="submit"
+                    className="px-6 py-2.5 rounded-lg bg-blue-600 hover:bg-blue-700 text-white font-semibold text-xs transition-colors flex items-center gap-1.5 cursor-pointer shadow-xs"
+                  >
+                    <Send className="w-3.5 h-3.5" />
+                    <span>Submit Requirement</span>
+                  </button>
+                ) : (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      onClose();
+                      onOpenAuth?.('signin', 'owner');
+                    }}
+                    className="px-6 py-2.5 rounded-lg bg-slate-900 hover:bg-slate-800 text-white font-semibold text-xs transition-colors flex items-center gap-2 cursor-pointer shadow-xs"
+                  >
+                    <Lock className="w-3.5 h-3.5 text-amber-400" />
+                    <span>Sign In to Submit Requirement</span>
+                  </button>
+                )}
               </div>
             </form>
           </div>

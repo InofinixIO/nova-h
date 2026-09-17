@@ -96,6 +96,7 @@ export default function App() {
   const [toolkitStageIndex, setToolkitStageIndex] = useState(0);
 
   const [requirementModalOpen, setRequirementModalOpen] = useState(false);
+  const [pendingRequirementModalAfterAuth, setPendingRequirementModalAfterAuth] = useState(false);
   const [selectedVendor, setSelectedVendor] = useState<DirectoryItem | null>(null);
 
   const [authModalOpen, setAuthModalOpen] = useState(false);
@@ -148,10 +149,19 @@ export default function App() {
     setToolkitModalOpen(true);
   };
 
+  const handleOpenRequirementModal = () => {
+    if (!currentUser) {
+      setPendingRequirementModalAfterAuth(true);
+      handleOpenAuth('signin', 'owner');
+      return;
+    }
+    setRequirementModalOpen(true);
+  };
+
   const handleStepAction = (stepNumber: number) => {
     switch (stepNumber) {
       case 1:
-        setRequirementModalOpen(true);
+        handleOpenRequirementModal();
         break;
       case 2:
       case 3:
@@ -176,6 +186,14 @@ export default function App() {
       localStorage.setItem('nova_h_current_user', JSON.stringify(user));
     } catch (e) {}
     
+    // If the user clicked "Post requirement" before signing in, open requirement form directly
+    if (pendingRequirementModalAfterAuth) {
+      setPendingRequirementModalAfterAuth(false);
+      setRequirementModalOpen(true);
+      showToast(`Welcome ${user.name}! Your hospital requirement form is ready with pre-filled details.`);
+      return;
+    }
+
     if (user.role === 'admin') {
       showToast(`Welcome Administrator ${user.name}! Administrative controls unlocked.`);
       handleNavigate('admin');
@@ -232,6 +250,7 @@ export default function App() {
               onLogout={handleLogout}
               onBackToHome={() => handleNavigate('')}
               onNavigate={handleNavigate}
+              onImpersonateUser={(user) => handleAuthSuccess(user)}
             />
           );
         }
@@ -338,7 +357,7 @@ export default function App() {
             <UserDashboard
               currentUser={currentUser}
               directoryItems={directoryItems}
-              onOpenRequirementModal={() => setRequirementModalOpen(true)}
+              onOpenRequirementModal={handleOpenRequirementModal}
               onNavigate={handleNavigate}
               onNotify={(msg) => showToast(msg)}
             />
@@ -403,7 +422,7 @@ export default function App() {
                     Explore Complete 15-Stage Toolkit
                   </button>
                   <button
-                    onClick={() => setRequirementModalOpen(true)}
+                    onClick={handleOpenRequirementModal}
                     className="px-5 py-2.5 rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold text-xs shadow-md transition-all cursor-pointer"
                   >
                     Post Project Requirement (RFQ)
@@ -413,7 +432,7 @@ export default function App() {
             </div>
             <ThreeUserGroups
               onSelectRole={(role) => handleOpenAuth('signup', role)}
-              onPostRequirement={() => setRequirementModalOpen(true)}
+              onPostRequirement={handleOpenRequirementModal}
             />
             <HospitalToolkit onOpenFullToolkit={handleOpenToolkit} stages={toolkitStages} />
           </div>
@@ -452,7 +471,7 @@ export default function App() {
             <DirectorySearch
               directoryItems={directoryItems.filter(i => i.role === 'vendor')}
               onSelectVendor={(v) => setSelectedVendor(v)}
-              onPostRequirement={() => setRequirementModalOpen(true)}
+              onPostRequirement={handleOpenRequirementModal}
               onOpenPamphletQr={() => handleNavigate('pamphlet')}
               autoDetectTrigger={autoDetectTrigger}
               currentUser={currentUser}
@@ -489,7 +508,7 @@ export default function App() {
             <DirectorySearch
               directoryItems={directoryItems.filter(i => i.role === 'advisor')}
               onSelectVendor={(v) => setSelectedVendor(v)}
-              onPostRequirement={() => setRequirementModalOpen(true)}
+              onPostRequirement={handleOpenRequirementModal}
               onOpenPamphletQr={() => handleNavigate('pamphlet')}
               autoDetectTrigger={autoDetectTrigger}
               currentUser={currentUser}
@@ -501,8 +520,12 @@ export default function App() {
 
       case 'toolkit':
         return (
-          <div className="py-8 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-8">
-            <HospitalToolkit onOpenFullToolkit={handleOpenToolkit} stages={toolkitStages} />
+          <div className="pt-1 sm:pt-2 pb-8">
+            <HospitalToolkit 
+              onOpenFullToolkit={handleOpenToolkit} 
+              stages={toolkitStages} 
+              isStandalonePage={true} 
+            />
           </div>
         );
 
@@ -538,7 +561,7 @@ export default function App() {
             <DirectorySearch
               directoryItems={directoryItems}
               onSelectVendor={(v) => setSelectedVendor(v)}
-              onPostRequirement={() => setRequirementModalOpen(true)}
+              onPostRequirement={handleOpenRequirementModal}
               onOpenPamphletQr={() => handleNavigate('pamphlet')}
               autoDetectTrigger={autoDetectTrigger}
               currentUser={currentUser}
@@ -587,7 +610,7 @@ export default function App() {
             {/* 3. THREE USER GROUPS */}
             <ThreeUserGroups
               onSelectRole={(role) => handleOpenAuth('signup', role)}
-              onPostRequirement={() => setRequirementModalOpen(true)}
+              onPostRequirement={handleOpenRequirementModal}
             />
 
             {/* 4. HOW NOVA WORKS */}
@@ -605,7 +628,7 @@ export default function App() {
             <DirectorySearch
               directoryItems={directoryItems}
               onSelectVendor={(v) => setSelectedVendor(v)}
-              onPostRequirement={() => setRequirementModalOpen(true)}
+              onPostRequirement={handleOpenRequirementModal}
               onOpenPamphletQr={() => handleNavigate('pamphlet')}
               autoDetectTrigger={autoDetectTrigger}
               currentUser={currentUser}
@@ -698,6 +721,11 @@ export default function App() {
         isOpen={requirementModalOpen}
         onClose={() => setRequirementModalOpen(false)}
         onSubmitSuccess={handleRequirementSubmitted}
+        currentUser={currentUser}
+        onOpenAuth={(mode, role) => {
+          setPendingRequirementModalAfterAuth(true);
+          handleOpenAuth(mode, role);
+        }}
       />
 
       <VendorDetailModal
@@ -705,7 +733,7 @@ export default function App() {
         onClose={() => setSelectedVendor(null)}
         onPostRequirement={() => {
           setSelectedVendor(null);
-          setRequirementModalOpen(true);
+          handleOpenRequirementModal();
         }}
         currentUser={currentUser}
         onOpenAuth={handleOpenAuth}
@@ -714,7 +742,10 @@ export default function App() {
       <AuthModal
         key={`auth-${authModalOpen}-${authMode}-${authRole}`}
         isOpen={authModalOpen}
-        onClose={() => setAuthModalOpen(false)}
+        onClose={() => {
+          setAuthModalOpen(false);
+          setPendingRequirementModalAfterAuth(false);
+        }}
         initialMode={authMode}
         initialRole={authRole}
         onSuccess={handleAuthSuccess}

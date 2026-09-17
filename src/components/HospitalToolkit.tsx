@@ -7,9 +7,14 @@ import { StageItem } from '../types';
 interface HospitalToolkitProps {
   onOpenFullToolkit: (stageIndex?: number) => void;
   stages?: StageItem[];
+  isStandalonePage?: boolean;
 }
 
-export const HospitalToolkit: React.FC<HospitalToolkitProps> = ({ onOpenFullToolkit, stages }) => {
+export const HospitalToolkit: React.FC<HospitalToolkitProps> = ({ 
+  onOpenFullToolkit, 
+  stages,
+  isStandalonePage = false 
+}) => {
   const stagesList = stages && stages.length > 0 ? stages : TOOLKIT_15_STAGES;
   const [currentSlide, setCurrentSlide] = useState(0);
 
@@ -26,21 +31,53 @@ export const HospitalToolkit: React.FC<HospitalToolkitProps> = ({ onOpenFullTool
   const activeStage = stagesList[safeSlideIndex];
 
   return (
-    <section className="py-16 sm:py-24 bg-slate-50 border-y border-slate-200">
+    <section className={isStandalonePage ? "pt-2 sm:pt-4 pb-12 bg-transparent" : "py-12 sm:py-16 bg-slate-50 border-y border-slate-200"}>
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         
         {/* Section Header */}
-        <div className="text-center max-w-3xl mx-auto mb-12">
+        <div className={`text-center max-w-3xl mx-auto ${isStandalonePage ? 'mb-6 sm:mb-8' : 'mb-10 sm:mb-12'}`}>
           <span className="text-xs font-bold uppercase tracking-wider text-blue-700 bg-blue-100/70 px-3 py-1 rounded-full">
             Essential Founder Resource
           </span>
-          <SectionHeading id="toolkit-section" className="text-3xl sm:text-4xl font-extrabold text-slate-900 tracking-tight mt-3">
+          <SectionHeading id="toolkit-section" className={`${isStandalonePage ? 'text-2xl sm:text-3xl lg:text-4xl' : 'text-3xl sm:text-4xl'} font-extrabold text-slate-900 tracking-tight mt-2.5`}>
             Hospital Owner's Toolkit
           </SectionHeading>
-          <p className="text-slate-600 text-base sm:text-lg mt-2">
-            Start with the Hospital Owners Toolkit. Understand the complete hospital development journey before searching for vendors.
+          <p className="text-slate-600 text-sm sm:text-base mt-2 max-w-2xl mx-auto">
+            Start with the Hospital Owners Toolkit. Understand the complete 15-stage hospital development journey before committing capital or hiring vendors.
           </p>
         </div>
+
+        {/* Quick Stage Pills for Standalone Page */}
+        {isStandalonePage && (
+          <div className="mb-6 sm:mb-8 bg-white p-2 sm:p-2.5 rounded-2xl border border-slate-200/80 shadow-xs">
+            <div className="flex items-center justify-between px-2 pb-1.5 text-[11px] text-slate-500 font-medium">
+              <span className="font-bold text-slate-700">15 Project Development Stages:</span>
+              <span className="text-slate-400">Click to preview any stage</span>
+            </div>
+            <div className="flex items-center gap-1.5 overflow-x-auto pb-1 scrollbar-none">
+              {stagesList.map((s, idx) => {
+                const isSelected = safeSlideIndex === idx;
+                return (
+                  <button
+                    key={s.stageNumber}
+                    type="button"
+                    onClick={() => setCurrentSlide(idx)}
+                    className={`px-2.5 py-1.5 rounded-lg text-xs font-bold whitespace-nowrap transition-all cursor-pointer flex items-center gap-1.5 shrink-0 ${
+                      isSelected
+                        ? 'bg-blue-600 text-white shadow-xs'
+                        : 'bg-slate-50 hover:bg-slate-100 text-slate-600 hover:text-slate-900 border border-slate-200/60'
+                    }`}
+                  >
+                    <span className={`w-4 h-4 rounded-full flex items-center justify-center text-[10px] font-mono ${isSelected ? 'bg-white/20 text-white' : 'bg-slate-200 text-slate-700'}`}>
+                      {s.stageNumber}
+                    </span>
+                    <span className="max-w-[110px] truncate">{s.title.split(':')[0] || s.title}</span>
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+        )}
 
         {/* Wireframe Section 5 Grid: Left Canva Embed + Right Description */}
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-12 items-center">
