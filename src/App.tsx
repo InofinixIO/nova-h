@@ -504,7 +504,7 @@ export default function App() {
               </div>
             </div>
             <DirectorySearch
-              directoryItems={directoryItems.filter(i => i.role === 'vendor')}
+              directoryItems={directoryItems.filter(i => i.role === 'owner')}
               onSelectVendor={(v) => setSelectedVendor(v)}
               onPostRequirement={handleOpenRequirementModal}
               autoDetectTrigger={autoDetectTrigger}
@@ -526,13 +526,13 @@ export default function App() {
             <div className="bg-gradient-to-r from-sky-950 to-slate-900 text-white p-8 sm:p-12 rounded-3xl shadow-xl">
               <div className="max-w-3xl">
                 <span className="px-3 py-1 rounded-full text-xs font-extrabold uppercase tracking-wider bg-sky-500/30 text-sky-200 border border-sky-400/30">
-                  Clinical Planners, NABH Consultants &amp; Architects
+                  Discover Projects &amp; Equipment Partners
                 </span>
                 <h1 className="text-3xl sm:text-4xl font-black mt-4 mb-3 tracking-tight">
-                  Hospital Advisors &amp; Specialist Directory
+                  Hospital Promoters &amp; Vendor Network
                 </h1>
                 <p className="text-slate-300 text-sm sm:text-base leading-relaxed mb-6">
-                  Join Macula Healthcare's execution partner pool. Advise hospital trustees on DPR formulation, AERB radiological layouts, NABH accreditations, and commissioning milestones.
+                  Connect with hospital trustees planning new facilities or expansions. Partner with verified medical equipment vendors to seamlessly execute your healthcare advisory mandates.
                 </p>
                 <div className="flex flex-wrap gap-3">
                   <button
@@ -545,7 +545,7 @@ export default function App() {
               </div>
             </div>
             <DirectorySearch
-              directoryItems={directoryItems.filter(i => i.role === 'advisor')}
+              directoryItems={directoryItems.filter(i => ['owner', 'vendor'].includes(i.role))}
               onSelectVendor={(v) => setSelectedVendor(v)}
               onPostRequirement={handleOpenRequirementModal}
               autoDetectTrigger={autoDetectTrigger}

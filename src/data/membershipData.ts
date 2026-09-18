@@ -161,7 +161,7 @@ export const ECOSYSTEM_COMMERCIAL_LOGIC = [
     notes: 'Workshops separately chargeable at ₹2,500 - ₹5,000.'
   },
   {
-    userType: 'Macula Healthcare',
+    userType: 'NOVA-H Team',
     commercialBasis: 'Consulting, project management and execution revenue',
     annualFee: 'Project-based',
     notes: 'Direct advisory & execution when actual hospital projects arise.'
