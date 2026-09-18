@@ -352,7 +352,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
                   </span>
                 </span>
                 <span className="px-2 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider bg-slate-200 text-slate-900">
-                  {selectedRole === 'advisor' ? 'Review Required' : '₹1000 / yr'}
+                  {selectedRole === 'advisor' ? '₹xxxx / yr' : '₹1000 / yr'}
                 </span>
               </div>
               <p className="text-[11px] text-slate-700">
@@ -385,7 +385,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
                 <UserCheck className="w-4 h-4" />
                 <span>
                   {selectedRole === 'advisor' 
-                    ? 'Submit Application' 
+                    ? 'Submit Application (₹xxxx/yr)' 
                     : 'Proceed to Payment (₹1000/yr)'}
                 </span>
               </>
