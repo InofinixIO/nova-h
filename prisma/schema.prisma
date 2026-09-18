@@ -1,0 +1,77 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+}
+
+model AuthUser {
+  id            String   @id @default(cuid())
+  name          String
+  role          String   // 'owner' (Promoter), 'vendor', 'advisor', 'admin'
+  facilityTypes String?  // Stored as JSON string (e.g. '["hospital", "clinic"]')
+  email         String   @unique
+  phone         String?
+  company       String?
+  isSubscribed  Boolean  @default(false)
+  plan          String?
+  status        String   @default("pending") // 'active', 'disabled', 'pending'
+  createdAt     DateTime @default(now())
+  lastLoginAt   DateTime @updatedAt
+}
+
+model DirectoryItem {
+  id                  String   @id @default(cuid())
+  name                String
+  role                String   // 'vendor', 'advisor'
+  category            String
+  rating              Float    @default(0)
+  reviewsCount        Int      @default(0)
+  location            String
+  serviceLocations    String   // Stored as JSON string
+  facilityTypesServed String?  // Stored as JSON string
+  projectStages       String   // Stored as JSON string
+  productsAndServices String   // Stored as JSON string
+  description         String
+  verified            Boolean  @default(false)
+  yearsOfExperience   Int      @default(0)
+  contactEmail        String
+  phone               String
+  website             String
+  featuredProject     String?
+  clientPortfolio     String?  // Stored as JSON string
+  gstin               String?
+  priceRange          String?
+  turnaroundTime      String?
+  certifications      String?  // Stored as JSON string
+  headquartersAddress String?
+  complianceBadges    String?  // Stored as JSON string
+  createdAt           DateTime @default(now())
+  updatedAt           DateTime @updatedAt
+}
+
+model FacilityType {
+  id          String      @id // e.g. 'hospital', 'clinic'
+  name        String
+  description String?
+  stages      StageItem[]
+  createdAt   DateTime    @default(now())
+  updatedAt   DateTime    @updatedAt
+}
+
+model StageItem {
+  id              String       @id @default(cuid())
+  stageNumber     Int
+  title           String
+  category        String
+  summary         String
+  keyDeliverables String       // Stored as JSON string
+  checklist       String       // Stored as JSON string
+  typicalTimeline String
+  keyStakeholders String       // Stored as JSON string
+  facilityTypeId  String
+  facilityType    FacilityType @relation(fields: [facilityTypeId], references: [id])
+  createdAt       DateTime     @default(now())
+  updatedAt       DateTime     @updatedAt
+}

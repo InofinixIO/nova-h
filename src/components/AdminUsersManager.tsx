@@ -30,7 +30,8 @@ import {
   updateUserPlan, 
   registerOrUpdateUser, 
   isDevModeActive, 
-  setDevMode 
+  setDevMode,
+  approveUser
 } from '../utils/userManagement';
 
 interface AdminUsersManagerProps {
@@ -47,7 +48,7 @@ export const AdminUsersManager: React.FC<AdminUsersManagerProps> = ({
   const [users, setUsers] = useState<AuthUser[]>(() => getAllUsers());
   const [searchQuery, setSearchQuery] = useState('');
   const [roleFilter, setRoleFilter] = useState<'all' | UserRole>('all');
-  const [statusFilter, setStatusFilter] = useState<'all' | 'active' | 'disabled'>('all');
+  const [statusFilter, setStatusFilter] = useState<'all' | 'active' | 'disabled' | 'pending'>('all');
   const [devMode, setDevModeState] = useState<boolean>(() => isDevModeActive());
 
   // Plan editing modal / inline state
@@ -116,6 +117,12 @@ export const AdminUsersManager: React.FC<AdminUsersManagerProps> = ({
     onNotify(`Updated plan for ${email} to "${selectedPlanValue}".`);
   };
 
+  const handleApproveUser = (targetUser: AuthUser) => {
+    const updated = approveUser(targetUser.email);
+    setUsers(updated);
+    onNotify(`Approved user "${targetUser.name}" (${targetUser.email}) and set to Active.`);
+  };
+
   const handleAddUserSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!newUserForm.name.trim() || !newUserForm.email.trim()) {
@@ -161,6 +168,7 @@ export const AdminUsersManager: React.FC<AdminUsersManagerProps> = ({
 
   const activeCount = users.filter(u => (u.status || 'active') === 'active').length;
   const disabledCount = users.filter(u => u.status === 'disabled').length;
+  const pendingCount = users.filter(u => u.status === 'pending').length;
   const ownersCount = users.filter(u => u.role === 'owner').length;
   const vendorsCount = users.filter(u => u.role === 'vendor').length;
   const advisorsCount = users.filter(u => u.role === 'advisor').length;
@@ -248,10 +256,19 @@ export const AdminUsersManager: React.FC<AdminUsersManagerProps> = ({
             <AlertTriangle className="w-4 h-4 text-red-500" />
           </div>
           <div className="text-2xl font-black text-red-600 mt-1">{disabledCount}</div>
-          <div className="text-[11px] text-slate-400 mt-0.5">Access suspended</div>
+          <div className="text-[11px] text-slate-400 mt-0.5">Revoked access</div>
         </div>
 
         <div className="bg-white p-4 rounded-xl border border-slate-200 shadow-2xs">
+          <div className="flex items-center justify-between">
+            <span className="text-xs font-semibold text-slate-500">Pending</span>
+            <AlertTriangle className="w-4 h-4 text-amber-500" />
+          </div>
+          <div className="text-2xl font-black text-amber-600 mt-1">{pendingCount}</div>
+          <div className="text-[11px] text-slate-400 mt-0.5">Awaiting approval</div>
+        </div>
+
+        <div className="bg-white p-4 rounded-xl border border-slate-200 shadow-2xs hidden sm:block">
           <div className="flex items-center justify-between">
             <span className="text-xs font-semibold text-slate-500">Hospital Owners</span>
             <Building2 className="w-4 h-4 text-blue-600" />
@@ -309,14 +326,15 @@ export const AdminUsersManager: React.FC<AdminUsersManagerProps> = ({
           </div>
 
           <div className="flex items-center gap-1.5 text-xs text-slate-500">
-            <span>Status:</span>
+            {/* Status Filter */}
             <select
               value={statusFilter}
-              onChange={(e) => setStatusFilter(e.target.value as any)}
-              className="px-2.5 py-1.5 text-xs rounded-lg border border-slate-200 bg-slate-50 font-medium text-slate-700 cursor-pointer"
+              onChange={(e) => setStatusFilter(e.target.value as 'all' | 'active' | 'disabled' | 'pending')}
+              className="px-3 py-2 border border-slate-300 rounded-lg text-sm bg-white font-medium"
             >
-              <option value="all">All Statuses</option>
+              <option value="all">All Status</option>
               <option value="active">Active Only</option>
+              <option value="pending">Pending Only</option>
               <option value="disabled">Disabled Only</option>
             </select>
           </div>
@@ -358,11 +376,11 @@ export const AdminUsersManager: React.FC<AdminUsersManagerProps> = ({
               ) : (
                 filteredUsers.map((u) => {
                   const isCurrentAdmin = currentUser && u.email.toLowerCase() === currentUser.email.toLowerCase();
-                  const isUserActive = (u.status || 'active') === 'active';
+                  const userStatus = u.status || 'active';
                   const isEditingPlan = editingPlanEmail === u.email;
 
                   return (
-                    <tr key={u.email} className={`hover:bg-slate-50/70 transition-colors ${!isUserActive ? 'bg-red-50/30' : ''}`}>
+                    <tr key={u.email} className={`hover:bg-slate-50/70 transition-colors ${userStatus === 'disabled' ? 'bg-red-50/30' : userStatus === 'pending' ? 'bg-amber-50/30' : ''}`}>
                       {/* Name & Contact */}
                       <td className="py-3.5 px-4">
                         <div className="flex items-center gap-3">
@@ -486,10 +504,15 @@ export const AdminUsersManager: React.FC<AdminUsersManagerProps> = ({
 
                       {/* Status */}
                       <td className="py-3.5 px-4">
-                        {isUserActive ? (
+                        {userStatus === 'active' ? (
                           <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider bg-emerald-100 text-emerald-800 border border-emerald-200">
                             <span className="w-1.5 h-1.5 rounded-full bg-emerald-600"></span>
                             <span>Active</span>
+                          </span>
+                        ) : userStatus === 'pending' ? (
+                          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider bg-amber-100 text-amber-800 border border-amber-200">
+                            <span className="w-1.5 h-1.5 rounded-full bg-amber-600 animate-pulse"></span>
+                            <span>Pending</span>
                           </span>
                         ) : (
                           <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider bg-red-100 text-red-800 border border-red-200">
@@ -511,32 +534,47 @@ export const AdminUsersManager: React.FC<AdminUsersManagerProps> = ({
                       {/* Actions */}
                       <td className="py-3.5 px-4 text-right">
                         <div className="flex items-center justify-end gap-1.5">
+                          {/* Approve Button for pending */}
+                          {userStatus === 'pending' && (
+                            <button
+                              type="button"
+                              onClick={() => handleApproveUser(u)}
+                              className="px-2.5 py-1 rounded-lg text-[11px] font-bold bg-amber-500 hover:bg-amber-600 text-slate-950 transition-colors cursor-pointer flex items-center gap-1 shadow-2xs"
+                              title="Approve User"
+                            >
+                              <CheckCircle2 className="w-3 h-3" />
+                              <span>Approve</span>
+                            </button>
+                          )}
+
                           {/* Enable / Disable Button */}
-                          <button
-                            type="button"
-                            disabled={isCurrentAdmin}
-                            onClick={() => handleToggleStatus(u)}
-                            className={`px-2.5 py-1 rounded-lg text-[11px] font-bold border transition-colors cursor-pointer flex items-center gap-1 ${
-                              isCurrentAdmin
-                                ? 'bg-slate-100 text-slate-400 border-slate-200 cursor-not-allowed'
-                                : isUserActive
-                                    ? 'bg-red-50 hover:bg-red-100 text-red-700 border-red-200'
-                                    : 'bg-emerald-50 hover:bg-emerald-100 text-emerald-700 border-emerald-200'
-                            }`}
-                            title={isCurrentAdmin ? 'Cannot disable self' : isUserActive ? 'Disable account' : 'Re-enable account'}
-                          >
-                            {isUserActive ? (
-                              <>
-                                <UserX className="w-3 h-3" />
-                                <span>Disable</span>
-                              </>
-                            ) : (
-                              <>
-                                <UserCheck className="w-3 h-3" />
-                                <span>Enable</span>
-                              </>
-                            )}
-                          </button>
+                          {userStatus !== 'pending' && (
+                            <button
+                              type="button"
+                              disabled={isCurrentAdmin}
+                              onClick={() => handleToggleStatus(u)}
+                              className={`px-2.5 py-1 rounded-lg text-[11px] font-bold border transition-colors cursor-pointer flex items-center gap-1 ${
+                                isCurrentAdmin
+                                  ? 'bg-slate-100 text-slate-400 border-slate-200 cursor-not-allowed'
+                                  : userStatus === 'active'
+                                      ? 'bg-red-50 hover:bg-red-100 text-red-700 border-red-200'
+                                      : 'bg-emerald-50 hover:bg-emerald-100 text-emerald-700 border-emerald-200'
+                              }`}
+                              title={isCurrentAdmin ? 'Cannot disable self' : userStatus === 'active' ? 'Disable account' : 'Re-enable account'}
+                            >
+                              {userStatus === 'active' ? (
+                                <>
+                                  <UserX className="w-3 h-3" />
+                                  <span>Disable</span>
+                                </>
+                              ) : (
+                                <>
+                                  <UserCheck className="w-3 h-3" />
+                                  <span>Enable</span>
+                                </>
+                              )}
+                            </button>
+                          )}
 
                           {/* Impersonate Button (when localStorage dev=1) */}
                           {devMode ? (

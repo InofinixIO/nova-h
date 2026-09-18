@@ -280,7 +280,9 @@ export const CompareProfilesView: React.FC<CompareProfilesViewProps> = ({
                           {item.name}
                         </h3>
                         {item.verified && (
-                          <CheckCircle2 className="w-4 h-4 text-blue-600 shrink-0" title="Verified by NOVA" />
+                          <span title="Verified by NOVA">
+                            <CheckCircle2 className="w-4 h-4 text-blue-600 shrink-0" />
+                          </span>
                         )}
                       </div>
                       <p className="text-xs font-semibold text-blue-700 mt-0.5">

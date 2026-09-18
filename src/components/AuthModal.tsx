@@ -102,14 +102,16 @@ export const AuthModal: React.FC<AuthModalProps> = ({
 
     const defaultPhone = phone || (isAdmin ? '+91 22 4982 1000' : '+91 98765 43210');
 
-    // Default plan assignment (Direct free registration, no payment required)
+    // Plan assignment
     const initialPlan = isAdmin 
       ? 'Administrator Master Access' 
       : selectedRole === 'owner' 
-          ? 'Owner Free Starter' 
+          ? 'Owner Starter Plan' 
           : selectedRole === 'vendor' 
-              ? 'Vendor Free Starter' 
-              : 'Advisor Free Starter';
+              ? 'Vendor Starter Plan' 
+              : 'Advisor Access (Pending)';
+
+    const isPaidSignup = mode === 'signup' && (selectedRole === 'owner' || selectedRole === 'vendor') && !isAdmin;
 
     const normalUser: AuthUser = {
       name: userName,
@@ -117,9 +119,9 @@ export const AuthModal: React.FC<AuthModalProps> = ({
       email: userEmail,
       company: defaultCompany,
       phone: defaultPhone,
-      isSubscribed: true,
+      isSubscribed: isAdmin || mode === 'signin' ? true : false,
       plan: initialPlan,
-      status: 'active'
+      status: (mode === 'signup' && selectedRole === 'advisor') ? 'pending' : 'active'
     };
 
     // Register or update in user database
@@ -127,6 +129,15 @@ export const AuthModal: React.FC<AuthModalProps> = ({
 
     onSuccess(savedUser);
     onClose();
+
+    if (isPaidSignup && onProceedToPayment) {
+      onProceedToPayment(selectedRole, {
+        planId: `${selectedRole}_starter`,
+        title: `${selectedRole.charAt(0).toUpperCase() + selectedRole.slice(1)} Starter Access`,
+        amount: 1000,
+        billingBasis: 'Yearly'
+      });
+    }
   };
 
   return (
@@ -330,26 +341,37 @@ export const AuthModal: React.FC<AuthModalProps> = ({
             </div>
           </div>
 
-          {/* Free Signup Assurance in Signup Mode */}
+          {/* Signup Assurance in Signup Mode */}
           {mode === 'signup' && (
-            <div className="bg-emerald-50 border border-emerald-200/80 rounded-xl p-3 text-xs space-y-1.5 animate-fadeIn">
-              <div className="flex items-center justify-between text-emerald-950 font-bold">
-                <span className="flex items-center gap-1.5 text-emerald-900">
-                  <CheckCircle2 className="w-4 h-4 text-emerald-600" />
-                  <span>Free Instant Registration</span>
+            <div className="bg-slate-50 border border-slate-200/80 rounded-xl p-3 text-xs space-y-1.5 animate-fadeIn">
+              <div className="flex items-center justify-between text-slate-900 font-bold">
+                <span className="flex items-center gap-1.5 text-slate-900">
+                  <CheckCircle2 className="w-4 h-4 text-blue-600" />
+                  <span>
+                    {selectedRole === 'advisor' ? 'Apply for Advisor Panel' : 'Network Registration'}
+                  </span>
                 </span>
-                <span className="px-2 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider bg-emerald-200 text-emerald-900">
-                  ₹0 / Free Access
+                <span className="px-2 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider bg-slate-200 text-slate-900">
+                  {selectedRole === 'advisor' ? 'Review Required' : '₹1000 / yr'}
                 </span>
               </div>
-              <p className="text-[11px] text-emerald-800">
+              <p className="text-[11px] text-slate-700">
                 {selectedRole === 'owner' && 'Full founder access: explore the 15-stage hospital toolkit, post project requirements, and connect with verified partners.'}
                 {selectedRole === 'vendor' && 'Direct supplier onboarding: list products, respond to hospital RFPs, and receive inquiries.'}
-                {selectedRole === 'advisor' && 'Direct advisory onboarding: join hospital consultancy panels and review promoter RFPs.'}
+                {selectedRole === 'advisor' && 'Apply to join hospital consultancy panels. Our team will review your application and activate your account once approved.'}
               </p>
-              <div className="pt-1.5 border-t border-emerald-200/60 flex items-center justify-between text-[10px] text-emerald-700">
-                <span>✓ No payment or credit card required</span>
-                <span className="font-semibold text-emerald-800">Instant Activation</span>
+              <div className="pt-1.5 border-t border-slate-200/60 flex items-center justify-between text-[10px] text-slate-600">
+                {selectedRole === 'advisor' ? (
+                  <>
+                    <span>✓ No payment required now</span>
+                    <span className="font-semibold text-blue-700">Admin Approval</span>
+                  </>
+                ) : (
+                  <>
+                    <span>✓ Secure online payment</span>
+                    <span className="font-semibold text-blue-700">Instant Access</span>
+                  </>
+                )}
               </div>
             </div>
           )}
@@ -361,7 +383,11 @@ export const AuthModal: React.FC<AuthModalProps> = ({
             {mode === 'signup' ? (
               <>
                 <UserCheck className="w-4 h-4" />
-                <span>Create Free Account (No Payment Required)</span>
+                <span>
+                  {selectedRole === 'advisor' 
+                    ? 'Submit Application' 
+                    : 'Proceed to Payment (₹1000/yr)'}
+                </span>
               </>
             ) : (
               <>

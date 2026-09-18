@@ -172,7 +172,9 @@ export const VendorDetailModal: React.FC<VendorDetailModalProps> = ({
               <h2 className="text-2xl sm:text-3xl font-extrabold text-slate-900 tracking-tight flex items-center gap-2">
                 <span>{vendor.name}</span>
                 {vendor.verified && (
-                  <ShieldCheck className="w-6 h-6 text-emerald-600 shrink-0" title="Verified by NOVA Healthcare Network" />
+                  <span title="Verified by NOVA Healthcare Network">
+                    <ShieldCheck className="w-6 h-6 text-emerald-600 shrink-0" />
+                  </span>
                 )}
               </h2>
               <div className="flex flex-wrap items-center gap-3 mt-2 text-xs text-slate-500">

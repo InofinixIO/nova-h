@@ -106,7 +106,54 @@ export const PamphletSection: React.FC<PamphletSectionProps> = ({
   };
 
   const handlePrint = () => {
-    window.print();
+    const printContent = pamphletRef.current;
+    if (!printContent) return;
+
+    const styles = Array.from(document.querySelectorAll('style, link[rel="stylesheet"]'))
+      .map(node => node.outerHTML)
+      .join('\n');
+
+    const printWindow = window.open('', '_blank');
+    if (!printWindow) return;
+
+    printWindow.document.write(`
+      <!DOCTYPE html>
+      <html>
+        <head>
+          <title>NOVA Pamphlet</title>
+          ${styles}
+          <style>
+            body { 
+              margin: 0; 
+              padding: 24px; 
+              display: flex; 
+              justify-content: center;
+              background: white;
+            }
+            #printable-pamphlet { 
+              box-shadow: none !important;
+              border: 1px solid #e2e8f0 !important;
+              max-width: 680px;
+            }
+            @media print {
+              body { padding: 0; }
+              #printable-pamphlet { border: none !important; padding: 0 !important; }
+            }
+          </style>
+        </head>
+        <body>
+          ${printContent.outerHTML}
+          <script>
+            // Wait for images to load if any
+            setTimeout(() => {
+              window.print();
+              window.close();
+            }, 500);
+          </script>
+        </body>
+      </html>
+    `);
+    printWindow.document.close();
   };
 
   return (

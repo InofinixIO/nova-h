@@ -1,38 +1,23 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { 
-  BookOpen, 
-  Edit3, 
-  Plus, 
-  Trash2, 
-  ArrowUp, 
-  ArrowDown, 
-  Save, 
-  RotateCcw, 
-  CheckCircle2, 
-  Clock, 
-  Users, 
-  FileText, 
-  ListChecks, 
-  Download, 
-  Upload, 
-  Check, 
-  X,
-  Eye
+  BookOpen, Edit3, Plus, Trash2, ArrowUp, ArrowDown, Save, RotateCcw, 
+  CheckCircle2, Clock, Users, FileText, ListChecks, Download, Upload, 
+  Check, X, Eye, Building2 
 } from 'lucide-react';
-import { StageItem } from '../types';
-import { resetToolkitStagesToDefault } from '../utils/toolkitStorage';
+import { StageItem, FacilityType } from '../types';
 
 interface AdminToolkitEditorProps {
-  stages: StageItem[];
-  onUpdateStages: (updatedStages: StageItem[]) => void;
   onNotify: (msg: string) => void;
+  // keeping these for backwards compatibility, though ignored internally
+  stages?: StageItem[];
+  onUpdateStages?: (updatedStages: StageItem[]) => void;
 }
 
-export const AdminToolkitEditor: React.FC<AdminToolkitEditorProps> = ({
-  stages,
-  onUpdateStages,
-  onNotify
-}) => {
+export const AdminToolkitEditor: React.FC<AdminToolkitEditorProps> = ({ onNotify }) => {
+  const [facilities, setFacilities] = useState<FacilityType[]>([]);
+  const [activeFacilityId, setActiveFacilityId] = useState<string>('');
+  const [stages, setStages] = useState<StageItem[]>([]);
+  
   const [editingIndex, setEditingIndex] = useState<number | null>(null);
   const [editingStage, setEditingStage] = useState<StageItem | null>(null);
 
@@ -41,9 +26,82 @@ export const AdminToolkitEditor: React.FC<AdminToolkitEditorProps> = ({
   const [newChecklistItem, setNewChecklistItem] = useState('');
   const [newStakeholder, setNewStakeholder] = useState('');
 
+  // Facility creation state
+  const [isCreatingFacility, setIsCreatingFacility] = useState(false);
+  const [newFacilityName, setNewFacilityName] = useState('');
+  const [newFacilityId, setNewFacilityId] = useState('');
+
+  // Fetch facilities
+  useEffect(() => {
+    fetch('/api/facilities')
+      .then(res => res.json())
+      .then(data => {
+        if (Array.isArray(data)) {
+          setFacilities(data);
+          if (data.length > 0) setActiveFacilityId(data[0].id);
+        }
+      })
+      .catch(e => console.error(e));
+  }, []);
+
+  // Fetch stages for active facility
+  useEffect(() => {
+    if (activeFacilityId) {
+      fetch(`/api/toolkit/${activeFacilityId}`)
+        .then(res => res.json())
+        .then(data => {
+          if (Array.isArray(data)) setStages(data);
+        })
+        .catch(e => console.error(e));
+    }
+  }, [activeFacilityId]);
+
+  const saveToServer = async (updatedStages: StageItem[]) => {
+    try {
+      const res = await fetch(`/api/toolkit/${activeFacilityId}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ stages: updatedStages })
+      });
+      if (res.ok) {
+        setStages(updatedStages);
+        onNotify('Saved to server.');
+      } else {
+        onNotify('Failed to save to server.');
+      }
+    } catch (e) {
+      console.error(e);
+      onNotify('Error saving to server.');
+    }
+  };
+
+  const handleCreateFacility = async () => {
+    if (!newFacilityName || !newFacilityId) return;
+    try {
+      const res = await fetch('/api/facilities', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id: newFacilityId, name: newFacilityName, description: `Toolkit for ${newFacilityName}` })
+      });
+      if (res.ok) {
+        const newFacility = await res.json();
+        setFacilities([...facilities, newFacility]);
+        setActiveFacilityId(newFacility.id);
+        setIsCreatingFacility(false);
+        setNewFacilityName('');
+        setNewFacilityId('');
+        onNotify(`Created new facility: ${newFacility.name}`);
+      } else {
+        onNotify('Failed to create facility');
+      }
+    } catch (e) {
+      console.error(e);
+      onNotify('Error creating facility');
+    }
+  };
+
   const handleStartEdit = (index: number) => {
     setEditingIndex(index);
-    // Deep clone the stage item to avoid accidental mutation before save
     setEditingStage(JSON.parse(JSON.stringify(stages[index])));
     setNewDeliverable('');
     setNewChecklistItem('');
@@ -64,8 +122,7 @@ export const AdminToolkitEditor: React.FC<AdminToolkitEditorProps> = ({
 
     const updated = [...stages];
     updated[editingIndex] = editingStage;
-    onUpdateStages(updated);
-    onNotify(`Successfully updated Stage ${editingStage.stageNumber}: "${editingStage.title}".`);
+    saveToServer(updated);
     setEditingIndex(null);
     setEditingStage(null);
   };
@@ -79,14 +136,8 @@ export const AdminToolkitEditor: React.FC<AdminToolkitEditorProps> = ({
     updated[index] = updated[targetIndex];
     updated[targetIndex] = temp;
 
-    // Renumber stages sequentially 1..N
-    const renumbered = updated.map((s, idx) => ({
-      ...s,
-      stageNumber: idx + 1
-    }));
-
-    onUpdateStages(renumbered);
-    onNotify(`Reordered Stage ${index + 1} to position ${targetIndex + 1}.`);
+    const renumbered = updated.map((s, idx) => ({ ...s, stageNumber: idx + 1 }));
+    saveToServer(renumbered);
   };
 
   const handleDeleteStage = (index: number) => {
@@ -95,15 +146,10 @@ export const AdminToolkitEditor: React.FC<AdminToolkitEditorProps> = ({
       return;
     }
     const stageToDelete = stages[index];
-    if (window.confirm(`Are you sure you want to delete Stage ${stageToDelete.stageNumber}: "${stageToDelete.title}"?`)) {
+    if (window.confirm(`Are you sure you want to delete Stage ${stageToDelete.stageNumber}?`)) {
       const filtered = stages.filter((_, idx) => idx !== index);
-      // Renumber stages
-      const renumbered = filtered.map((s, idx) => ({
-        ...s,
-        stageNumber: idx + 1
-      }));
-      onUpdateStages(renumbered);
-      onNotify(`Deleted Stage: "${stageToDelete.title}". Remaining: ${renumbered.length} stages.`);
+      const renumbered = filtered.map((s, idx) => ({ ...s, stageNumber: idx + 1 }));
+      saveToServer(renumbered);
       if (editingIndex === index) {
         setEditingIndex(null);
         setEditingStage(null);
@@ -117,76 +163,21 @@ export const AdminToolkitEditor: React.FC<AdminToolkitEditorProps> = ({
       stageNumber: newStageNumber,
       title: `New Stage ${newStageNumber}`,
       category: 'General Execution',
-      summary: 'Define the objectives, regulatory procedures, and implementation steps for this hospital developmental stage.',
-      keyDeliverables: ['Detailed Project Blueprint', 'Compliance Documentation'],
-      checklist: ['Define stage milestones', 'Appoint key consultants and vendors'],
+      summary: 'Define objectives and implementation steps for this stage.',
+      keyDeliverables: [],
+      checklist: [],
       typicalTimeline: '1 - 3 Months',
-      keyStakeholders: ['Project Promoters', 'Healthcare Consultants']
+      keyStakeholders: [],
+      facilityTypeId: activeFacilityId
     };
 
     const updated = [...stages, newStage];
-    onUpdateStages(updated);
-    onNotify(`Added new Stage ${newStageNumber}. Click "Edit" to configure details.`);
-    // Immediately open editor for the new stage
+    setStages(updated);
+    saveToServer(updated);
     setEditingIndex(updated.length - 1);
     setEditingStage(JSON.parse(JSON.stringify(newStage)));
   };
 
-  const handleResetToDefaults = () => {
-    if (window.confirm('Reset all toolkit stages back to the default 15 stages from the master guide? Any custom edits will be reverted.')) {
-      const defaults = resetToolkitStagesToDefault();
-      onUpdateStages(defaults);
-      setEditingIndex(null);
-      setEditingStage(null);
-      onNotify('Reset toolkit to standard 15 stages.');
-    }
-  };
-
-  const handleExportJSON = () => {
-    const jsonStr = JSON.stringify(stages, null, 2);
-    const blob = new Blob([jsonStr], { type: 'application/json' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `nova-toolkit-15-stages-${new Date().toISOString().split('T')[0]}.json`;
-    a.click();
-    URL.revokeObjectURL(url);
-    onNotify('Exported toolkit stages JSON.');
-  };
-
-  const handleImportJSON = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-
-    const reader = new FileReader();
-    reader.onload = (event) => {
-      try {
-        const parsed = JSON.parse(event.target?.result as string);
-        if (Array.isArray(parsed) && parsed.length > 0 && parsed[0].title) {
-          const validated: StageItem[] = parsed.map((item, idx) => ({
-            stageNumber: item.stageNumber || idx + 1,
-            title: item.title || `Stage ${idx + 1}`,
-            category: item.category || 'Hospital Development',
-            summary: item.summary || '',
-            keyDeliverables: Array.isArray(item.keyDeliverables) ? item.keyDeliverables : [],
-            checklist: Array.isArray(item.checklist) ? item.checklist : [],
-            typicalTimeline: item.typicalTimeline || '2 - 4 Months',
-            keyStakeholders: Array.isArray(item.keyStakeholders) ? item.keyStakeholders : []
-          }));
-          onUpdateStages(validated);
-          onNotify(`Successfully imported ${validated.length} stages from JSON file.`);
-        } else {
-          alert('Invalid JSON structure. Please ensure the file contains an array of StageItem objects.');
-        }
-      } catch (err) {
-        alert('Failed to parse JSON file: ' + (err as Error).message);
-      }
-    };
-    reader.readAsText(file);
-    e.target.value = '';
-  };
-
-  // Helper methods for array fields inside the active editor
   const addDeliverable = () => {
     if (!newDeliverable.trim() || !editingStage) return;
     setEditingStage({
@@ -195,7 +186,6 @@ export const AdminToolkitEditor: React.FC<AdminToolkitEditorProps> = ({
     });
     setNewDeliverable('');
   };
-
   const removeDeliverable = (idx: number) => {
     if (!editingStage) return;
     setEditingStage({
@@ -203,7 +193,6 @@ export const AdminToolkitEditor: React.FC<AdminToolkitEditorProps> = ({
       keyDeliverables: editingStage.keyDeliverables.filter((_, i) => i !== idx)
     });
   };
-
   const addChecklistItem = () => {
     if (!newChecklistItem.trim() || !editingStage) return;
     setEditingStage({
@@ -212,7 +201,6 @@ export const AdminToolkitEditor: React.FC<AdminToolkitEditorProps> = ({
     });
     setNewChecklistItem('');
   };
-
   const removeChecklistItem = (idx: number) => {
     if (!editingStage) return;
     setEditingStage({
@@ -220,7 +208,6 @@ export const AdminToolkitEditor: React.FC<AdminToolkitEditorProps> = ({
       checklist: editingStage.checklist.filter((_, i) => i !== idx)
     });
   };
-
   const addStakeholder = () => {
     if (!newStakeholder.trim() || !editingStage) return;
     setEditingStage({
@@ -229,7 +216,6 @@ export const AdminToolkitEditor: React.FC<AdminToolkitEditorProps> = ({
     });
     setNewStakeholder('');
   };
-
   const removeStakeholder = (idx: number) => {
     if (!editingStage) return;
     setEditingStage({
@@ -240,7 +226,6 @@ export const AdminToolkitEditor: React.FC<AdminToolkitEditorProps> = ({
 
   return (
     <div className="space-y-6">
-      {/* Header bar with actions */}
       <div className="bg-white rounded-2xl p-6 shadow-sm border border-slate-200 flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
           <div className="flex items-center gap-2.5">
@@ -249,46 +234,38 @@ export const AdminToolkitEditor: React.FC<AdminToolkitEditorProps> = ({
             </span>
             <div>
               <h2 className="text-lg font-bold text-slate-900">
-                Hospital Development Stages Manager ({stages.length} Stages)
+                Facility Toolkit Manager
               </h2>
               <p className="text-xs text-slate-500">
-                Edit stage titles, milestones, critical checklists, timelines, and stakeholder requirements in real time.
+                Edit toolkit stages per facility type.
               </p>
             </div>
           </div>
         </div>
-
-        <div className="flex items-center gap-2 flex-wrap">
-          <label className="px-3 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-semibold flex items-center gap-1.5 transition-colors cursor-pointer border border-slate-200">
-            <Upload className="w-3.5 h-3.5" />
-            <span>Import JSON</span>
-            <input 
-              type="file" 
-              accept=".json" 
-              onChange={handleImportJSON} 
-              className="hidden" 
-            />
-          </label>
-
-          <button
-            onClick={handleExportJSON}
-            className="px-3 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-semibold flex items-center gap-1.5 transition-colors cursor-pointer border border-slate-200"
-          >
-            <Download className="w-3.5 h-3.5" />
-            <span>Export JSON</span>
-          </button>
-
-          <button
-            onClick={handleResetToDefaults}
-            className="px-3 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-semibold flex items-center gap-1.5 transition-colors cursor-pointer border border-slate-200"
-          >
-            <RotateCcw className="w-3.5 h-3.5" />
-            <span>Reset 15 Stages</span>
-          </button>
-
+        
+        <div className="flex items-center gap-4">
+          <div className="flex items-center gap-2">
+            <Building2 className="w-4 h-4 text-slate-400" />
+            <select
+              value={activeFacilityId}
+              onChange={e => {
+                setActiveFacilityId(e.target.value);
+                setEditingIndex(null);
+                setEditingStage(null);
+              }}
+              className="px-3 py-1.5 text-sm font-semibold text-slate-700 border border-slate-300 rounded-lg focus:ring-blue-500"
+            >
+              {facilities.map(f => (
+                <option key={f.id} value={f.id}>{f.name}</option>
+              ))}
+            </select>
+            <button onClick={() => setIsCreatingFacility(true)} className="p-1.5 text-blue-600 bg-blue-50 hover:bg-blue-100 rounded-md" title="Add Facility Type">
+              <Plus className="w-4 h-4" />
+            </button>
+          </div>
           <button
             onClick={handleAddNewStage}
-            className="px-4 py-2 rounded-xl bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold flex items-center gap-1.5 transition-colors cursor-pointer shadow-xs"
+            className="px-4 py-2 rounded-xl bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold flex items-center gap-1.5 cursor-pointer shadow-xs"
           >
             <Plus className="w-4 h-4" />
             <span>Add New Stage</span>
@@ -296,18 +273,32 @@ export const AdminToolkitEditor: React.FC<AdminToolkitEditorProps> = ({
         </div>
       </div>
 
-      {/* Main Grid: Stages list & Editor Panel */}
+      {isCreatingFacility && (
+        <div className="bg-white rounded-2xl p-6 shadow-sm border border-slate-200 animate-fadeIn">
+          <h3 className="text-sm font-bold text-slate-900 mb-3">Add New Facility Type</h3>
+          <div className="flex items-end gap-4">
+            <div className="flex-1">
+              <label className="block text-xs font-bold text-slate-700 mb-1">Facility Name</label>
+              <input type="text" value={newFacilityName} onChange={e => setNewFacilityName(e.target.value)} placeholder="e.g. Diagnostic Center" className="w-full px-3 py-2 text-xs rounded-lg border border-slate-300 focus:ring-2 focus:ring-blue-500" />
+            </div>
+            <div className="flex-1">
+              <label className="block text-xs font-bold text-slate-700 mb-1">Facility ID (slug)</label>
+              <input type="text" value={newFacilityId} onChange={e => setNewFacilityId(e.target.value)} placeholder="e.g. diagnostic_center" className="w-full px-3 py-2 text-xs rounded-lg border border-slate-300 focus:ring-2 focus:ring-blue-500" />
+            </div>
+            <div className="flex items-center gap-2">
+              <button onClick={() => setIsCreatingFacility(false)} className="px-4 py-2 rounded-lg border border-slate-300 text-slate-600 text-xs font-bold hover:bg-slate-50">Cancel</button>
+              <button onClick={handleCreateFacility} className="px-4 py-2 rounded-lg bg-blue-600 text-white text-xs font-bold hover:bg-blue-700 shadow-sm">Create</button>
+            </div>
+          </div>
+        </div>
+      )}
+
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
-        
-        {/* Left Column: Stage List (lg:col-span-5) */}
         <div className="lg:col-span-5 space-y-3">
           <div className="bg-slate-50 border border-slate-200 rounded-2xl p-4">
             <div className="flex items-center justify-between mb-3 px-1">
               <span className="text-xs font-bold text-slate-600 uppercase tracking-wider">
-                Stage Sequence (Click to Edit)
-              </span>
-              <span className="text-xs text-slate-500 font-mono">
-                {stages.length} Stages Configured
+                Stage Sequence ({stages.length})
               </span>
             </div>
 
@@ -345,15 +336,12 @@ export const AdminToolkitEditor: React.FC<AdminToolkitEditorProps> = ({
                           </div>
                         </div>
                       </button>
-
-                      {/* Reorder and Delete controls */}
                       <div className="flex items-center gap-1 shrink-0">
                         <button
                           type="button"
                           onClick={() => handleMoveStage(idx, 'up')}
                           disabled={idx === 0}
-                          title="Move stage up"
-                          className="p-1 rounded text-slate-400 hover:text-slate-700 hover:bg-slate-100 disabled:opacity-30 disabled:pointer-events-none cursor-pointer"
+                          className="p-1 rounded text-slate-400 hover:text-slate-700 disabled:opacity-30 cursor-pointer"
                         >
                           <ArrowUp className="w-3.5 h-3.5" />
                         </button>
@@ -361,35 +349,18 @@ export const AdminToolkitEditor: React.FC<AdminToolkitEditorProps> = ({
                           type="button"
                           onClick={() => handleMoveStage(idx, 'down')}
                           disabled={idx === stages.length - 1}
-                          title="Move stage down"
-                          className="p-1 rounded text-slate-400 hover:text-slate-700 hover:bg-slate-100 disabled:opacity-30 disabled:pointer-events-none cursor-pointer"
+                          className="p-1 rounded text-slate-400 hover:text-slate-700 disabled:opacity-30 cursor-pointer"
                         >
                           <ArrowDown className="w-3.5 h-3.5" />
                         </button>
                         <button
                           type="button"
-                          onClick={() => handleStartEdit(idx)}
-                          title="Edit stage details"
-                          className={`p-1 rounded cursor-pointer ${
-                            isSelected ? 'text-blue-600 bg-blue-100' : 'text-slate-400 hover:text-blue-600 hover:bg-slate-100'
-                          }`}
-                        >
-                          <Edit3 className="w-3.5 h-3.5" />
-                        </button>
-                        <button
-                          type="button"
                           onClick={() => handleDeleteStage(idx)}
-                          title="Delete stage"
-                          className="p-1 rounded text-slate-400 hover:text-red-600 hover:bg-red-50 cursor-pointer"
+                          className="p-1 rounded text-slate-400 hover:text-red-600 cursor-pointer"
                         >
                           <Trash2 className="w-3.5 h-3.5" />
                         </button>
                       </div>
-                    </div>
-
-                    <div className="mt-2.5 pt-2 border-t border-slate-100 flex items-center justify-between text-[10px] text-slate-400">
-                      <span>{st.checklist.length} checklist items</span>
-                      <span>{st.keyDeliverables.length} deliverables</span>
                     </div>
                   </div>
                 );
@@ -398,12 +369,9 @@ export const AdminToolkitEditor: React.FC<AdminToolkitEditorProps> = ({
           </div>
         </div>
 
-        {/* Right Column: Stage Editor Form (lg:col-span-7) */}
         <div className="lg:col-span-7 space-y-6">
           {editingStage && editingIndex !== null ? (
-            <div className="bg-white border border-slate-200 rounded-2xl p-6 shadow-sm space-y-5 animate-fadeIn">
-              
-              {/* Form Title & Top Controls */}
+            <div className="bg-white border border-slate-200 rounded-2xl p-6 shadow-sm space-y-5">
               <div className="flex items-center justify-between pb-4 border-b border-slate-200">
                 <div className="flex items-center gap-2">
                   <span className="w-7 h-7 rounded-lg bg-blue-600 text-white font-bold text-xs flex items-center justify-center">
@@ -413,358 +381,86 @@ export const AdminToolkitEditor: React.FC<AdminToolkitEditorProps> = ({
                     <h3 className="text-base font-bold text-slate-900">
                       Edit Stage {editingStage.stageNumber}: {editingStage.title}
                     </h3>
-                    <p className="text-xs text-slate-500">
-                      Make your changes and press Save Stage to update live across the portal.
-                    </p>
                   </div>
                 </div>
-
                 <div className="flex items-center gap-2">
-                  <button
-                    type="button"
-                    onClick={handleCancelEdit}
-                    className="px-3 py-1.5 rounded-lg border border-slate-300 text-slate-600 hover:bg-slate-50 text-xs font-semibold cursor-pointer"
-                  >
+                  <button onClick={handleCancelEdit} className="px-3 py-1.5 rounded-lg border text-slate-600 hover:bg-slate-50 text-xs font-semibold cursor-pointer">
                     Cancel
                   </button>
-                  <button
-                    type="button"
-                    onClick={handleSaveStage}
-                    className="px-4 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold flex items-center gap-1.5 cursor-pointer shadow-xs"
-                  >
+                  <button onClick={handleSaveStage} className="px-4 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold flex items-center gap-1.5 cursor-pointer shadow-xs">
                     <Save className="w-3.5 h-3.5" />
-                    <span>Save Stage</span>
+                    <span>Save</span>
                   </button>
                 </div>
               </div>
 
-              {/* Basic Details: Title, Stage Number, Category, Timeline */}
               <div className="grid grid-cols-1 sm:grid-cols-12 gap-3.5">
-                <div className="sm:col-span-3">
-                  <label className="block text-xs font-bold text-slate-700 mb-1">
-                    Stage Number
-                  </label>
-                  <input
-                    type="number"
-                    min={1}
-                    value={editingStage.stageNumber}
-                    onChange={(e) => setEditingStage({ ...editingStage, stageNumber: parseInt(e.target.value) || 1 })}
-                    className="w-full px-3 py-2 text-xs rounded-lg border border-slate-300 focus:ring-2 focus:ring-blue-500"
-                  />
+                <div className="sm:col-span-12">
+                  <label className="block text-xs font-bold text-slate-700 mb-1">Stage Title *</label>
+                  <input type="text" value={editingStage.title} onChange={e => setEditingStage({ ...editingStage, title: e.target.value })} className="w-full px-3 py-2 text-xs rounded-lg border border-slate-300" />
                 </div>
-
-                <div className="sm:col-span-9">
-                  <label className="block text-xs font-bold text-slate-700 mb-1">
-                    Stage Title *
-                  </label>
-                  <input
-                    type="text"
-                    required
-                    value={editingStage.title}
-                    onChange={(e) => setEditingStage({ ...editingStage, title: e.target.value })}
-                    placeholder="e.g. Concept & Feasibility"
-                    className="w-full px-3 py-2 text-xs rounded-lg border border-slate-300 focus:ring-2 focus:ring-blue-500 font-semibold text-slate-900"
-                  />
-                </div>
-
                 <div className="sm:col-span-6">
-                  <label className="block text-xs font-bold text-slate-700 mb-1">
-                    Category / Phase
-                  </label>
-                  <input
-                    type="text"
-                    value={editingStage.category}
-                    onChange={(e) => setEditingStage({ ...editingStage, category: e.target.value })}
-                    placeholder="e.g. Feasibility & Strategy"
-                    className="w-full px-3 py-2 text-xs rounded-lg border border-slate-300 focus:ring-2 focus:ring-blue-500"
-                  />
+                  <label className="block text-xs font-bold text-slate-700 mb-1">Category / Phase</label>
+                  <input type="text" value={editingStage.category} onChange={e => setEditingStage({ ...editingStage, category: e.target.value })} className="w-full px-3 py-2 text-xs rounded-lg border border-slate-300" />
                 </div>
-
                 <div className="sm:col-span-6">
-                  <label className="block text-xs font-bold text-slate-700 mb-1">
-                    Typical Timeline
-                  </label>
-                  <div className="relative">
-                    <Clock className="w-3.5 h-3.5 text-slate-400 absolute left-3 top-2.5" />
-                    <input
-                      type="text"
-                      value={editingStage.typicalTimeline}
-                      onChange={(e) => setEditingStage({ ...editingStage, typicalTimeline: e.target.value })}
-                      placeholder="e.g. 1 - 2 Months"
-                      className="w-full pl-8 pr-3 py-2 text-xs rounded-lg border border-slate-300 focus:ring-2 focus:ring-blue-500"
-                    />
-                  </div>
+                  <label className="block text-xs font-bold text-slate-700 mb-1">Typical Timeline</label>
+                  <input type="text" value={editingStage.typicalTimeline} onChange={e => setEditingStage({ ...editingStage, typicalTimeline: e.target.value })} className="w-full px-3 py-2 text-xs rounded-lg border border-slate-300" />
                 </div>
               </div>
 
-              {/* Stage Summary / Scope */}
               <div>
-                <label className="block text-xs font-bold text-slate-700 mb-1">
-                  Stage Summary & Purpose
-                </label>
-                <textarea
-                  rows={3}
-                  value={editingStage.summary}
-                  onChange={(e) => setEditingStage({ ...editingStage, summary: e.target.value })}
-                  placeholder="Summarize the key developmental focus, clinical scope, and operational targets for this stage..."
-                  className="w-full px-3 py-2 text-xs rounded-lg border border-slate-300 focus:ring-2 focus:ring-blue-500"
-                />
+                <label className="block text-xs font-bold text-slate-700 mb-1">Summary</label>
+                <textarea rows={3} value={editingStage.summary} onChange={e => setEditingStage({ ...editingStage, summary: e.target.value })} className="w-full px-3 py-2 text-xs rounded-lg border border-slate-300" />
               </div>
 
-              {/* Critical Checklist Manager */}
               <div className="bg-slate-50 border border-slate-200 rounded-xl p-4 space-y-3">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-1.5">
-                    <ListChecks className="w-4 h-4 text-emerald-600" />
-                    <label className="text-xs font-bold text-slate-800">
-                      Critical Checklist Items ({editingStage.checklist.length})
-                    </label>
-                  </div>
-                  <span className="text-[11px] text-slate-400">
-                    Checked by founders during execution
-                  </span>
-                </div>
-
-                <div className="space-y-1.5 max-h-48 overflow-y-auto pr-1">
+                <label className="text-xs font-bold text-slate-800">Checklist Items ({editingStage.checklist.length})</label>
+                <div className="space-y-1.5">
                   {editingStage.checklist.map((item, cIdx) => (
-                    <div key={cIdx} className="flex items-center gap-2 bg-white p-2 rounded-lg border border-slate-200 text-xs">
-                      <CheckCircle2 className="w-3.5 h-3.5 text-emerald-500 shrink-0" />
-                      <input
-                        type="text"
-                        value={item}
-                        onChange={(e) => {
-                          const updated = [...editingStage.checklist];
-                          updated[cIdx] = e.target.value;
-                          setEditingStage({ ...editingStage, checklist: updated });
-                        }}
-                        className="flex-1 bg-transparent border-none p-0 text-xs focus:ring-0 text-slate-800"
-                      />
-                      <button
-                        type="button"
-                        onClick={() => removeChecklistItem(cIdx)}
-                        className="text-slate-400 hover:text-red-500 p-0.5 cursor-pointer"
-                        title="Remove item"
-                      >
-                        <Trash2 className="w-3.5 h-3.5" />
-                      </button>
+                    <div key={cIdx} className="flex items-center gap-2 bg-white p-2 rounded-lg border text-xs">
+                      <CheckCircle2 className="w-3.5 h-3.5 text-emerald-500" />
+                      <input type="text" value={item} onChange={e => {
+                        const updated = [...editingStage.checklist];
+                        updated[cIdx] = e.target.value;
+                        setEditingStage({ ...editingStage, checklist: updated });
+                      }} className="flex-1 bg-transparent border-none p-0 text-xs focus:ring-0" />
+                      <button onClick={() => removeChecklistItem(cIdx)} className="text-slate-400 hover:text-red-500 cursor-pointer"><Trash2 className="w-3.5 h-3.5" /></button>
                     </div>
                   ))}
                 </div>
-
                 <div className="flex items-center gap-2">
-                  <input
-                    type="text"
-                    value={newChecklistItem}
-                    onChange={(e) => setNewChecklistItem(e.target.value)}
-                    onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); addChecklistItem(); } }}
-                    placeholder="Type new checklist item and press Enter..."
-                    className="flex-1 px-3 py-1.5 text-xs rounded-lg border border-slate-300 focus:ring-2 focus:ring-blue-500 bg-white"
-                  />
-                  <button
-                    type="button"
-                    onClick={addChecklistItem}
-                    className="px-3 py-1.5 rounded-lg bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold flex items-center gap-1 cursor-pointer shrink-0"
-                  >
-                    <Plus className="w-3.5 h-3.5" />
-                    <span>Add</span>
-                  </button>
+                  <input type="text" value={newChecklistItem} onChange={e => setNewChecklistItem(e.target.value)} onKeyDown={e => { if (e.key === 'Enter') addChecklistItem(); }} placeholder="New checklist item..." className="flex-1 px-3 py-1.5 text-xs rounded-lg border border-slate-300" />
+                  <button onClick={addChecklistItem} className="px-3 py-1.5 rounded-lg bg-blue-600 text-white text-xs font-bold cursor-pointer"><Plus className="w-3.5 h-3.5" /></button>
                 </div>
               </div>
 
-              {/* Key Deliverables Manager */}
               <div className="bg-slate-50 border border-slate-200 rounded-xl p-4 space-y-3">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-1.5">
-                    <FileText className="w-4 h-4 text-blue-600" />
-                    <label className="text-xs font-bold text-slate-800">
-                      Key Deliverables & Documentation ({editingStage.keyDeliverables.length})
-                    </label>
-                  </div>
-                  <span className="text-[11px] text-slate-400">
-                    Tangible project reports & approvals
-                  </span>
-                </div>
-
-                <div className="space-y-1.5 max-h-40 overflow-y-auto pr-1">
+                <label className="text-xs font-bold text-slate-800">Key Deliverables ({editingStage.keyDeliverables.length})</label>
+                <div className="space-y-1.5">
                   {editingStage.keyDeliverables.map((item, dIdx) => (
-                    <div key={dIdx} className="flex items-center gap-2 bg-white p-2 rounded-lg border border-slate-200 text-xs">
-                      <span className="w-1.5 h-1.5 rounded-full bg-blue-600 shrink-0"></span>
-                      <input
-                        type="text"
-                        value={item}
-                        onChange={(e) => {
-                          const updated = [...editingStage.keyDeliverables];
-                          updated[dIdx] = e.target.value;
-                          setEditingStage({ ...editingStage, keyDeliverables: updated });
-                        }}
-                        className="flex-1 bg-transparent border-none p-0 text-xs focus:ring-0 text-slate-800"
-                      />
-                      <button
-                        type="button"
-                        onClick={() => removeDeliverable(dIdx)}
-                        className="text-slate-400 hover:text-red-500 p-0.5 cursor-pointer"
-                        title="Remove deliverable"
-                      >
-                        <Trash2 className="w-3.5 h-3.5" />
-                      </button>
+                    <div key={dIdx} className="flex items-center gap-2 bg-white p-2 rounded-lg border text-xs">
+                      <span className="w-1.5 h-1.5 rounded-full bg-blue-600"></span>
+                      <input type="text" value={item} onChange={e => {
+                        const updated = [...editingStage.keyDeliverables];
+                        updated[dIdx] = e.target.value;
+                        setEditingStage({ ...editingStage, keyDeliverables: updated });
+                      }} className="flex-1 bg-transparent border-none p-0 text-xs focus:ring-0" />
+                      <button onClick={() => removeDeliverable(dIdx)} className="text-slate-400 hover:text-red-500 cursor-pointer"><Trash2 className="w-3.5 h-3.5" /></button>
                     </div>
                   ))}
                 </div>
-
                 <div className="flex items-center gap-2">
-                  <input
-                    type="text"
-                    value={newDeliverable}
-                    onChange={(e) => setNewDeliverable(e.target.value)}
-                    onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); addDeliverable(); } }}
-                    placeholder="Type key deliverable and press Enter..."
-                    className="flex-1 px-3 py-1.5 text-xs rounded-lg border border-slate-300 focus:ring-2 focus:ring-blue-500 bg-white"
-                  />
-                  <button
-                    type="button"
-                    onClick={addDeliverable}
-                    className="px-3 py-1.5 rounded-lg bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold flex items-center gap-1 cursor-pointer shrink-0"
-                  >
-                    <Plus className="w-3.5 h-3.5" />
-                    <span>Add</span>
-                  </button>
+                  <input type="text" value={newDeliverable} onChange={e => setNewDeliverable(e.target.value)} onKeyDown={e => { if (e.key === 'Enter') addDeliverable(); }} placeholder="New deliverable..." className="flex-1 px-3 py-1.5 text-xs rounded-lg border border-slate-300" />
+                  <button onClick={addDeliverable} className="px-3 py-1.5 rounded-lg bg-blue-600 text-white text-xs font-bold cursor-pointer"><Plus className="w-3.5 h-3.5" /></button>
                 </div>
               </div>
-
-              {/* Key Stakeholders Manager */}
-              <div className="bg-slate-50 border border-slate-200 rounded-xl p-4 space-y-3">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-1.5">
-                    <Users className="w-4 h-4 text-purple-600" />
-                    <label className="text-xs font-bold text-slate-800">
-                      Key Stakeholders & Vendor Disciplines ({editingStage.keyStakeholders.length})
-                    </label>
-                  </div>
-                </div>
-
-                <div className="flex flex-wrap gap-2">
-                  {editingStage.keyStakeholders.map((sh, sIdx) => (
-                    <span
-                      key={sIdx}
-                      className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-white border border-slate-200 text-xs font-medium text-slate-700 shadow-2xs"
-                    >
-                      <span>{sh}</span>
-                      <button
-                        type="button"
-                        onClick={() => removeStakeholder(sIdx)}
-                        className="text-slate-400 hover:text-red-500 cursor-pointer"
-                      >
-                        <X className="w-3 h-3" />
-                      </button>
-                    </span>
-                  ))}
-                </div>
-
-                <div className="flex items-center gap-2">
-                  <input
-                    type="text"
-                    value={newStakeholder}
-                    onChange={(e) => setNewStakeholder(e.target.value)}
-                    onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); addStakeholder(); } }}
-                    placeholder="Add stakeholder discipline (e.g. Healthcare Architects, MEP Contractors)..."
-                    className="flex-1 px-3 py-1.5 text-xs rounded-lg border border-slate-300 focus:ring-2 focus:ring-blue-500 bg-white"
-                  />
-                  <button
-                    type="button"
-                    onClick={addStakeholder}
-                    className="px-3 py-1.5 rounded-lg bg-purple-600 hover:bg-purple-700 text-white text-xs font-bold flex items-center gap-1 cursor-pointer shrink-0"
-                  >
-                    <Plus className="w-3.5 h-3.5" />
-                    <span>Add Tag</span>
-                  </button>
-                </div>
-              </div>
-
-              {/* Live Preview Card */}
-              <div className="pt-4 border-t border-slate-200">
-                <div className="flex items-center gap-1.5 mb-2 text-xs font-bold text-slate-500 uppercase tracking-wider">
-                  <Eye className="w-3.5 h-3.5" />
-                  <span>Reader Preview: How Founders Will See This Stage</span>
-                </div>
-                
-                <div className="bg-gradient-to-br from-slate-900 via-slate-800 to-indigo-950 rounded-xl p-5 text-white shadow-md border border-slate-800 space-y-3">
-                  <div className="flex items-center justify-between">
-                    <span className="px-2.5 py-0.5 rounded-md bg-blue-500/20 text-blue-300 font-bold text-[11px] uppercase tracking-wider border border-blue-400/30">
-                      Stage {editingStage.stageNumber} • {editingStage.category}
-                    </span>
-                    <span className="text-[11px] text-slate-300 bg-slate-800/80 px-2 py-0.5 rounded-full font-mono">
-                      ⏱ {editingStage.typicalTimeline}
-                    </span>
-                  </div>
-
-                  <h4 className="text-lg font-extrabold text-white">
-                    {editingStage.title}
-                  </h4>
-
-                  <p className="text-xs text-slate-300 leading-relaxed">
-                    {editingStage.summary || 'Stage summary will appear here.'}
-                  </p>
-
-                  <div className="bg-slate-800/70 rounded-lg p-3 border border-slate-700/60 space-y-1.5">
-                    <p className="text-[11px] font-bold text-blue-300 uppercase tracking-wide">
-                      Critical Stage Checklist:
-                    </p>
-                    <ul className="space-y-1 text-xs text-slate-200">
-                      {editingStage.checklist.slice(0, 3).map((item, i) => (
-                        <li key={i} className="flex items-start gap-1.5">
-                          <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400 shrink-0 mt-0.5" />
-                          <span className="line-clamp-1">{item}</span>
-                        </li>
-                      ))}
-                      {editingStage.checklist.length > 3 && (
-                        <li className="text-[10px] text-slate-400 italic">
-                          +{editingStage.checklist.length - 3} more items in full checklist
-                        </li>
-                      )}
-                    </ul>
-                  </div>
-                </div>
-              </div>
-
-              {/* Bottom Action Buttons */}
-              <div className="flex items-center justify-end gap-3 pt-3">
-                <button
-                  type="button"
-                  onClick={handleCancelEdit}
-                  className="px-4 py-2 rounded-xl border border-slate-300 hover:bg-slate-50 text-slate-700 text-xs font-bold cursor-pointer"
-                >
-                  Cancel
-                </button>
-                <button
-                  type="button"
-                  onClick={handleSaveStage}
-                  className="px-6 py-2 rounded-xl bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold flex items-center gap-2 cursor-pointer shadow-md"
-                >
-                  <Save className="w-4 h-4" />
-                  <span>Save Stage Changes</span>
-                </button>
-              </div>
-
             </div>
           ) : (
-            <div className="bg-slate-50 border-2 border-dashed border-slate-200 rounded-2xl p-12 text-center flex flex-col items-center justify-center min-h-[420px]">
-              <div className="w-14 h-14 rounded-2xl bg-blue-100 text-blue-600 flex items-center justify-center mb-4">
-                <Edit3 className="w-7 h-7" />
-              </div>
-              <h3 className="text-base font-bold text-slate-800 mb-1">
-                Select a Stage to Edit
-              </h3>
-              <p className="text-xs text-slate-500 max-w-sm mb-6">
-                Click on any of the {stages.length} stages on the left or click "Add New Stage" to configure title, summary, deliverables, and checklist items.
-              </p>
-              <button
-                type="button"
-                onClick={() => handleStartEdit(0)}
-                className="px-4 py-2 rounded-xl bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold flex items-center gap-1.5 cursor-pointer shadow-xs"
-              >
-                <Edit3 className="w-3.5 h-3.5" />
-                <span>Edit Stage 1: {stages[0]?.title || 'First Stage'}</span>
-              </button>
+            <div className="bg-slate-50 border-2 border-dashed border-slate-200 rounded-2xl p-12 text-center flex flex-col items-center min-h-[400px] justify-center">
+              <Edit3 className="w-8 h-8 text-blue-500 mb-4" />
+              <h3 className="text-base font-bold text-slate-800 mb-2">Select a Stage</h3>
+              <p className="text-xs text-slate-500 max-w-sm mb-6">Choose a stage from the left sequence to edit its details, checklist, and deliverables.</p>
             </div>
           )}
         </div>
@@ -773,3 +469,4 @@ export const AdminToolkitEditor: React.FC<AdminToolkitEditorProps> = ({
     </div>
   );
 };
+

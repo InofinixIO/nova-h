@@ -4,7 +4,7 @@ import { HeroSection } from './components/HeroSection';
 import { WhatIsNova } from './components/WhatIsNova';
 import { ThreeUserGroups } from './components/ThreeUserGroups';
 import { HowNovaWorks } from './components/HowNovaWorks';
-import { HospitalToolkit } from './components/HospitalToolkit';
+import { FacilityToolkit } from './components/FacilityToolkit';
 import { DirectorySearch } from './components/DirectorySearch';
 import { WhyJoinNova } from './components/WhyJoinNova';
 import { FutureFeatures } from './components/FutureFeatures';
@@ -31,7 +31,7 @@ import { WhatsAppFlowBuilder } from './components/whatsapp/WhatsAppFlowBuilder';
 import { ProcurementWorkspace } from './components/procurement/ProcurementWorkspace';
 import { CompareProfilesView } from './components/CompareProfilesView';
 
-import { UserRole, DirectoryItem, ProjectRequirement, PaymentTransaction, AuthUser, StageItem } from './types';
+import { UserRole, DirectoryItem, ProjectRequirement, PaymentTransaction, AuthUser, StageItem, FacilityType } from './types';
 import { getStoredDirectory, saveStoredDirectory } from './utils/directoryStorage';
 import { getStoredToolkitStages, saveStoredToolkitStages } from './utils/toolkitStorage';
 import { RouteSlug, getSlugFromPath, navigateToSlug } from './utils/routes';
@@ -68,13 +68,46 @@ export default function App() {
 
   // Dynamic directory listings state loaded from local storage / seed defaults
   const [directoryItems, setDirectoryItems] = useState<DirectoryItem[]>(() => {
-    return getStoredDirectory();
+    const fromStorage = getStoredDirectory();
+    return fromStorage;
   });
 
-  // Dynamic 15 Toolkit stages state loaded from local storage / seed defaults
+  useEffect(() => {
+    import('./utils/directoryStorage').then(m => m.fetchDirectoryFromServer().then(() => {
+      setDirectoryItems(getStoredDirectory());
+    }));
+    import('./utils/userManagement').then(m => m.fetchUsersFromServer());
+  }, []);
+
+  const [facilityTypes, setFacilityTypes] = useState<FacilityType[]>([]);
+  const [activeFacilityId, setActiveFacilityId] = useState<string>('hospital');
+
+  useEffect(() => {
+    fetch('/api/facilities')
+      .then(res => res.json())
+      .then(data => {
+        if (Array.isArray(data)) setFacilityTypes(data);
+      })
+      .catch(e => console.error('Failed to fetch facilities', e));
+  }, []);
+
+  // Dynamic Toolkit stages state based on active facility
   const [toolkitStages, setToolkitStages] = useState<StageItem[]>(() => {
-    return getStoredToolkitStages();
+    return getStoredToolkitStages(); // Fallback to local storage for default hospital
   });
+
+  useEffect(() => {
+    if (activeFacilityId) {
+      fetch(`/api/toolkit/${activeFacilityId}`)
+        .then(res => res.json())
+        .then(data => {
+          if (Array.isArray(data) && data.length > 0) {
+            setToolkitStages(data);
+          }
+        })
+        .catch(e => console.error(`Failed to fetch stages for ${activeFacilityId}`, e));
+    }
+  }, [activeFacilityId]);
 
   const handleUpdateToolkitStages = (updatedStages: StageItem[]) => {
     setToolkitStages(updatedStages);
@@ -216,6 +249,11 @@ export default function App() {
   };
 
   const handleAuthSuccess = (user: AuthUser) => {
+    if (user.status === 'pending') {
+      showToast(`Your Advisor application is under review by our admin team. You will be able to login once activated.`);
+      return;
+    }
+
     setCurrentUser(user);
     try {
       localStorage.setItem('nova_h_current_user', JSON.stringify(user));
@@ -469,7 +507,13 @@ export default function App() {
               onSelectRole={(role) => handleOpenAuth('signup', role)}
               onPostRequirement={handleOpenRequirementModal}
             />
-            <HospitalToolkit onOpenFullToolkit={handleOpenToolkit} stages={toolkitStages} />
+            <FacilityToolkit 
+              onOpenFullToolkit={handleOpenToolkit} 
+              stages={toolkitStages} 
+              facilityTypes={facilityTypes}
+              activeFacilityId={activeFacilityId}
+              setActiveFacilityId={setActiveFacilityId}
+            />
           </div>
         );
 
@@ -479,13 +523,13 @@ export default function App() {
             <div className="bg-gradient-to-r from-slate-900 to-indigo-950 text-white p-8 sm:p-12 rounded-3xl shadow-xl">
               <div className="max-w-3xl">
                 <span className="px-3 py-1 rounded-full text-xs font-extrabold uppercase tracking-wider bg-indigo-500/30 text-indigo-200 border border-indigo-400/30">
-                  Medical Devices, MEP, Furniture &amp; IT
+                  Connect with Hospital Projects
                 </span>
                 <h1 className="text-3xl sm:text-4xl font-black mt-4 mb-3 tracking-tight">
-                  Healthcare Vendor &amp; Supplier Network
+                  Hospital Promoters &amp; Projects Network
                 </h1>
                 <p className="text-slate-300 text-sm sm:text-base leading-relaxed mb-6">
-                  Showcase biomedical equipment, modular OT systems, and hospital infrastructure directly to active promoters, medical directors, and healthcare procurement teams.
+                  Discover new hospital projects, expansions, and connect directly with active promoters, medical directors, and healthcare procurement teams looking for your solutions.
                 </p>
                 <div className="flex flex-wrap gap-3">
                   <button
@@ -516,6 +560,9 @@ export default function App() {
               onToggleCompare={handleToggleCompare}
               onClearCompare={handleClearCompare}
               onOpenCompare={handleOpenCompare}
+              facilityTypes={facilityTypes}
+              activeFacilityId={activeFacilityId}
+              setActiveFacilityId={setActiveFacilityId}
             />
           </div>
         );
@@ -529,17 +576,17 @@ export default function App() {
                   Discover Projects &amp; Equipment Partners
                 </span>
                 <h1 className="text-3xl sm:text-4xl font-black mt-4 mb-3 tracking-tight">
-                  Hospital Promoters &amp; Vendor Network
+                  Advisory Hub: Promoters &amp; Vendors
                 </h1>
                 <p className="text-slate-300 text-sm sm:text-base leading-relaxed mb-6">
-                  Connect with hospital trustees planning new facilities or expansions. Partner with verified medical equipment vendors to seamlessly execute your healthcare advisory mandates.
+                  Connect with hospital owners planning new facilities or expansions. Collaborate with verified medical equipment vendors to execute your healthcare advisory mandates seamlessly.
                 </p>
                 <div className="flex flex-wrap gap-3">
                   <button
                     onClick={() => handleOpenAuth('signup', 'advisor')}
                     className="px-5 py-2.5 rounded-xl bg-sky-600 hover:bg-sky-500 text-white font-bold text-xs shadow-md transition-all cursor-pointer"
                   >
-                    Join as Healthcare Advisor (₹1,000/yr)
+                    Join as Healthcare Advisor (₹XXXX/yr)
                   </button>
                 </div>
               </div>
@@ -557,6 +604,9 @@ export default function App() {
               onToggleCompare={handleToggleCompare}
               onClearCompare={handleClearCompare}
               onOpenCompare={handleOpenCompare}
+              facilityTypes={facilityTypes}
+              activeFacilityId={activeFacilityId}
+              setActiveFacilityId={setActiveFacilityId}
             />
           </div>
         );
@@ -564,10 +614,13 @@ export default function App() {
       case 'toolkit':
         return (
           <div className="pt-1 sm:pt-2 pb-8">
-            <HospitalToolkit 
+            <FacilityToolkit 
               onOpenFullToolkit={handleOpenToolkit} 
               stages={toolkitStages} 
-              isStandalonePage={true} 
+              isStandalonePage={true}
+              facilityTypes={facilityTypes}
+              activeFacilityId={activeFacilityId}
+              setActiveFacilityId={setActiveFacilityId}
             />
           </div>
         );
@@ -591,7 +644,7 @@ export default function App() {
                 NOVA-H Annual Membership Plans
               </h1>
               <p className="text-slate-600 text-sm mt-2">
-                Order-value indexed tiers for vendors, flat ₹1,000 project access for promoters and specialist advisors. Instant ₹0 activation via 100% BNI/promo coupons or secure Razorpay checkout.
+                Order-value indexed tiers for vendors, flat ₹1,000 project access for promoters and ₹XXXX for specialist advisors. Instant ₹0 activation via 100% BNI/promo coupons or secure Razorpay checkout.
               </p>
             </div>
             <MembershipPricingSection onSelectPlanForPayment={handleInitiatePayment} />
@@ -614,6 +667,9 @@ export default function App() {
               onToggleCompare={handleToggleCompare}
               onClearCompare={handleClearCompare}
               onOpenCompare={handleOpenCompare}
+              facilityTypes={facilityTypes}
+              activeFacilityId={activeFacilityId}
+              setActiveFacilityId={setActiveFacilityId}
             />
           </div>
         );
@@ -726,9 +782,12 @@ export default function App() {
             />
 
             {/* 5. HOSPITAL OWNERS TOOLKIT */}
-            <HospitalToolkit
+            <FacilityToolkit
               onOpenFullToolkit={handleOpenToolkit}
               stages={toolkitStages}
+              facilityTypes={facilityTypes}
+              activeFacilityId={activeFacilityId}
+              setActiveFacilityId={setActiveFacilityId}
             />
 
             {/* 6. LOCATION-BASED SEARCH / DIRECTORY */}
@@ -744,6 +803,9 @@ export default function App() {
               onToggleCompare={handleToggleCompare}
               onClearCompare={handleClearCompare}
               onOpenCompare={handleOpenCompare}
+              facilityTypes={facilityTypes}
+              activeFacilityId={activeFacilityId}
+              setActiveFacilityId={setActiveFacilityId}
             />
 
             {/* 6.7 NOVA-H MEMBERSHIP & PRICING MODEL WITH RAZORPAY & 100% COUPONS */}

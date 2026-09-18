@@ -3,6 +3,8 @@ import path from 'path';
 import crypto from 'crypto';
 import { createServer as createViteServer } from 'vite';
 import dotenv from 'dotenv';
+import { PrismaClient } from '@prisma/client';
+import { PrismaLibSql } from '@prisma/adapter-libsql';
 
 dotenv.config();
 
@@ -12,7 +14,7 @@ interface RequestWithRawBody extends Request {
 
 async function startServer() {
   const app = express();
-  const PORT = 3000;
+  const PORT = 3005;
 
   // Capture raw body for webhook HMAC signature verification
   app.use(express.json({
@@ -29,6 +31,212 @@ async function startServer() {
       service: 'NOVA-H Procurement & Membership Server',
       timestamp: new Date().toISOString()
     });
+  });
+
+  const adapter = new PrismaLibSql({ url: 'file:./dev.db' });
+  const prisma = new PrismaClient({ adapter });
+
+  // API Endpoints for Users
+  app.get('/api/users', async (req: Request, res: Response) => {
+    try {
+      const users = await prisma.authUser.findMany();
+      res.json(users);
+    } catch (e: any) {
+      res.status(500).json({ error: e.message });
+    }
+  });
+
+  app.post('/api/users', async (req: Request, res: Response) => {
+    try {
+      const user = req.body;
+      const savedUser = await prisma.authUser.upsert({
+        where: { email: user.email },
+        update: {
+          name: user.name,
+          role: user.role,
+          phone: user.phone,
+          company: user.company,
+          isSubscribed: user.isSubscribed,
+          plan: user.plan,
+          status: user.status
+        },
+        create: {
+          id: user.id || undefined,
+          name: user.name,
+          role: user.role,
+          email: user.email,
+          phone: user.phone,
+          company: user.company,
+          isSubscribed: user.isSubscribed,
+          plan: user.plan,
+          status: user.status
+        }
+      });
+      res.json(savedUser);
+    } catch (e: any) {
+      res.status(500).json({ error: e.message });
+    }
+  });
+
+  // API Endpoints for Directory Items
+  app.get('/api/directory', async (req: Request, res: Response) => {
+    try {
+      const items = await prisma.directoryItem.findMany();
+      // Parse JSON strings back to arrays
+      const formattedItems = items.map((item: any) => ({
+        ...item,
+        serviceLocations: JSON.parse(item.serviceLocations || '[]'),
+        projectStages: JSON.parse(item.projectStages || '[]'),
+        productsAndServices: JSON.parse(item.productsAndServices || '[]'),
+        clientPortfolio: JSON.parse(item.clientPortfolio || '[]'),
+        certifications: JSON.parse(item.certifications || '[]'),
+        complianceBadges: JSON.parse(item.complianceBadges || '[]')
+      }));
+      res.json(formattedItems);
+    } catch (e: any) {
+      res.status(500).json({ error: e.message });
+    }
+  });
+
+  app.post('/api/directory', async (req: Request, res: Response) => {
+    try {
+      const items = Array.isArray(req.body) ? req.body : [req.body];
+      // Basic implementation for bulk save or single item
+      for (const item of items) {
+        await prisma.directoryItem.upsert({
+          where: { id: item.id },
+          update: {
+            name: item.name,
+            role: item.role,
+            category: item.category,
+            rating: item.rating,
+            reviewsCount: item.reviewsCount,
+            location: item.location,
+            serviceLocations: JSON.stringify(item.serviceLocations || []),
+            projectStages: JSON.stringify(item.projectStages || []),
+            productsAndServices: JSON.stringify(item.productsAndServices || []),
+            description: item.description,
+            verified: item.verified,
+            yearsOfExperience: item.yearsOfExperience,
+            contactEmail: item.contactEmail,
+            phone: item.phone,
+            website: item.website,
+            featuredProject: item.featuredProject,
+            clientPortfolio: JSON.stringify(item.clientPortfolio || []),
+            gstin: item.gstin,
+            priceRange: item.priceRange,
+            turnaroundTime: item.turnaroundTime,
+            certifications: JSON.stringify(item.certifications || []),
+            headquartersAddress: item.headquartersAddress,
+            complianceBadges: JSON.stringify(item.complianceBadges || [])
+          },
+          create: {
+            id: item.id,
+            name: item.name,
+            role: item.role,
+            category: item.category,
+            rating: item.rating,
+            reviewsCount: item.reviewsCount,
+            location: item.location,
+            serviceLocations: JSON.stringify(item.serviceLocations || []),
+            projectStages: JSON.stringify(item.projectStages || []),
+            productsAndServices: JSON.stringify(item.productsAndServices || []),
+            description: item.description,
+            verified: item.verified,
+            yearsOfExperience: item.yearsOfExperience,
+            contactEmail: item.contactEmail,
+            phone: item.phone,
+            website: item.website,
+            featuredProject: item.featuredProject,
+            clientPortfolio: JSON.stringify(item.clientPortfolio || []),
+            gstin: item.gstin,
+            priceRange: item.priceRange,
+            turnaroundTime: item.turnaroundTime,
+            certifications: JSON.stringify(item.certifications || []),
+            headquartersAddress: item.headquartersAddress,
+            complianceBadges: JSON.stringify(item.complianceBadges || [])
+          }
+        });
+      }
+      res.json({ success: true });
+    } catch (e: any) {
+      res.status(500).json({ error: e.message });
+    }
+  });
+
+  // API Endpoints for Facilities
+  app.get('/api/facilities', async (req: Request, res: Response) => {
+    try {
+      const facilities = await prisma.facilityType.findMany();
+      res.json(facilities);
+    } catch (e: any) {
+      res.status(500).json({ error: e.message });
+    }
+  });
+
+  app.post('/api/facilities', async (req: Request, res: Response) => {
+    try {
+      const { id, name, description } = req.body;
+      const facility = await prisma.facilityType.create({
+        data: { id, name, description }
+      });
+      res.json(facility);
+    } catch (e: any) {
+      res.status(500).json({ error: e.message });
+    }
+  });
+
+  // API Endpoints for Toolkit Stages
+  app.get('/api/toolkit/:facilityId', async (req: Request, res: Response) => {
+    try {
+      const { facilityId } = req.params;
+      const stages = await prisma.stageItem.findMany({
+        where: { facilityTypeId: facilityId },
+        orderBy: { stageNumber: 'asc' }
+      });
+      const formattedStages = stages.map((stage: any) => ({
+        ...stage,
+        keyDeliverables: JSON.parse(stage.keyDeliverables || '[]'),
+        checklist: JSON.parse(stage.checklist || '[]'),
+        keyStakeholders: JSON.parse(stage.keyStakeholders || '[]')
+      }));
+      res.json(formattedStages);
+    } catch (e: any) {
+      res.status(500).json({ error: e.message });
+    }
+  });
+
+  app.put('/api/toolkit/:facilityId', async (req: Request, res: Response) => {
+    try {
+      const { facilityId } = req.params;
+      const stages = req.body.stages; // Array of stages
+      
+      // Delete old stages
+      await prisma.stageItem.deleteMany({
+        where: { facilityTypeId: facilityId }
+      });
+
+      // Insert new stages
+      for (const stage of stages) {
+        await prisma.stageItem.create({
+          data: {
+            stageNumber: stage.stageNumber,
+            title: stage.title,
+            category: stage.category,
+            summary: stage.summary,
+            keyDeliverables: JSON.stringify(stage.keyDeliverables),
+            checklist: JSON.stringify(stage.checklist),
+            typicalTimeline: stage.typicalTimeline,
+            keyStakeholders: JSON.stringify(stage.keyStakeholders),
+            facilityTypeId: facilityId
+          }
+        });
+      }
+
+      res.json({ success: true });
+    } catch (e: any) {
+      res.status(500).json({ error: e.message });
+    }
   });
 
   // 2. Razorpay Order Creation Route (Optional server-side order generation)

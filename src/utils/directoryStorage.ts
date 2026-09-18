@@ -26,8 +26,34 @@ export function saveStoredDirectory(items: DirectoryItem[]): void {
   try {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(items));
     window.dispatchEvent(new CustomEvent('nova_directory_updated', { detail: items }));
+    saveDirectoryToServer(items);
   } catch (e) {
     console.error('Failed to save directory items:', e);
+  }
+}
+
+export async function fetchDirectoryFromServer(): Promise<void> {
+  try {
+    const res = await fetch('/api/directory');
+    const items = await res.json();
+    if (items && Array.isArray(items)) {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(items));
+      window.dispatchEvent(new CustomEvent('nova_directory_updated', { detail: items }));
+    }
+  } catch (e) {
+    console.error('Failed to fetch directory from server:', e);
+  }
+}
+
+export async function saveDirectoryToServer(items: DirectoryItem[]): Promise<void> {
+  try {
+    await fetch('/api/directory', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(items)
+    });
+  } catch (e) {
+    console.error('Failed to save directory to server:', e);
   }
 }
 

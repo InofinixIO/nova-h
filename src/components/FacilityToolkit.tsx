@@ -2,18 +2,24 @@ import React, { useState } from 'react';
 import { BookOpen, CheckCircle, ChevronLeft, ChevronRight, Sparkles, Layers, ArrowRight, ShieldCheck, Download } from 'lucide-react';
 import { SectionHeading } from './SectionHeading';
 import { TOOLKIT_15_STAGES } from '../data/mockData';
-import { StageItem } from '../types';
+import { StageItem, FacilityType } from '../types';
 
-interface HospitalToolkitProps {
+interface FacilityToolkitProps {
   onOpenFullToolkit: (stageIndex?: number) => void;
   stages?: StageItem[];
   isStandalonePage?: boolean;
+  facilityTypes?: FacilityType[];
+  activeFacilityId?: string;
+  setActiveFacilityId?: (id: string) => void;
 }
 
-export const HospitalToolkit: React.FC<HospitalToolkitProps> = ({ 
+export const FacilityToolkit: React.FC<FacilityToolkitProps> = ({ 
   onOpenFullToolkit, 
   stages,
-  isStandalonePage = false 
+  isStandalonePage = false,
+  facilityTypes = [],
+  activeFacilityId = 'hospital',
+  setActiveFacilityId
 }) => {
   const stagesList = stages && stages.length > 0 ? stages : TOOLKIT_15_STAGES;
   const [currentSlide, setCurrentSlide] = useState(0);
@@ -35,17 +41,32 @@ export const HospitalToolkit: React.FC<HospitalToolkitProps> = ({
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         
         {/* Section Header */}
-        <div className={`text-center max-w-3xl mx-auto ${isStandalonePage ? 'mb-6 sm:mb-8' : 'mb-10 sm:mb-12'}`}>
+        <div className={`text-center max-w-3xl mx-auto ${isStandalonePage ? 'mb-4 sm:mb-6' : 'mb-8 sm:mb-10'}`}>
           <span className="text-xs font-bold uppercase tracking-wider text-blue-700 bg-blue-100/70 px-3 py-1 rounded-full">
             Essential Founder Resource
           </span>
           <SectionHeading id="toolkit-section" className={`${isStandalonePage ? 'text-2xl sm:text-3xl lg:text-4xl' : 'text-3xl sm:text-4xl'} font-extrabold text-slate-900 tracking-tight mt-2.5`}>
-            Hospital Owner's Toolkit
+            Facility Builder's Toolkit
           </SectionHeading>
           <p className="text-slate-600 text-sm sm:text-base mt-2 max-w-2xl mx-auto">
-            Start with the Hospital Owners Toolkit. Understand the complete 15-stage hospital development journey before committing capital or hiring vendors.
+            Understand the complete project development journey before committing capital or hiring vendors. Select your facility type below.
           </p>
         </div>
+
+        {/* Facility Selector */}
+        {facilityTypes.length > 0 && setActiveFacilityId && (
+          <div className="mb-8 flex justify-center">
+            <select
+              value={activeFacilityId}
+              onChange={(e) => setActiveFacilityId(e.target.value)}
+              className="bg-white border border-slate-300 text-slate-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block p-2.5 shadow-sm font-medium min-w-[250px]"
+            >
+              {facilityTypes.map(ft => (
+                <option key={ft.id} value={ft.id}>{ft.name}</option>
+              ))}
+            </select>
+          </div>
+        )}
 
         {/* Quick Stage Pills for Standalone Page */}
         {isStandalonePage && (

@@ -22,6 +22,7 @@ export const RequirementModal: React.FC<RequirementModalProps> = ({
     hospitalName: '',
     location: 'Mumbai',
     bedCapacity: '100 - 250 Beds',
+    facilityType: 'hospital',
     stage: 'Planning & Feasibility',
     categoryNeeded: 'Hospital Consulting',
     description: '',
@@ -64,6 +65,7 @@ export const RequirementModal: React.FC<RequirementModalProps> = ({
       hospitalName: formData.hospitalName || currentUser?.company || 'Upcoming Hospital Project',
       location: formData.location,
       bedCapacity: formData.bedCapacity,
+      facilityTypeId: formData.facilityType,
       stage: formData.stage,
       categoryNeeded: formData.categoryNeeded,
       description: formData.description,
@@ -175,6 +177,22 @@ export const RequirementModal: React.FC<RequirementModalProps> = ({
               </div>
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-xs font-bold text-slate-700 uppercase mb-1">
+                    Facility Type
+                  </label>
+                  <select
+                    value={formData.facilityType}
+                    onChange={(e) => setFormData({ ...formData, facilityType: e.target.value })}
+                    className="w-full h-10 px-3 rounded-lg border border-slate-300 text-sm bg-white font-medium"
+                  >
+                    <option value="hospital">General Hospital</option>
+                    <option value="diagnostic-center">Diagnostic Center</option>
+                    <option value="clinic">Clinic</option>
+                    <option value="rehab-center">Rehab Center</option>
+                  </select>
+                </div>
+
                 <div>
                   <label className="block text-xs font-bold text-slate-700 uppercase mb-1">
                     Hospital Location

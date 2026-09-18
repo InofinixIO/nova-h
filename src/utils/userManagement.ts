@@ -130,8 +130,35 @@ export const getAllUsers = (): AuthUser[] => {
 export const saveAllUsers = (users: AuthUser[]): void => {
   try {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(users));
+    saveUsersToServer(users);
   } catch (e) {
     console.error('Failed to save users to localStorage', e);
+  }
+};
+
+export const fetchUsersFromServer = async (): Promise<void> => {
+  try {
+    const res = await fetch('/api/users');
+    const users = await res.json();
+    if (users && Array.isArray(users)) {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(users));
+    }
+  } catch (e) {
+    console.error('Failed to fetch users from server:', e);
+  }
+};
+
+export const saveUsersToServer = async (users: AuthUser[]): Promise<void> => {
+  try {
+    for (const user of users) {
+      await fetch('/api/users', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(user)
+      });
+    }
+  } catch (e) {
+    console.error('Failed to save users to server:', e);
   }
 };
 
@@ -177,7 +204,7 @@ export const registerOrUpdateUser = (userData: AuthUser): AuthUser => {
       company: userData.company || 'Healthcare Organization',
       isSubscribed: userData.isSubscribed ?? false,
       plan: userData.plan || defaultPlanForRole(userData.role),
-      status: 'active',
+      status: userData.status || 'active',
       createdAt: new Date().toISOString(),
       lastLoginAt: new Date().toISOString()
     };
@@ -195,13 +222,39 @@ export const toggleUserStatus = (email: string): AuthUser[] => {
   const emailNorm = email.trim().toLowerCase();
   const updated = users.map(u => {
     if ((u.email || '').trim().toLowerCase() === emailNorm) {
-      const nextStatus: 'active' | 'disabled' = u.status === 'disabled' ? 'active' : 'disabled';
+      const nextStatus: 'active' | 'disabled' | 'pending' = u.status === 'disabled' ? 'active' : 'disabled';
       return { ...u, status: nextStatus };
     }
     return u;
   });
   saveAllUsers(updated);
   return updated;
+};
+
+/**
+ * Approve a pending user (Admin only)
+ */
+export const approveUser = (email: string): AuthUser[] => {
+  const users = getAllUsers();
+  const emailNorm = email.trim().toLowerCase();
+  const updated = users.map(u => {
+    if ((u.email || '').trim().toLowerCase() === emailNorm && u.status === 'pending') {
+      return { ...u, status: 'active', plan: 'Advisor Active Access' } as AuthUser;
+    }
+    return u;
+  });
+  saveAllUsers(updated);
+  return updated;
+};
+
+/**
+ * Check if a user is pending
+ */
+export const isUserPending = (email: string): boolean => {
+  const users = getAllUsers();
+  const emailNorm = (email || '').trim().toLowerCase();
+  const user = users.find(u => (u.email || '').trim().toLowerCase() === emailNorm);
+  return user ? user.status === 'pending' : false;
 };
 
 /**

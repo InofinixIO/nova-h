@@ -20,7 +20,7 @@ import {
   ArrowRight
 } from 'lucide-react';
 import { SectionHeading } from './SectionHeading';
-import { DirectoryItem, AuthUser, UserRole } from '../types';
+import { DirectoryItem, AuthUser, UserRole, FacilityType } from '../types';
 import { detectUserCity } from '../utils/geoUtils';
 
 interface DirectorySearchProps {
@@ -37,6 +37,9 @@ interface DirectorySearchProps {
   onToggleCompare?: (id: string) => void;
   onClearCompare?: () => void;
   onOpenCompare?: () => void;
+  facilityTypes?: FacilityType[];
+  activeFacilityId?: string;
+  setActiveFacilityId?: (id: string) => void;
 }
 
 // Stage to categories mapping: Stages have different categories
@@ -131,13 +134,17 @@ export const DirectorySearch: React.FC<DirectorySearchProps> = ({
   comparedIds = [],
   onToggleCompare,
   onClearCompare,
-  onOpenCompare
+  onOpenCompare,
+  facilityTypes = [],
+  activeFacilityId,
+  setActiveFacilityId
 }) => {
   const [selectedLocation, setSelectedLocation] = useState<string>('All');
   const [selectedStage, setSelectedStage] = useState<string>('All');
-  const [selectedCategory, setSelectedCategory] = useState<string>('All');
-  const [searchQuery, setSearchQuery] = useState<string>('');
-  const [roleFilter, setRoleFilter] = useState<'all' | 'vendor' | 'advisor'>('all');
+  const [selectedCategory, setSelectedCategory] = useState<string>('All Categories');
+  const [searchQuery, setSearchQuery] = useState('');
+  const [roleFilter, setRoleFilter] = useState<'all' | 'owner' | 'vendor' | 'advisor'>('all');
+  const [showOnlyVerified, setShowOnlyVerified] = useState(false);
 
   // Geolocation & Pamphlet Scan States
   const [isDetectingLocation, setIsDetectingLocation] = useState(false);
@@ -280,18 +287,21 @@ export const DirectorySearch: React.FC<DirectorySearchProps> = ({
     setSelectedCategory('All');
   };
 
-  // Filtering logic
+  // Filtering logic incorporating search, category, location, stage, role, verification, and facility type
   const filteredBusinesses = useMemo(() => {
     return directoryItems.filter((item) => {
       // Location filter
-      if (selectedLocation !== 'All') {
+      if (selectedLocation !== 'All' && selectedLocation !== 'All Locations') {
+        const vendorCities = item.serviceLocations ? item.serviceLocations.map(loc => loc.toLowerCase()) : [];
         const matchesLocation = item.location.toLowerCase() === selectedLocation.toLowerCase() ||
-          item.serviceLocations?.some(loc => loc.toLowerCase() === selectedLocation.toLowerCase() || loc === 'All India');
+          vendorCities.includes(selectedLocation.toLowerCase()) ||
+          vendorCities.includes('all india') ||
+          vendorCities.includes('pan india');
         if (!matchesLocation) return false;
       }
 
       // Category filter
-      if (selectedCategory !== 'All' && item.category !== selectedCategory) {
+      if (selectedCategory !== 'All' && selectedCategory !== 'All Categories' && item.category !== selectedCategory) {
         return false;
       }
 
@@ -309,6 +319,19 @@ export const DirectorySearch: React.FC<DirectorySearchProps> = ({
         return false;
       }
 
+      // Verification filter
+      if (showOnlyVerified && !item.verified && !(item as any).isVerified) {
+        return false;
+      }
+
+      // Facility filter
+      if (activeFacilityId && activeFacilityId !== 'all') {
+        const facilityServed = (item as any).facilityTypesServed;
+        if (facilityServed && facilityServed.length > 0 && !facilityServed.includes(activeFacilityId)) {
+          return false;
+        }
+      }
+
       // Free Search Query
       if (searchQuery.trim() !== '') {
         const q = searchQuery.toLowerCase();
@@ -324,7 +347,7 @@ export const DirectorySearch: React.FC<DirectorySearchProps> = ({
 
       return true;
     });
-  }, [directoryItems, selectedLocation, selectedCategory, selectedStage, roleFilter, searchQuery]);
+  }, [directoryItems, selectedLocation, selectedCategory, selectedStage, roleFilter, searchQuery, showOnlyVerified, activeFacilityId]);
 
   const resetFilters = () => {
     setSelectedLocation('All');
@@ -332,6 +355,8 @@ export const DirectorySearch: React.FC<DirectorySearchProps> = ({
     setSelectedCategory('All');
     setSearchQuery('');
     setRoleFilter('all');
+    setShowOnlyVerified(false);
+    if (setActiveFacilityId) setActiveFacilityId('all');
   };
 
   return (
@@ -657,7 +682,9 @@ export const DirectorySearch: React.FC<DirectorySearchProps> = ({
                         {item.name}
                       </h4>
                       {item.verified && (
-                        <CheckCircle2 className="w-4 h-4 text-blue-600 shrink-0" title="Verified Partner by NOVA" />
+                        <span title="Verified Partner by NOVA">
+                          <CheckCircle2 className="w-4 h-4 text-blue-600 shrink-0" />
+                        </span>
                       )}
                     </div>
 

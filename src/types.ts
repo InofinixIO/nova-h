@@ -76,7 +76,14 @@ export interface PaymentTransaction {
   isComplimentary?: boolean;
 }
 
+export interface FacilityType {
+  id: string;
+  name: string;
+  description: string;
+}
+
 export interface StageItem {
+  id?: string;
   stageNumber: number;
   title: string;
   category: string;
@@ -85,18 +92,20 @@ export interface StageItem {
   checklist: string[];
   typicalTimeline: string;
   keyStakeholders: string[];
+  facilityTypeId?: string;
 }
 
 export interface AuthUser {
   id?: string;
   name: string;
   role: UserRole;
+  facilityTypes?: string[]; // Array of FacilityType IDs this user promotes
   email: string;
   phone?: string;
   company?: string;
   isSubscribed?: boolean;
   plan?: string;
-  status?: 'active' | 'disabled';
+  status?: 'active' | 'disabled' | 'pending';
   createdAt?: string;
   lastLoginAt?: string;
 }
@@ -104,12 +113,13 @@ export interface AuthUser {
 export interface DirectoryItem {
   id: string;
   name: string;
-  role: 'vendor' | 'advisor';
+  role: 'vendor' | 'advisor' | 'owner';
   category: string;
   rating: number;
   reviewsCount: number;
   location: string;
   serviceLocations: string[];
+  facilityTypesServed?: string[]; // Array of FacilityType IDs
   projectStages: string[];
   productsAndServices: string[];
   description: string;
@@ -140,9 +150,10 @@ export type ProjectRequirementStatus = 'pending_review' | 'approved' | 'matched'
 
 export interface ProjectRequirement {
   id: string;
-  hospitalName: string;
+  hospitalName: string; // Keeping hospitalName for backward compatibility, though it might be "facilityName"
   location: string;
   bedCapacity: string;
+  facilityTypeId?: string;
   stage: string;
   categoryNeeded: string;
   description: string;
@@ -480,7 +491,7 @@ export interface AdvisorObservation {
   rfpId: string;
   advisorName: string;
   organization: string;
-  category: 'technical' | 'commercial_risk' | 'vendor_suitability' | 'negotiation_leverage';
+  category: 'technical' | 'commercial_risk' | 'vendor_suitability' | 'negotiation_leverage' | 'leverage_suggestion' | 'compliance';
   observation: string;
   recommendation: string;
   createdAt: string;
