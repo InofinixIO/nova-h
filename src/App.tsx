@@ -33,11 +33,12 @@ import { ProcurementWorkspace } from './components/procurement/ProcurementWorksp
 import { CompareProfilesView } from './components/CompareProfilesView';
 import { MjmlTemplateBuilder } from './components/mjml/MjmlTemplateBuilder';
 import { BackendArchitectureView } from './components/architecture/BackendArchitectureView';
+import { PartnerDetailView } from './components/PartnerDetailView';
 
 import { UserRole, DirectoryItem, ProjectRequirement, PaymentTransaction, AuthUser, StageItem } from './types';
 import { getStoredDirectory, saveStoredDirectory } from './utils/directoryStorage';
 import { getStoredToolkitStages, saveStoredToolkitStages } from './utils/toolkitStorage';
-import { RouteSlug, getSlugFromPath, navigateToSlug } from './utils/routes';
+import { RouteSlug, getSlugFromPath, navigateToSlug, getPartnerIdentifierFromUrl } from './utils/routes';
 import { isFeatureEnabled } from './utils/featureFlags';
 import { 
   CheckCircle2, 
@@ -343,6 +344,40 @@ export default function App() {
 
   // Helper for rendering specific page content based on currentSlug
   const renderPageContent = () => {
+    // Standalone Partner / Directory Item Detail Page (/partner/[id] or /partner/[name-slug])
+    if (currentSlug === 'partner' || currentSlug.startsWith('partner/')) {
+      const partnerIdentifier = getPartnerIdentifierFromUrl() || (currentSlug.startsWith('partner/') ? currentSlug.slice('partner/'.length) : '');
+      const cleanIdent = decodeURIComponent(partnerIdentifier).trim().toLowerCase();
+
+      const matchedPartner = directoryItems.find(item => 
+        String(item.id).toLowerCase() === cleanIdent ||
+        item.name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '') === cleanIdent ||
+        item.name.toLowerCase() === cleanIdent
+      ) || directoryItems.find(item => String(item.id) === '1') || directoryItems[0];
+
+      if (matchedPartner) {
+        return (
+          <PartnerDetailView
+            partner={matchedPartner}
+            currentUser={currentUser}
+            onBack={() => {
+              if (window.history.length > 1) {
+                window.history.back();
+              } else {
+                handleNavigate('directory');
+              }
+            }}
+            onOpenAuth={handleOpenAuth}
+            onPostRequirement={handleOpenRequirementModal}
+            isCompared={comparedProfileIds.includes(matchedPartner.id)}
+            onToggleCompare={handleToggleCompare}
+            onOpenCompare={handleOpenCompare}
+            onNotify={(msg) => showToast(msg)}
+          />
+        );
+      }
+    }
+
     switch (currentSlug) {
       case 'admin':
       case 'admin/users':
@@ -1082,6 +1117,10 @@ export default function App() {
         isCompared={selectedVendor ? comparedProfileIds.includes(selectedVendor.id) : false}
         onToggleCompare={handleToggleCompare}
         onOpenCompare={handleOpenCompare}
+        onViewFullPage={(id) => {
+          setSelectedVendor(null);
+          handleNavigate(`partner/${encodeURIComponent(id)}`);
+        }}
       />
 
       <AuthModal

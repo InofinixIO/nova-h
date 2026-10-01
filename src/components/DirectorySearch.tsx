@@ -1139,9 +1139,21 @@ export const DirectorySearch: React.FC<DirectorySearchProps> = ({
                   )}
                 </div>
 
-                <p className="mt-2.5 text-[10px] font-mono text-slate-600 dark:text-slate-400 max-w-full truncate px-2 text-center" title={currentSearchUrl}>
-                  {currentSearchUrl}
-                </p>
+                {/* Dedicated Copy Icon directly beside the QR code link selection */}
+                <div className="mt-3 w-full flex items-center justify-between gap-2 px-3 py-1.5 bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-700 text-xs shadow-2xs">
+                  <span className="font-mono text-[11px] text-slate-600 dark:text-slate-400 truncate flex-1 select-all" title={currentSearchUrl}>
+                    {currentSearchUrl}
+                  </span>
+                  <button
+                    type="button"
+                    onClick={handleCopySearchLink}
+                    className="p-1.5 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-600 dark:text-slate-300 hover:text-teal-600 dark:hover:text-teal-400 transition-colors cursor-pointer shrink-0"
+                    title="Copy QR code target link"
+                    aria-label="Copy search link"
+                  >
+                    {copiedLink ? <Check className="w-4 h-4 text-emerald-600" /> : <Copy className="w-4 h-4" />}
+                  </button>
+                </div>
               </div>
 
               {/* Action Buttons */}

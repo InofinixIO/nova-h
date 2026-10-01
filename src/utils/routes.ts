@@ -34,16 +34,26 @@ export type RouteSlug =
   | 'mjml-builder'
   | 'email-templates'
   | 'architecture'
-  | 'backend-architecture';
+  | 'backend-architecture'
+  | 'partner'
+  | `partner/${string}`;
 
 export const getSlugFromPath = (): RouteSlug => {
   if (typeof window === 'undefined') return '';
-  // Check pathname first e.g. /owners or /pricing or /admin/users
+  // Check pathname first e.g. /owners or /pricing or /admin/users or /partner/1
   let path = window.location.pathname.replace(/^\/+|\/+$/g, '').toLowerCase();
   
   // If running in some iframe / subfolder environments, check hash fallback if path is empty
   if (!path && window.location.hash) {
     path = window.location.hash.replace(/^#\/?/, '').toLowerCase();
+  }
+
+  // Handle partner item detail page (e.g. /partner/1 or /partner/apex-biomedical)
+  if (path.startsWith('partner/')) {
+    return path as RouteSlug;
+  }
+  if (path === 'partner') {
+    return 'partner';
   }
 
   const validSlugs: RouteSlug[] = [
@@ -97,6 +107,29 @@ export const getSlugFromPath = (): RouteSlug => {
   }
 
   return '';
+};
+
+/**
+ * Extracts partner ID or slug identifier from the current window path
+ */
+export const getPartnerIdentifierFromUrl = (): string => {
+  if (typeof window === 'undefined') return '';
+  let path = window.location.pathname.replace(/^\/+|\/+$/g, '');
+  if (!path && window.location.hash) {
+    path = window.location.hash.replace(/^#\/?/, '');
+  }
+  if (path.toLowerCase().startsWith('partner/')) {
+    return decodeURIComponent(path.slice('partner/'.length));
+  }
+  return '';
+};
+
+/**
+ * Generates a clean URL slug for a directory partner
+ */
+export const createPartnerSlug = (id: string): string => {
+  if (!id) return 'directory';
+  return `partner/${encodeURIComponent(id.trim())}`;
 };
 
 export const navigateToSlug = (slug: RouteSlug | string, replace: boolean = false) => {

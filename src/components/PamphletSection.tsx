@@ -404,12 +404,23 @@ export const PamphletSection: React.FC<PamphletSectionProps> = ({
         <div className="px-4 sm:px-6 py-3.5 bg-slate-50 dark:bg-slate-800 border-b border-slate-200 dark:border-slate-700 flex flex-col md:flex-row md:items-center justify-between gap-3 text-xs">
           <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 flex-1 min-w-[280px]">
             <span className="font-bold text-slate-700 dark:text-slate-300 whitespace-nowrap">Target URL:</span>
-            <input
-              type="text"
-              value={targetUrl}
-              onChange={(e) => setTargetUrl(e.target.value)}
-              className="flex-1 bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-600 rounded-lg px-3 py-1.5 font-mono text-xs text-slate-800 dark:text-slate-200 focus:outline-hidden focus:ring-2 focus:ring-teal-600"
-            />
+            <div className="flex items-center flex-1 relative">
+              <input
+                type="text"
+                value={targetUrl}
+                onChange={(e) => setTargetUrl(e.target.value)}
+                className="w-full bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-600 rounded-lg pl-3 pr-8 py-1.5 font-mono text-xs text-slate-800 dark:text-slate-200 focus:outline-hidden focus:ring-2 focus:ring-teal-600"
+              />
+              <button
+                type="button"
+                onClick={handleCopyLink}
+                className="absolute right-1.5 p-1 rounded text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors cursor-pointer"
+                title="Copy target URL"
+                aria-label="Copy target URL"
+              >
+                {copied ? <Check className="w-3.5 h-3.5 text-emerald-600" /> : <Copy className="w-3.5 h-3.5" />}
+              </button>
+            </div>
             <label className="flex items-center gap-1.5 cursor-pointer select-none text-slate-600 dark:text-slate-300 font-medium whitespace-nowrap bg-white dark:bg-slate-900 px-2.5 py-1.5 rounded-lg border border-slate-200 dark:border-slate-700">
               <input
                 type="checkbox"
@@ -591,10 +602,21 @@ export const PamphletSection: React.FC<PamphletSectionProps> = ({
                 )}
               </div>
 
-              {/* Target URL caption */}
-              <p className="mt-2 font-mono text-xs font-bold text-slate-800 tracking-tight">
-                {effectiveUrl}
-              </p>
+              {/* Target URL caption with dedicated copy button */}
+              <div className="mt-2 flex items-center justify-center gap-1.5 px-3 py-1 bg-slate-50 border border-slate-200 rounded-lg shadow-2xs max-w-full">
+                <span className="font-mono text-xs font-bold text-slate-800 tracking-tight truncate select-all" title={effectiveUrl}>
+                  {effectiveUrl}
+                </span>
+                <button
+                  type="button"
+                  onClick={handleCopyLink}
+                  className="p-1 rounded text-slate-500 hover:text-teal-700 hover:bg-slate-200 transition-colors cursor-pointer shrink-0"
+                  title="Copy QR code target link"
+                  aria-label="Copy target link"
+                >
+                  {copied ? <Check className="w-3.5 h-3.5 text-emerald-600" /> : <Copy className="w-3.5 h-3.5" />}
+                </button>
+              </div>
 
               {/* Dynamic Scanning Instruction Badge */}
               <div className="mt-2.5 flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-emerald-50 text-emerald-800 border border-emerald-200 text-xs font-bold">

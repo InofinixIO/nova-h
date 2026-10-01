@@ -28,6 +28,7 @@ import {
 } from 'lucide-react';
 import { DirectoryItem, AuthUser, UserRole } from '../types';
 import { addEnquiry } from '../utils/enquiriesStorage';
+import { navigateToSlug, createPartnerSlug } from '../utils/routes';
 
 interface VendorDetailModalProps {
   vendor: DirectoryItem | null;
@@ -38,6 +39,7 @@ interface VendorDetailModalProps {
   isCompared?: boolean;
   onToggleCompare?: (id: string) => void;
   onOpenCompare?: () => void;
+  onViewFullPage?: (id: string) => void;
 }
 
 export const VendorDetailModal: React.FC<VendorDetailModalProps> = ({
@@ -48,7 +50,8 @@ export const VendorDetailModal: React.FC<VendorDetailModalProps> = ({
   onOpenAuth,
   isCompared = false,
   onToggleCompare,
-  onOpenCompare
+  onOpenCompare,
+  onViewFullPage
 }) => {
   const [messageSent, setMessageSent] = useState(false);
   const [messageText, setMessageText] = useState('');
@@ -192,7 +195,24 @@ export const VendorDetailModal: React.FC<VendorDetailModalProps> = ({
             </div>
 
             {/* Quick Actions */}
-            <div className="flex items-center gap-2 shrink-0">
+            <div className="flex flex-wrap items-center gap-2 shrink-0">
+              <button
+                type="button"
+                onClick={() => {
+                  if (onViewFullPage) {
+                    onViewFullPage(vendor.id);
+                  } else {
+                    onClose();
+                    navigateToSlug(createPartnerSlug(vendor.id));
+                  }
+                }}
+                className="px-3.5 py-2 rounded-xl bg-blue-50 dark:bg-blue-950/60 hover:bg-blue-100 dark:hover:bg-blue-900/60 text-blue-700 dark:text-blue-300 font-bold text-xs transition-colors cursor-pointer flex items-center gap-1.5 border border-blue-200 dark:border-blue-800 shadow-2xs"
+                title="Open standalone partner page with dedicated /partner/[id] URL slug"
+              >
+                <span>View Standalone Page</span>
+                <ExternalLink className="w-3.5 h-3.5" />
+              </button>
+
               <button
                 onClick={onPostRequirement}
                 className="px-3.5 py-2 rounded-xl bg-slate-100 dark:bg-slate-700 hover:bg-slate-200 dark:hover:bg-slate-600 text-slate-800 dark:text-slate-200 font-bold text-xs transition-colors cursor-pointer flex items-center gap-1.5"
@@ -651,6 +671,22 @@ export const VendorDetailModal: React.FC<VendorDetailModalProps> = ({
                 <span>View Comparison →</span>
               </button>
             )}
+            <button
+              type="button"
+              onClick={() => {
+                if (onViewFullPage) {
+                  onViewFullPage(vendor.id);
+                } else {
+                  onClose();
+                  navigateToSlug(createPartnerSlug(vendor.id));
+                }
+              }}
+              className="px-3 py-1.5 rounded-lg bg-blue-50 dark:bg-blue-950/60 text-blue-700 dark:text-blue-300 hover:bg-blue-100 dark:hover:bg-blue-900/80 font-bold text-xs flex items-center gap-1.5 cursor-pointer border border-blue-200 dark:border-blue-800 transition-colors"
+              title="Open dedicated partner page with full specifications and direct RFQ form"
+            >
+              <span>View Standalone Page</span>
+              <ExternalLink className="w-3.5 h-3.5" />
+            </button>
             <button
               onClick={onClose}
               className="px-3.5 py-1.5 rounded-lg border border-slate-300 dark:border-slate-600 hover:bg-slate-100 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 font-semibold cursor-pointer"
