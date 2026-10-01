@@ -646,7 +646,7 @@ export const VendorDetailModal: React.FC<VendorDetailModalProps> = ({
             <span className="w-2 h-2 rounded-full bg-emerald-500"></span>
             <span>NOVA Verified Healthcare Network</span>
           </div>
-          <div className="flex items-center gap-3">
+          <div className="flex flex-wrap items-center justify-end gap-2 sm:gap-2.5 w-full sm:w-auto">
             {onToggleCompare && (
               <button
                 onClick={() => onToggleCompare(vendor.id)}

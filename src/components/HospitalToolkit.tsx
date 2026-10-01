@@ -87,14 +87,16 @@ export const HospitalToolkit: React.FC<HospitalToolkitProps> = ({
             <div className="bg-slate-900 rounded-2xl shadow-xl overflow-hidden border border-slate-800 text-white relative">
               
               {/* Canva Reader Top Bar */}
-              <div className="bg-slate-950 px-4 py-2.5 flex items-center justify-between border-b border-slate-800 text-xs">
-                <div className="flex items-center gap-2">
-                  <span className="w-2.5 h-2.5 rounded-full bg-red-500/80"></span>
-                  <span className="w-2.5 h-2.5 rounded-full bg-amber-500/80"></span>
-                  <span className="w-2.5 h-2.5 rounded-full bg-emerald-500/80"></span>
-                  <span className="ml-2 font-mono text-[11px] text-slate-400">Canva Interactive Reader: Hospital Owners Toolkit</span>
+              <div className="bg-slate-950 px-3 sm:px-4 py-2.5 flex items-center justify-between border-b border-slate-800 text-xs gap-2 min-w-0">
+                <div className="flex items-center gap-2 min-w-0 flex-1">
+                  <span className="w-2.5 h-2.5 rounded-full bg-red-500/80 shrink-0"></span>
+                  <span className="w-2.5 h-2.5 rounded-full bg-amber-500/80 shrink-0"></span>
+                  <span className="w-2.5 h-2.5 rounded-full bg-emerald-500/80 shrink-0"></span>
+                  <span className="ml-1.5 font-mono text-[10px] sm:text-[11px] text-slate-400 truncate">
+                    Canva Interactive Reader: Owners Toolkit
+                  </span>
                 </div>
-                <div className="text-slate-400 font-medium">
+                <div className="text-slate-400 font-medium whitespace-nowrap text-[11px] sm:text-xs shrink-0">
                   Stage {activeStage?.stageNumber || safeSlideIndex + 1} of {stagesList.length}
                 </div>
               </div>
@@ -146,7 +148,7 @@ export const HospitalToolkit: React.FC<HospitalToolkitProps> = ({
                   </button>
 
                   {/* Stage indicator dots */}
-                  <div className="flex items-center gap-1">
+                  <div className="flex items-center gap-1 max-w-[140px] sm:max-w-none overflow-x-auto scrollbar-none px-1 py-1">
                     {stagesList.map((s, idx) => (
                       <button
                         key={idx}
@@ -172,13 +174,13 @@ export const HospitalToolkit: React.FC<HospitalToolkitProps> = ({
               </div>
 
               {/* Bottom bar with quick modal launch */}
-              <div className="bg-slate-950/90 px-4 py-3 border-t border-slate-800 flex items-center justify-between text-xs">
-                <span className="text-slate-400">Interactive hospital promoter curriculum</span>
+              <div className="bg-slate-950/90 px-3 sm:px-4 py-2.5 sm:py-3 border-t border-slate-800 flex flex-col sm:flex-row items-center justify-between gap-1.5 text-xs text-center sm:text-left">
+                <span className="text-slate-400 text-[11px] sm:text-xs">Interactive hospital promoter curriculum</span>
                 <button
                   onClick={() => onOpenFullToolkit(currentSlide)}
-                  className="text-blue-400 hover:text-blue-300 font-semibold cursor-pointer underline flex items-center gap-1"
+                  className="text-blue-400 hover:text-blue-300 font-semibold cursor-pointer underline flex items-center gap-1 text-[11px] sm:text-xs"
                 >
-                  Expand Full Guide & Checklist
+                  Expand Full Guide &amp; Checklist
                 </button>
               </div>
 

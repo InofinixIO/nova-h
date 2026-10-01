@@ -519,7 +519,7 @@ export const DirectorySearch: React.FC<DirectorySearchProps> = ({
             </p>
           </div>
 
-          <div className="flex items-center gap-3 shrink-0">
+          <div className="flex flex-wrap items-center justify-center md:justify-end gap-2.5 w-full md:w-auto">
             {/* Compare Profiles button */}
             {onOpenCompare && (
               <button
@@ -739,7 +739,7 @@ export const DirectorySearch: React.FC<DirectorySearchProps> = ({
 
           {/* Subtext and Quick Role Filter */}
           <div className="mt-4 pt-3 border-t border-slate-200/60 dark:border-slate-700 flex flex-wrap items-center justify-between gap-3 text-xs">
-            <div className="flex items-center gap-2">
+            <div className="flex flex-wrap items-center gap-2 max-w-full">
               <p className="text-slate-600 dark:text-slate-400 font-medium">
                 Browse verified partners freely.
               </p>
@@ -767,7 +767,7 @@ export const DirectorySearch: React.FC<DirectorySearchProps> = ({
             </div>
 
             {/* Quick role tabs */}
-            <div className="flex items-center gap-1.5 bg-white dark:bg-slate-900 p-1 rounded-lg border border-slate-200 dark:border-slate-700">
+            <div className="flex flex-wrap items-center gap-1.5 bg-white dark:bg-slate-900 p-1 rounded-lg border border-slate-200 dark:border-slate-700">
               <button
                 onClick={() => handleRoleSelect('all')}
                 className={`px-3 py-1 rounded-md text-xs font-semibold cursor-pointer transition-all ${
@@ -807,11 +807,11 @@ export const DirectorySearch: React.FC<DirectorySearchProps> = ({
         </div>
 
         {/* Results Count */}
-        <div className="flex items-center justify-between mb-6">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-6">
           <p className="text-sm font-semibold text-slate-800 dark:text-slate-200">
             Showing <span className="text-blue-700 dark:text-blue-400">{filteredBusinesses.length}</span> verified healthcare partner{filteredBusinesses.length === 1 ? '' : 's'}
           </p>
-          <div className="flex items-center gap-4">
+          <div className="flex flex-wrap items-center gap-3 sm:gap-4">
             {currentUser?.role === 'admin' && (
               <button
                 onClick={onOpenAdminDirectory}
@@ -937,8 +937,8 @@ export const DirectorySearch: React.FC<DirectorySearchProps> = ({
                 </div>
 
                 {/* Footer Action */}
-                <div className="pt-4 border-t border-slate-100 dark:border-slate-700 flex items-center justify-between">
-                  <div className="flex items-center gap-2">
+                <div className="pt-4 border-t border-slate-100 dark:border-slate-700 flex flex-wrap items-center justify-between gap-2.5">
+                  <div className="flex flex-wrap items-center gap-2">
                     {onToggleCompare && (
                       <label 
                         className={`flex items-center gap-1.5 px-2 py-1 rounded-md text-[11px] font-bold cursor-pointer select-none transition-all ${

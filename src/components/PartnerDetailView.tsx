@@ -185,7 +185,7 @@ export const PartnerDetailView: React.FC<PartnerDetailViewProps> = ({
           </div>
 
           {/* Quick Profile Actions: Compare, QR Code, Share */}
-          <div className="flex items-center gap-2">
+          <div className="flex flex-wrap items-center gap-2">
             {onToggleCompare && (
               <button
                 type="button"

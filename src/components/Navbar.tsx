@@ -62,10 +62,15 @@ export const Navbar: React.FC<NavbarProps> = ({
   return (
     <header
       id="nova-header"
-      className={`fixed top-0 left-0 right-0 z-40 transition-all duration-200 ${
+      style={{
+        paddingTop: `calc(env(safe-area-inset-top, 0px) + ${scrolled ? '0.5rem' : '0.75rem'})`,
+        paddingLeft: 'env(safe-area-inset-left, 0px)',
+        paddingRight: 'env(safe-area-inset-right, 0px)',
+      }}
+      className={`fixed top-0 left-0 right-0 z-40 transition-all duration-200 pb-2.5 sm:pb-3 ${
         scrolled
-          ? 'bg-white/95 dark:bg-slate-900/95 backdrop-blur-md shadow-xs border-b border-slate-200/80 dark:border-slate-800 py-2.5'
-          : 'bg-white dark:bg-slate-900 border-b border-slate-200 dark:border-slate-800 py-3'
+          ? 'bg-white/95 dark:bg-slate-900/95 backdrop-blur-md shadow-xs border-b border-slate-200/80 dark:border-slate-800'
+          : 'bg-white dark:bg-slate-900 border-b border-slate-200 dark:border-slate-800'
       }`}
     >
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex items-center justify-between gap-3 xl:gap-6">
@@ -361,7 +366,14 @@ export const Navbar: React.FC<NavbarProps> = ({
 
       {/* Mobile Menu Dropdown */}
       {mobileMenuOpen && (
-        <div className="lg:hidden bg-white dark:bg-slate-900 border-b border-slate-200 dark:border-slate-800 px-4 pt-2 pb-6 space-y-3 shadow-lg animate-fadeIn">
+        <div 
+          style={{
+            paddingLeft: 'max(1rem, env(safe-area-inset-left, 0px))',
+            paddingRight: 'max(1rem, env(safe-area-inset-right, 0px))',
+            paddingBottom: 'max(1.5rem, env(safe-area-inset-bottom, 0px))',
+          }}
+          className="lg:hidden bg-white dark:bg-slate-900 border-b border-slate-200 dark:border-slate-800 px-4 pt-2 space-y-3 shadow-lg animate-fadeIn max-h-[calc(100vh-5rem)] overflow-y-auto"
+        >
           {currentUser && (
             <div className="p-3 bg-blue-50/60 dark:bg-slate-800/80 rounded-xl border border-blue-200/80 dark:border-slate-700 flex items-center justify-between">
               <div className="flex items-center gap-2.5">

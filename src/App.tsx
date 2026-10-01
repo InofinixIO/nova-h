@@ -1045,7 +1045,7 @@ export default function App() {
   const isWorkspaceRoute = Boolean(currentUser && (currentSlug.startsWith('dashboard') || currentSlug.startsWith('admin')));
 
   return (
-    <div className={`${isWorkspaceRoute ? 'h-screen h-dvh overflow-hidden' : 'min-h-screen'} bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-slate-100 font-sans flex flex-col selection:bg-blue-600 selection:text-white transition-colors duration-200`}>
+    <div className={`${isWorkspaceRoute ? 'h-screen h-dvh overflow-hidden' : 'min-h-screen'} w-full max-w-full overflow-x-clip min-w-0 bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-slate-100 font-sans flex flex-col selection:bg-blue-600 selection:text-white transition-colors duration-200`}>
       
       {/* Toast Alert */}
       {toastMessage && (
@@ -1070,8 +1070,8 @@ export default function App() {
         />
       )}
 
-      {/* Main Page Layout matching Route Slug (pt-0 h-full overflow-hidden for workspace, pt-16 sm:pt-20 for marketing pages) */}
-      <main className={`flex-1 ${isWorkspaceRoute ? 'pt-0 h-full overflow-hidden' : 'pt-16 sm:pt-20'}`}>
+      {/* Main Page Layout matching Route Slug (pt-0 h-full overflow-hidden for workspace, safe-area top padding for marketing pages) */}
+      <main className={`flex-1 w-full max-w-full overflow-x-clip min-w-0 ${isWorkspaceRoute ? 'pt-0 h-full overflow-hidden' : 'pt-[calc(4.25rem+env(safe-area-inset-top,0px))] sm:pt-[calc(4.75rem+env(safe-area-inset-top,0px))]'}`}>
         {renderPageContent()}
       </main>
 

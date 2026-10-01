@@ -323,7 +323,7 @@ export const MembershipPricingSection: React.FC<MembershipPricingSectionProps> =
                   </span>
                   <h4 className="text-sm font-bold text-white">Business Type</h4>
                 </div>
-                <div className="grid grid-cols-3 gap-2">
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
                   {[
                     { id: 'product', label: 'Product Provider' },
                     { id: 'service', label: 'Service Provider' },
@@ -471,11 +471,11 @@ export const MembershipPricingSection: React.FC<MembershipPricingSectionProps> =
                 <button
                   type="button"
                   onClick={handlePayForVendor}
-                  className="w-full py-3.5 px-4 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-black text-sm transition-all flex items-center justify-center gap-2 cursor-pointer shadow-lg hover:shadow-emerald-500/20"
+                  className="w-full py-3.5 px-3 sm:px-4 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-black text-xs sm:text-sm transition-all flex flex-wrap items-center justify-center gap-1.5 sm:gap-2 cursor-pointer shadow-lg hover:shadow-emerald-500/20 text-center"
                 >
-                  <CreditCard className="w-4 h-4" />
+                  <CreditCard className="w-4 h-4 shrink-0" />
                   <span>Enroll in Plan ₹{currentAssignedBand.fee.toLocaleString('en-IN')} / Apply Coupon</span>
-                  <ArrowRight className="w-4 h-4" />
+                  <ArrowRight className="w-4 h-4 shrink-0" />
                 </button>
                 <p className="text-[11px] text-slate-400 text-center">
                   100% coupon (BNI100) activates directly at ₹0 • Razorpay checkout for paid balances

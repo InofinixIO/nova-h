@@ -135,18 +135,13 @@ export const Footer: React.FC<FooterProps> = ({ onOpenAuth, onOpenToolkit, onOpe
             </h4>
             <ul className="space-y-2.5 text-sm text-slate-400">
               <li>
-                <a href="#contact" onClick={(e) => { e.preventDefault(); alert("Contact: support@nova-h.in | +91 22 4982 1100"); }} className="hover:text-white transition-colors">
-                  Contact Us
+                <a href="mailto:support@nova-h.in" className="hover:text-white transition-colors">
+                  Contact: support@nova-h.in
                 </a>
               </li>
               <li>
-                <a href="#privacy" onClick={(e) => { e.preventDefault(); alert("NOVA Privacy Policy: We respect healthcare data privacy and do not sell promoter contact information."); }} className="hover:text-white transition-colors">
-                  Privacy Policy
-                </a>
-              </li>
-              <li>
-                <a href="#terms" onClick={(e) => { e.preventDefault(); alert("NOVA Terms of Use: Community guidelines for hospital promoters, verified vendors, and consultants."); }} className="hover:text-white transition-colors">
-                  Terms of Use
+                <a href="#disclaimer" onClick={(e) => { e.preventDefault(); scrollTo('disclaimer-box'); }} className="hover:text-white transition-colors">
+                  Privacy Policy &amp; Terms
                 </a>
               </li>
               <li>
