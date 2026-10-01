@@ -4,7 +4,9 @@ import {
   WhatsAppNodeType, 
   WhatsAppButton, 
   WhatsAppListItem, 
-  WhatsAppFormField 
+  WhatsAppFormField,
+  WhatsAppProductItem,
+  WhatsAppTemplateButton
 } from '../../types';
 import { 
   Trash2, 
@@ -17,7 +19,12 @@ import {
   HelpCircle,
   Hash,
   ChevronRight,
-  Info
+  Info,
+  Store,
+  ShoppingCart,
+  ShoppingBag,
+  Zap,
+  Image as ImageIcon
 } from 'lucide-react';
 
 interface NodeInspectorProps {
@@ -39,7 +46,7 @@ export const NodeInspector: React.FC<NodeInspectorProps> = ({
         <Layers className="w-12 h-12 text-slate-300 mb-3" />
         <h4 className="font-bold text-slate-700 text-sm">No Node Selected</h4>
         <p className="text-xs text-slate-500 max-w-xs mt-1">
-          Select any node from the visual flow canvas on the left to edit its interactive buttons, text, or Meta Flow screens.
+          Select any node from the visual flow canvas on the left to edit its interactive buttons, text, products, or Meta templates.
         </p>
       </div>
     );
@@ -170,31 +177,131 @@ export const NodeInspector: React.FC<NodeInspectorProps> = ({
     });
   };
 
+  // Multi-Product handlers
+  const handleAddProductSection = () => {
+    const currentSections = node.productSections || [];
+    const newSection = {
+      title: `Category ${currentSections.length + 1}`,
+      products: [
+        {
+          id: `p-${Date.now()}`,
+          retailerId: `SKU-${Date.now().toString().slice(-4)}`,
+          title: 'Equipment Item',
+          price: '₹50,000',
+          currency: 'INR',
+          description: 'Medical grade certification included',
+          imageUrl: 'https://images.unsplash.com/photo-1516549655169-df83a0774514?auto=format&fit=crop&w=400&q=80',
+          nextNodeId: ''
+        }
+      ]
+    };
+    onUpdateNode({
+      ...node,
+      productSections: [...currentSections, newSection]
+    });
+  };
+
+  const handleAddProductToSection = (sIdx: number) => {
+    const sections = [...(node.productSections || [])];
+    if (!sections[sIdx]) return;
+    sections[sIdx].products.push({
+      id: `p-${Date.now()}`,
+      retailerId: `SKU-${Date.now().toString().slice(-4)}`,
+      title: 'New Medical Equipment',
+      price: '₹75,000',
+      currency: 'INR',
+      description: 'Standard hospital specification',
+      imageUrl: 'https://images.unsplash.com/photo-1584515979956-d9f6e5d09982?auto=format&fit=crop&w=400&q=80',
+      nextNodeId: ''
+    });
+    onUpdateNode({ ...node, productSections: sections });
+  };
+
+  const handleUpdateProduct = (sIdx: number, pIdx: number, updated: Partial<WhatsAppProductItem>) => {
+    const sections = [...(node.productSections || [])];
+    if (!sections[sIdx] || !sections[sIdx].products[pIdx]) return;
+    sections[sIdx].products[pIdx] = { ...sections[sIdx].products[pIdx], ...updated };
+    onUpdateNode({ ...node, productSections: sections });
+  };
+
+  const handleDeleteProduct = (sIdx: number, pIdx: number) => {
+    const sections = [...(node.productSections || [])];
+    if (!sections[sIdx]) return;
+    sections[sIdx].products.splice(pIdx, 1);
+    onUpdateNode({ ...node, productSections: sections });
+  };
+
+  // Template button handler
+  const handleAddTemplateButton = () => {
+    if (!node.templateConfig) return;
+    const currentBtns = node.templateConfig.buttons || [];
+    if (currentBtns.length >= 3) return;
+    const newTBtn: WhatsAppTemplateButton = {
+      id: `tbtn-${Date.now()}`,
+      type: 'QUICK_REPLY',
+      text: `Action ${currentBtns.length + 1}`,
+      nextNodeId: ''
+    };
+    onUpdateNode({
+      ...node,
+      templateConfig: {
+        ...node.templateConfig,
+        buttons: [...currentBtns, newTBtn]
+      }
+    });
+  };
+
+  const handleUpdateTemplateButton = (idx: number, updated: Partial<WhatsAppTemplateButton>) => {
+    if (!node.templateConfig) return;
+    const currentBtns = [...(node.templateConfig.buttons || [])];
+    currentBtns[idx] = { ...currentBtns[idx], ...updated };
+    onUpdateNode({
+      ...node,
+      templateConfig: {
+        ...node.templateConfig,
+        buttons: currentBtns
+      }
+    });
+  };
+
+  const handleDeleteTemplateButton = (idx: number) => {
+    if (!node.templateConfig) return;
+    const currentBtns = [...(node.templateConfig.buttons || [])];
+    currentBtns.splice(idx, 1);
+    onUpdateNode({
+      ...node,
+      templateConfig: {
+        ...node.templateConfig,
+        buttons: currentBtns
+      }
+    });
+  };
+
   return (
-    <div className="bg-white rounded-2xl border border-slate-200 shadow-sm p-5 overflow-y-auto max-h-[85vh] space-y-5">
-      
-      {/* Node Header Info */}
-      <div className="flex items-center justify-between pb-4 border-b border-slate-200">
+    <div className="p-4 sm:p-5 space-y-5 text-left font-sans">
+      {/* Node Header & Actions */}
+      <div className="flex items-center justify-between pb-3 border-b border-slate-200">
         <div>
-          <span className="text-[10px] font-black uppercase tracking-wider text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded border border-emerald-200">
-            Node Inspector
+          <span className="text-[10px] font-mono font-bold text-slate-400 uppercase tracking-wider block">
+            Node Configuration
           </span>
-          <h3 className="text-base font-black text-slate-900 mt-1">
-            {node.title}
+          <h3 className="text-base font-black text-slate-900 flex items-center gap-1.5">
+            <span>{node.title}</span>
           </h3>
         </div>
 
         <button
+          type="button"
           onClick={() => onDeleteNode(node.id)}
-          title="Delete Node"
-          className="p-2 text-rose-500 hover:text-rose-700 hover:bg-rose-50 rounded-lg cursor-pointer transition-colors"
+          className="text-xs text-rose-600 hover:text-rose-700 font-bold p-1.5 rounded-lg hover:bg-rose-50 border border-transparent hover:border-rose-200 transition-colors flex items-center gap-1 cursor-pointer"
         >
-          <Trash2 className="w-4 h-4" />
+          <Trash2 className="w-3.5 h-3.5" />
+          <span>Delete</span>
         </button>
       </div>
 
-      {/* Node Title & Type */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+      {/* Node Basic Info */}
+      <div className="space-y-3">
         <div>
           <label className="block text-xs font-bold text-slate-700 mb-1">
             Step Title
@@ -216,16 +323,84 @@ export const NodeInspector: React.FC<NodeInspectorProps> = ({
             onChange={(e) => {
               const newType = e.target.value as WhatsAppNodeType;
               let updated: WhatsAppNode = { ...node, type: newType };
-              if (newType === 'button' && (!node.buttons || node.buttons.length === 0)) {
-                updated.buttons = [{ id: 'btn-1', title: 'Yes, Proceed', nextNodeId: '' }];
+
+              if ((newType === 'text_buttons' || newType === 'button') && (!node.buttons || node.buttons.length === 0)) {
+                updated.buttons = [
+                  { id: `btn-${Date.now()}-1`, title: '🏥 Build New Hospital', nextNodeId: '' },
+                  { id: `btn-${Date.now()}-2`, title: '⚡ Upgrade / Expand', nextNodeId: '' }
+                ];
+              } else if (newType === 'media_buttons') {
+                if (!node.buttons || node.buttons.length === 0) {
+                  updated.buttons = [
+                    { id: `btn-${Date.now()}-1`, title: '📥 Download Specs', nextNodeId: '' },
+                    { id: `btn-${Date.now()}-2`, title: '📑 Request Rate Card', nextNodeId: '' }
+                  ];
+                }
+                if (node.headerType === 'none') {
+                  updated.headerType = 'image';
+                  updated.headerContent = 'https://images.unsplash.com/photo-1586773860418-d37222d8fce3?auto=format&fit=crop&w=800&q=80';
+                }
               } else if (newType === 'list' && (!node.listSections || node.listSections.length === 0)) {
-                updated.listButtonText = 'Select Option';
+                updated.listButtonText = 'Select Department';
                 updated.listSections = [
                   {
-                    title: 'Category 1',
-                    rows: [{ id: 'row-1', title: 'Option 1', description: 'Details here', nextNodeId: '' }]
+                    title: 'Hospital Services',
+                    rows: [{ id: `r-${Date.now()}-1`, title: 'Modular OT Suites', description: 'NABH compliant cleanroom', nextNodeId: '' }]
                   }
                 ];
+              } else if (newType === 'catalogue' && !node.catalogConfig) {
+                updated.catalogConfig = {
+                  catalogId: 'meta-cat-nova-01',
+                  headerText: 'NOVA Medical Catalog',
+                  bodyText: '250+ Certified Medical Equipment Packages',
+                  footerText: 'Direct OEM Pricing • AERB Certified',
+                  actionButtonText: 'View Catalog',
+                  thumbnailUrl: 'https://images.unsplash.com/photo-1516549655169-df83a0774514?auto=format&fit=crop&w=600&q=80',
+                  nextNodeId: ''
+                };
+              } else if (newType === 'single_product' && !node.singleProduct) {
+                updated.singleProduct = {
+                  id: `prod-${Date.now()}`,
+                  retailerId: 'MED-VENT-500',
+                  title: 'Turbine ICU Ventilator Pro',
+                  price: '₹4,50,000',
+                  currency: 'INR',
+                  description: 'Invasive & Non-invasive modes with 12.1" HD touchscreen and battery backup.',
+                  imageUrl: 'https://images.unsplash.com/photo-1584515979956-d9f6e5d09982?auto=format&fit=crop&w=600&q=80',
+                  category: 'Critical Care Equipment',
+                  nextNodeId: ''
+                };
+              } else if (newType === 'multi_product' && (!node.productSections || node.productSections.length === 0)) {
+                updated.productSections = [
+                  {
+                    title: 'Intensive Care Unit (ICU)',
+                    products: [
+                      {
+                        id: `p-${Date.now()}-1`,
+                        retailerId: 'ICU-BED-01',
+                        title: 'Motorized 5-Function ICU Bed',
+                        price: '₹1,25,000',
+                        currency: 'INR',
+                        description: 'CPR quick-release, Trendelenburg & central braking',
+                        imageUrl: 'https://images.unsplash.com/photo-1586773860418-d37222d8fce3?auto=format&fit=crop&w=400&q=80',
+                        nextNodeId: ''
+                      }
+                    ]
+                  }
+                ];
+              } else if (newType === 'template' && !node.templateConfig) {
+                updated.templateConfig = {
+                  templateName: 'rfq_quote_notification',
+                  category: 'UTILITY',
+                  language: 'en_US',
+                  headerType: 'text',
+                  headerText: 'NOVA PROCUREMENT UPDATE',
+                  bodyVariables: ['Dr. Sharma', 'Apollo Hospital Project', '3 Quotes'],
+                  buttons: [
+                    { id: `tbtn-${Date.now()}-1`, type: 'QUICK_REPLY', text: '📊 Review Quotes', nextNodeId: '' },
+                    { id: `tbtn-${Date.now()}-2`, type: 'URL', text: '🌐 Open Portal', value: 'https://nova-h.in' }
+                  ]
+                };
               } else if (newType === 'flow_screen' && !node.flowScreen) {
                 updated.flowScreen = {
                   title: 'Project Intake Form',
@@ -238,17 +413,26 @@ export const NodeInspector: React.FC<NodeInspectorProps> = ({
             }}
             className="w-full text-xs p-2 rounded-xl border border-slate-300 focus:ring-1 focus:ring-emerald-500 outline-none bg-white font-medium text-slate-800"
           >
-            <option value="button">Quick Reply (Up to 3 Buttons)</option>
-            <option value="list">Interactive List Menu (Sections & Items)</option>
-            <option value="flow_screen">WhatsApp Flow (Native Form Screen)</option>
-            <option value="media_cta">Media Message + Call / URL Button</option>
-            <option value="input_capture">User Input Capture (Text/Number)</option>
-            <option value="agent_handover">Live Agent Handover</option>
+            <optgroup label="WhatsApp Interactive Message Types">
+              <option value="text_buttons">Text Buttons (Quick Reply Up to 3)</option>
+              <option value="media_buttons">Media Buttons (Image/Doc + Reply Buttons)</option>
+              <option value="list">Interactive List Menu (Sections & Items)</option>
+              <option value="catalogue">Catalogue Message (Meta Storefront)</option>
+              <option value="single_product">Single Product (Featured SKU Card)</option>
+              <option value="multi_product">Multi Product (Multi-Category Catalog)</option>
+              <option value="template">Meta Template (Approved Notification)</option>
+            </optgroup>
+            <optgroup label="Advanced Flow Building">
+              <option value="flow_screen">WhatsApp Flow (Native Form Screen)</option>
+              <option value="media_cta">Media Message + Call / URL Button</option>
+              <option value="input_capture">User Input Capture (Text/Number)</option>
+              <option value="agent_handover">Live Agent Handover</option>
+            </optgroup>
           </select>
         </div>
       </div>
 
-      {/* Header Media Settings */}
+      {/* Header Media Settings (for text_buttons, media_buttons, list, etc.) */}
       <div className="p-3.5 bg-slate-50 rounded-xl border border-slate-200 space-y-3">
         <div className="flex items-center justify-between">
           <label className="text-xs font-bold text-slate-800">
@@ -309,7 +493,7 @@ export const NodeInspector: React.FC<NodeInspectorProps> = ({
         </div>
 
         <textarea
-          rows={5}
+          rows={4}
           value={node.bodyText}
           onChange={(e) => onUpdateNode({ ...node, bodyText: e.target.value })}
           placeholder="Write your interactive message text here. Use *bold* for bold and _italic_ for italics..."
@@ -353,22 +537,23 @@ export const NodeInspector: React.FC<NodeInspectorProps> = ({
           type="text"
           value={node.footerText || ''}
           onChange={(e) => onUpdateNode({ ...node, footerText: e.target.value })}
-          placeholder="e.g. Official NOVA Healthcare Advisory &bull; Reply STOP to unsubscribe"
+          placeholder="e.g. Official NOVA Healthcare Advisory • Reply STOP to unsubscribe"
           className="w-full text-xs p-2 rounded-xl border border-slate-300 focus:ring-1 focus:ring-emerald-500 outline-none"
         />
       </div>
 
       {/* ========================================================================= */}
-      {/* INTERACTIVE CONTROLS CONFIGURATION BY TYPE                                 */}
+      {/* INTERACTIVE CONTROLS CONFIGURATION BY MESSAGE TYPE                        */}
       {/* ========================================================================= */}
 
-      {/* 1. QUICK REPLY BUTTONS */}
-      {node.type === 'button' && (
+      {/* 1 & 2. TEXT BUTTONS & MEDIA BUTTONS */}
+      {(node.type === 'text_buttons' || node.type === 'button' || node.type === 'media_buttons') && (
         <div className="p-4 bg-emerald-50/50 rounded-2xl border border-emerald-200 space-y-3">
           <div className="flex items-center justify-between">
             <div>
-              <h4 className="text-xs font-black text-emerald-900">
-                Interactive Quick Reply Buttons ({node.buttons?.length || 0} / 3)
+              <h4 className="text-xs font-black text-emerald-900 flex items-center gap-1">
+                <Zap className="w-3.5 h-3.5 text-emerald-600" />
+                <span>Quick Reply Buttons ({node.buttons?.length || 0} / 3)</span>
               </h4>
               <p className="text-[10px] text-emerald-700">Meta allows up to 3 interactive reply buttons per message.</p>
             </div>
@@ -428,7 +613,7 @@ export const NodeInspector: React.FC<NodeInspectorProps> = ({
         </div>
       )}
 
-      {/* 2. INTERACTIVE LIST MESSAGE */}
+      {/* 3. INTERACTIVE LIST MESSAGE */}
       {node.type === 'list' && (
         <div className="p-4 bg-blue-50/50 rounded-2xl border border-blue-200 space-y-3">
           <div className="flex items-center justify-between">
@@ -436,7 +621,7 @@ export const NodeInspector: React.FC<NodeInspectorProps> = ({
               <h4 className="text-xs font-black text-blue-900">
                 Interactive List Menu
               </h4>
-              <p className="text-[10px] text-blue-700">Tap below to configure menu header & row items.</p>
+              <p className="text-[10px] text-blue-700">Configure menu header button and row items.</p>
             </div>
           </div>
 
@@ -505,7 +690,7 @@ export const NodeInspector: React.FC<NodeInspectorProps> = ({
                         <button
                           type="button"
                           onClick={() => handleDeleteListRow(sIdx, rIdx)}
-                          className="text-slate-400 hover:text-rose-600 p-1"
+                          className="text-slate-400 hover:text-rose-600 p-1 cursor-pointer"
                         >
                           <Trash2 className="w-3 h-3" />
                         </button>
@@ -527,7 +712,436 @@ export const NodeInspector: React.FC<NodeInspectorProps> = ({
         </div>
       )}
 
-      {/* 3. WHATSAPP FLOW NATIVE SCREEN */}
+      {/* 4. CATALOGUE MESSAGE */}
+      {node.type === 'catalogue' && (
+        <div className="p-4 bg-indigo-50/50 rounded-2xl border border-indigo-200 space-y-3">
+          <div className="flex items-center gap-2">
+            <Store className="w-4 h-4 text-indigo-700" />
+            <h4 className="text-xs font-black text-indigo-900">
+              Meta Commerce Catalogue Message
+            </h4>
+          </div>
+          <p className="text-[10px] text-indigo-700">
+            Showcases your entire Meta Commerce Catalog directly in the chat with a "View Catalog" button.
+          </p>
+
+          <div className="grid grid-cols-2 gap-2">
+            <div>
+              <label className="block text-[10px] font-bold text-indigo-900 mb-0.5">Catalog ID</label>
+              <input
+                type="text"
+                value={node.catalogConfig?.catalogId || ''}
+                onChange={(e) => onUpdateNode({
+                  ...node,
+                  catalogConfig: { ...node.catalogConfig, catalogId: e.target.value }
+                })}
+                placeholder="meta-cat-nova-01"
+                className="w-full text-xs p-1.5 border border-indigo-200 rounded-lg bg-white font-mono"
+              />
+            </div>
+            <div>
+              <label className="block text-[10px] font-bold text-indigo-900 mb-0.5">Action Button Label</label>
+              <input
+                type="text"
+                value={node.catalogConfig?.actionButtonText || 'View Catalog'}
+                onChange={(e) => onUpdateNode({
+                  ...node,
+                  catalogConfig: { ...node.catalogConfig, actionButtonText: e.target.value }
+                })}
+                className="w-full text-xs p-1.5 border border-indigo-200 rounded-lg bg-white font-bold"
+              />
+            </div>
+          </div>
+
+          <div>
+            <label className="block text-[10px] font-bold text-indigo-900 mb-0.5">Catalog Thumbnail Image URL</label>
+            <input
+              type="text"
+              value={node.catalogConfig?.thumbnailUrl || ''}
+              onChange={(e) => onUpdateNode({
+                ...node,
+                catalogConfig: { ...node.catalogConfig, thumbnailUrl: e.target.value }
+              })}
+              placeholder="https://..."
+              className="w-full text-xs p-1.5 border border-indigo-200 rounded-lg bg-white"
+            />
+          </div>
+
+          <div>
+            <label className="block text-[10px] font-bold text-indigo-900 mb-0.5">
+              Route When User Taps Catalog Action:
+            </label>
+            <select
+              value={node.catalogConfig?.nextNodeId || node.nextNodeId || ''}
+              onChange={(e) => onUpdateNode({
+                ...node,
+                catalogConfig: { ...node.catalogConfig, nextNodeId: e.target.value },
+                nextNodeId: e.target.value
+              })}
+              className="w-full text-xs p-1.5 border border-indigo-200 rounded-lg bg-white font-medium"
+            >
+              <option value="">Next Step...</option>
+              {allNodes.map((n) => (
+                <option key={n.id} value={n.id}>{n.title}</option>
+              ))}
+            </select>
+          </div>
+        </div>
+      )}
+
+      {/* 5. SINGLE PRODUCT */}
+      {node.type === 'single_product' && (
+        <div className="p-4 bg-emerald-50/60 rounded-2xl border border-emerald-200 space-y-3">
+          <div className="flex items-center gap-2">
+            <ShoppingCart className="w-4 h-4 text-emerald-700" />
+            <h4 className="text-xs font-black text-emerald-900">
+              Single Product Card (WhatsApp Commerce)
+            </h4>
+          </div>
+
+          <div className="grid grid-cols-2 gap-2">
+            <div>
+              <label className="block text-[10px] font-bold text-emerald-900 mb-0.5">Retailer Product SKU</label>
+              <input
+                type="text"
+                value={node.singleProduct?.retailerId || ''}
+                onChange={(e) => onUpdateNode({
+                  ...node,
+                  singleProduct: { ...node.singleProduct!, retailerId: e.target.value }
+                })}
+                placeholder="NOVA-MED-VENT-500"
+                className="w-full text-xs p-1.5 border border-emerald-200 rounded-lg bg-white font-mono"
+              />
+            </div>
+            <div>
+              <label className="block text-[10px] font-bold text-emerald-900 mb-0.5">Price & Currency</label>
+              <input
+                type="text"
+                value={node.singleProduct?.price || ''}
+                onChange={(e) => onUpdateNode({
+                  ...node,
+                  singleProduct: { ...node.singleProduct!, price: e.target.value }
+                })}
+                placeholder="₹4,50,000"
+                className="w-full text-xs p-1.5 border border-emerald-200 rounded-lg bg-white font-bold text-emerald-700"
+              />
+            </div>
+          </div>
+
+          <div>
+            <label className="block text-[10px] font-bold text-emerald-900 mb-0.5">Product Title</label>
+            <input
+              type="text"
+              value={node.singleProduct?.title || ''}
+              onChange={(e) => onUpdateNode({
+                ...node,
+                singleProduct: { ...node.singleProduct!, title: e.target.value }
+              })}
+              placeholder="e.g. Turbine ICU Ventilator Pro 500"
+              className="w-full text-xs p-1.5 border border-emerald-200 rounded-lg bg-white font-bold"
+            />
+          </div>
+
+          <div>
+            <label className="block text-[10px] font-bold text-emerald-900 mb-0.5">Product Image URL</label>
+            <input
+              type="text"
+              value={node.singleProduct?.imageUrl || ''}
+              onChange={(e) => onUpdateNode({
+                ...node,
+                singleProduct: { ...node.singleProduct!, imageUrl: e.target.value }
+              })}
+              placeholder="https://images.unsplash.com/..."
+              className="w-full text-xs p-1.5 border border-emerald-200 rounded-lg bg-white"
+            />
+          </div>
+
+          <div>
+            <label className="block text-[10px] font-bold text-emerald-900 mb-0.5">Short Description</label>
+            <textarea
+              rows={2}
+              value={node.singleProduct?.description || ''}
+              onChange={(e) => onUpdateNode({
+                ...node,
+                singleProduct: { ...node.singleProduct!, description: e.target.value }
+              })}
+              placeholder="Invasive & Non-invasive modes with 12.1 inch display"
+              className="w-full text-xs p-1.5 border border-emerald-200 rounded-lg bg-white"
+            />
+          </div>
+
+          <div>
+            <label className="block text-[10px] font-bold text-emerald-900 mb-0.5">
+              Next Step When User Clicks Product / Inquires:
+            </label>
+            <select
+              value={node.singleProduct?.nextNodeId || node.nextNodeId || ''}
+              onChange={(e) => onUpdateNode({
+                ...node,
+                singleProduct: { ...node.singleProduct!, nextNodeId: e.target.value },
+                nextNodeId: e.target.value
+              })}
+              className="w-full text-xs p-1.5 border border-emerald-200 rounded-lg bg-white font-medium"
+            >
+              <option value="">Next Step...</option>
+              {allNodes.map((n) => (
+                <option key={n.id} value={n.id}>{n.title}</option>
+              ))}
+            </select>
+          </div>
+        </div>
+      )}
+
+      {/* 6. MULTI PRODUCT */}
+      {node.type === 'multi_product' && (
+        <div className="p-4 bg-cyan-50/50 rounded-2xl border border-cyan-200 space-y-3">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <ShoppingBag className="w-4 h-4 text-cyan-700" />
+              <h4 className="text-xs font-black text-cyan-900">
+                Multi-Product Sections (Catalog Showcase)
+              </h4>
+            </div>
+            <button
+              type="button"
+              onClick={handleAddProductSection}
+              className="py-1 px-2 rounded-lg bg-cyan-700 hover:bg-cyan-800 text-white font-bold text-[10px] flex items-center gap-1 cursor-pointer"
+            >
+              <Plus className="w-3 h-3" />
+              <span>Add Category</span>
+            </button>
+          </div>
+
+          <div className="space-y-3">
+            {node.productSections?.map((section, sIdx) => (
+              <div key={sIdx} className="p-3 bg-white rounded-xl border border-cyan-200 space-y-2">
+                <div className="flex items-center justify-between">
+                  <input
+                    type="text"
+                    value={section.title}
+                    onChange={(e) => {
+                      const sections = [...(node.productSections || [])];
+                      sections[sIdx].title = e.target.value;
+                      onUpdateNode({ ...node, productSections: sections });
+                    }}
+                    placeholder="Category Title (e.g. ICU Equipment)"
+                    className="text-xs font-bold text-slate-800 border-b border-transparent focus:border-cyan-500 outline-none"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => handleAddProductToSection(sIdx)}
+                    className="text-[10px] font-bold text-cyan-700 hover:text-cyan-900 bg-cyan-50 px-2 py-0.5 rounded cursor-pointer"
+                  >
+                    + Add Product
+                  </button>
+                </div>
+
+                <div className="space-y-2 pl-2 border-l-2 border-cyan-200">
+                  {section.products.map((prod, pIdx) => (
+                    <div key={prod.id} className="p-2 bg-slate-50 rounded-lg border border-slate-200 space-y-1.5">
+                      <div className="flex items-center gap-2">
+                        <input
+                          type="text"
+                          value={prod.title}
+                          onChange={(e) => handleUpdateProduct(sIdx, pIdx, { title: e.target.value })}
+                          placeholder="Product Name"
+                          className="flex-1 text-xs font-bold text-slate-800 p-1 border border-slate-300 rounded bg-white"
+                        />
+                        <input
+                          type="text"
+                          value={prod.price}
+                          onChange={(e) => handleUpdateProduct(sIdx, pIdx, { price: e.target.value })}
+                          placeholder="₹1,25,000"
+                          className="w-24 text-xs font-bold text-emerald-700 p-1 border border-slate-300 rounded bg-white"
+                        />
+                        <button
+                          type="button"
+                          onClick={() => handleDeleteProduct(sIdx, pIdx)}
+                          className="text-slate-400 hover:text-rose-600 p-1"
+                        >
+                          <Trash2 className="w-3 h-3" />
+                        </button>
+                      </div>
+
+                      <div className="grid grid-cols-2 gap-1.5">
+                        <input
+                          type="text"
+                          value={prod.retailerId}
+                          onChange={(e) => handleUpdateProduct(sIdx, pIdx, { retailerId: e.target.value })}
+                          placeholder="SKU-001"
+                          className="text-[10px] text-slate-600 font-mono p-1 border border-slate-200 rounded bg-white"
+                        />
+                        <input
+                          type="text"
+                          value={prod.imageUrl}
+                          onChange={(e) => handleUpdateProduct(sIdx, pIdx, { imageUrl: e.target.value })}
+                          placeholder="Image URL"
+                          className="text-[10px] text-slate-600 p-1 border border-slate-200 rounded bg-white"
+                        />
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            ))}
+          </div>
+
+          <div>
+            <label className="block text-[10px] font-bold text-cyan-900 mb-0.5">
+              Next Step When User Views Catalog:
+            </label>
+            <select
+              value={node.nextNodeId || ''}
+              onChange={(e) => onUpdateNode({ ...node, nextNodeId: e.target.value })}
+              className="w-full text-xs p-1.5 border border-cyan-200 rounded-lg bg-white"
+            >
+              <option value="">Next Step...</option>
+              {allNodes.map((n) => (
+                <option key={n.id} value={n.id}>{n.title}</option>
+              ))}
+            </select>
+          </div>
+        </div>
+      )}
+
+      {/* 7. META TEMPLATE */}
+      {node.type === 'template' && (
+        <div className="p-4 bg-amber-50/50 rounded-2xl border border-amber-200 space-y-3">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-1.5">
+              <Zap className="w-4 h-4 text-amber-700" />
+              <h4 className="text-xs font-black text-amber-900">
+                Meta Pre-Approved Template Message
+              </h4>
+            </div>
+            <span className="text-[9px] font-black uppercase px-2 py-0.5 rounded bg-amber-200 text-amber-800">
+              {node.templateConfig?.category || 'UTILITY'}
+            </span>
+          </div>
+
+          <div className="grid grid-cols-2 gap-2">
+            <div>
+              <label className="block text-[10px] font-bold text-amber-900 mb-0.5">Template Name</label>
+              <input
+                type="text"
+                value={node.templateConfig?.templateName || ''}
+                onChange={(e) => onUpdateNode({
+                  ...node,
+                  templateConfig: { ...node.templateConfig, templateName: e.target.value }
+                })}
+                placeholder="rfq_quote_notification"
+                className="w-full text-xs p-1.5 border border-amber-300 rounded-lg bg-white font-mono"
+              />
+            </div>
+            <div>
+              <label className="block text-[10px] font-bold text-amber-900 mb-0.5">Category</label>
+              <select
+                value={node.templateConfig?.category || 'UTILITY'}
+                onChange={(e) => onUpdateNode({
+                  ...node,
+                  templateConfig: { ...node.templateConfig, category: e.target.value as any }
+                })}
+                className="w-full text-xs p-1.5 border border-amber-300 rounded-lg bg-white font-medium"
+              >
+                <option value="UTILITY">UTILITY (Quotes, Updates)</option>
+                <option value="MARKETING">MARKETING (Offers, Launches)</option>
+                <option value="AUTHENTICATION">AUTHENTICATION (OTP)</option>
+              </select>
+            </div>
+          </div>
+
+          {/* Template Variables */}
+          <div>
+            <label className="block text-[10px] font-bold text-amber-900 mb-1">
+              Body Variable Fallbacks (&#123;&#123;1&#125;&#125;, &#123;&#123;2&#125;&#125;, &#123;&#123;3&#125;&#125;):
+            </label>
+            <div className="space-y-1">
+              {(node.templateConfig?.bodyVariables || ['Dr. Vivek Sharma', 'Apollo Hospital Project', '3 Quotes']).map((v, idx) => (
+                <div key={idx} className="flex items-center gap-2">
+                  <span className="text-[10px] font-mono text-amber-800 font-bold w-8">{`{{${idx + 1}}}`}</span>
+                  <input
+                    type="text"
+                    value={v}
+                    onChange={(e) => {
+                      const vars = [...(node.templateConfig?.bodyVariables || [])];
+                      vars[idx] = e.target.value;
+                      onUpdateNode({
+                        ...node,
+                        templateConfig: { ...node.templateConfig, bodyVariables: vars }
+                      });
+                    }}
+                    className="flex-1 text-xs p-1 border border-amber-200 rounded bg-white"
+                  />
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* Template Buttons */}
+          <div className="space-y-2 pt-1">
+            <div className="flex items-center justify-between">
+              <label className="text-[10px] font-bold text-amber-900">
+                Template Action Buttons ({node.templateConfig?.buttons?.length || 0} / 3)
+              </label>
+              {(node.templateConfig?.buttons?.length || 0) < 3 && (
+                <button
+                  type="button"
+                  onClick={handleAddTemplateButton}
+                  className="text-[10px] font-bold text-amber-800 bg-amber-200 hover:bg-amber-300 px-2 py-0.5 rounded cursor-pointer"
+                >
+                  + Add Button
+                </button>
+              )}
+            </div>
+
+            {node.templateConfig?.buttons?.map((tb, idx) => (
+              <div key={tb.id} className="p-2 bg-white rounded-lg border border-amber-200 space-y-1">
+                <div className="flex items-center gap-2">
+                  <input
+                    type="text"
+                    value={tb.text}
+                    onChange={(e) => handleUpdateTemplateButton(idx, { text: e.target.value })}
+                    placeholder="Button Text"
+                    className="flex-1 text-xs font-bold p-1 border border-slate-200 rounded"
+                  />
+                  <select
+                    value={tb.type}
+                    onChange={(e) => handleUpdateTemplateButton(idx, { type: e.target.value as any })}
+                    className="text-xs p-1 border border-slate-200 rounded bg-slate-50"
+                  >
+                    <option value="QUICK_REPLY">Quick Reply</option>
+                    <option value="URL">URL Link</option>
+                    <option value="PHONE_NUMBER">Call</option>
+                  </select>
+                  <button
+                    type="button"
+                    onClick={() => handleDeleteTemplateButton(idx)}
+                    className="text-slate-400 hover:text-rose-600 p-0.5"
+                  >
+                    <Trash2 className="w-3.5 h-3.5" />
+                  </button>
+                </div>
+
+                <div className="flex items-center gap-2">
+                  <span className="text-[10px] text-slate-500">Route on Click:</span>
+                  <select
+                    value={tb.nextNodeId || ''}
+                    onChange={(e) => handleUpdateTemplateButton(idx, { nextNodeId: e.target.value })}
+                    className="flex-1 text-xs p-1 border border-slate-200 rounded bg-slate-50"
+                  >
+                    <option value="">Next Step...</option>
+                    {allNodes.map((n) => (
+                      <option key={n.id} value={n.id}>{n.title}</option>
+                    ))}
+                  </select>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* ADVANCED 1. WHATSAPP FLOW NATIVE SCREEN */}
       {node.type === 'flow_screen' && node.flowScreen && (
         <div className="p-4 bg-purple-50/50 rounded-2xl border border-purple-200 space-y-3">
           <div className="flex items-center justify-between">
@@ -607,7 +1221,7 @@ export const NodeInspector: React.FC<NodeInspectorProps> = ({
                   <button
                     type="button"
                     onClick={() => handleDeleteFormField(fIdx)}
-                    className="text-slate-400 hover:text-rose-600 p-0.5"
+                    className="text-slate-400 hover:text-rose-600 p-0.5 cursor-pointer"
                   >
                     <Trash2 className="w-3.5 h-3.5" />
                   </button>
@@ -649,7 +1263,7 @@ export const NodeInspector: React.FC<NodeInspectorProps> = ({
         </div>
       )}
 
-      {/* 4. MEDIA CTA BUTTON */}
+      {/* ADVANCED 2. MEDIA CTA BUTTON */}
       {node.type === 'media_cta' && (
         <div className="p-4 bg-amber-50/50 rounded-2xl border border-amber-200 space-y-3">
           <h4 className="text-xs font-black text-amber-900">
@@ -693,7 +1307,7 @@ export const NodeInspector: React.FC<NodeInspectorProps> = ({
         </div>
       )}
 
-      {/* 5. USER INPUT CAPTURE */}
+      {/* ADVANCED 3. USER INPUT CAPTURE */}
       {node.type === 'input_capture' && (
         <div className="p-4 bg-slate-100 rounded-2xl border border-slate-300 space-y-3">
           <h4 className="text-xs font-black text-slate-800">

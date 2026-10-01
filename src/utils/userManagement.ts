@@ -75,11 +75,26 @@ export const DEFAULT_USERS: AuthUser[] = [
     email: 'advisor@maculahealth.in',
     phone: '+91 98220 54321',
     company: 'Macula Healthcare Consulting',
+    specialization: 'Turnkey Healthcare Planning & Operations',
     isSubscribed: true,
-    plan: 'Advisor Specialist (₹1,000/yr)',
+    plan: 'Advisor Specialist (₹XXXX/yr - Activated)',
     status: 'active',
     createdAt: '2026-01-20T15:10:00Z',
     lastLoginAt: '2026-09-17T02:05:00Z'
+  },
+  {
+    id: 'user-advisor-pending',
+    name: 'Ar. Vikramaditya Rao',
+    role: 'advisor',
+    email: 'ar.rao@hospidesign.in',
+    phone: '+91 99881 22334',
+    company: 'V. Rao Healthcare Architecture',
+    specialization: 'AERB & Architectural Design',
+    isSubscribed: false,
+    plan: 'Advisor Membership (Pending Admin Activation)',
+    status: 'pending',
+    createdAt: '2026-09-17T11:00:00Z',
+    lastLoginAt: '2026-09-17T11:00:00Z'
   },
   {
     id: 'user-advisor-2',
@@ -88,8 +103,9 @@ export const DEFAULT_USERS: AuthUser[] = [
     email: 'ar.nair@healthbuild.in',
     phone: '+91 97440 33221',
     company: 'HealthBuild Architects & Planners',
-    isSubscribed: false,
-    plan: 'Advisor Free Starter',
+    specialization: 'Hospital Space Planning',
+    isSubscribed: true,
+    plan: 'Advisor Specialist (₹XXXX/yr - Activated)',
     status: 'active',
     createdAt: '2026-04-02T16:45:00Z',
     lastLoginAt: '2026-09-13T14:30:00Z'
@@ -145,9 +161,9 @@ export const registerOrUpdateUser = (userData: AuthUser): AuthUser => {
 
   const defaultPlanForRole = (role: UserRole) => {
     switch (role) {
-      case 'owner': return 'Owner Free Starter';
-      case 'vendor': return 'Vendor Free Starter';
-      case 'advisor': return 'Advisor Free Starter';
+      case 'owner': return 'Owner Annual (₹1,000/yr)';
+      case 'vendor': return 'Vendor Standard (₹1,000 - ₹5,000/yr)';
+      case 'advisor': return 'Advisor Membership (Pending Admin Activation)';
       case 'admin': return 'Administrator Master Access';
     }
   };
@@ -160,14 +176,17 @@ export const registerOrUpdateUser = (userData: AuthUser): AuthUser => {
       role: userData.role || existing.role,
       company: userData.company || existing.company,
       phone: userData.phone || existing.phone,
+      specialization: userData.specialization || existing.specialization,
+      isSubscribed: userData.isSubscribed !== undefined ? userData.isSubscribed : existing.isSubscribed,
       plan: userData.plan || existing.plan || defaultPlanForRole(userData.role),
-      status: existing.status || 'active',
+      status: userData.status || existing.status || (userData.role === 'advisor' ? 'pending' : 'active'),
       lastLoginAt: new Date().toISOString()
     };
     users[existingIndex] = updated;
     saveAllUsers(users);
     return updated;
   } else {
+    const initialStatus = userData.status || (userData.role === 'advisor' ? 'pending' : 'active');
     const newUser: AuthUser = {
       id: userData.id || `user-${Date.now()}-${Math.random().toString(36).substring(2, 6)}`,
       name: userData.name || 'Healthcare User',
@@ -175,9 +194,10 @@ export const registerOrUpdateUser = (userData: AuthUser): AuthUser => {
       email: userData.email,
       phone: userData.phone || '+91 98765 43210',
       company: userData.company || 'Healthcare Organization',
-      isSubscribed: userData.isSubscribed ?? false,
+      specialization: userData.specialization,
+      isSubscribed: userData.isSubscribed ?? (userData.role !== 'advisor'),
       plan: userData.plan || defaultPlanForRole(userData.role),
-      status: 'active',
+      status: initialStatus,
       createdAt: new Date().toISOString(),
       lastLoginAt: new Date().toISOString()
     };
@@ -188,6 +208,27 @@ export const registerOrUpdateUser = (userData: AuthUser): AuthUser => {
 };
 
 /**
+ * Activate an advisor from the admin panel
+ */
+export const activateAdvisorUser = (email: string): AuthUser[] => {
+  const users = getAllUsers();
+  const emailNorm = email.trim().toLowerCase();
+  const updated = users.map(u => {
+    if ((u.email || '').trim().toLowerCase() === emailNorm) {
+      return {
+        ...u,
+        status: 'active' as const,
+        isSubscribed: true,
+        plan: 'Advisor Specialist (₹XXXX/yr - Activated)'
+      };
+    }
+    return u;
+  });
+  saveAllUsers(updated);
+  return updated;
+};
+
+/**
  * Toggle user status between active and disabled
  */
 export const toggleUserStatus = (email: string): AuthUser[] => {
@@ -195,7 +236,7 @@ export const toggleUserStatus = (email: string): AuthUser[] => {
   const emailNorm = email.trim().toLowerCase();
   const updated = users.map(u => {
     if ((u.email || '').trim().toLowerCase() === emailNorm) {
-      const nextStatus: 'active' | 'disabled' = u.status === 'disabled' ? 'active' : 'disabled';
+      const nextStatus: 'active' | 'disabled' = u.status === 'active' ? 'disabled' : 'active';
       return { ...u, status: nextStatus };
     }
     return u;

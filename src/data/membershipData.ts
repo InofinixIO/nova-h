@@ -25,9 +25,9 @@ export const MEMBERSHIP_PLANS: Record<string, MembershipPlan> = {
     title: 'Advisor / Consultant Membership',
     subtitle: 'Qualified professional aligned to NOVA-H / Macula Healthcare methodology',
     commercialBasis: 'Qualified professional subscription',
-    annualFee: 1000,
-    displayFee: '₹1,000/year',
-    badge: 'Expert Network',
+    annualFee: 0,
+    displayFee: '₹XXXX/year',
+    badge: 'Vetted Advisor',
     benefits: [
       'Publish verified professional consultant profile in NOVA-H directory',
       'Ecosystem collaboration with hospital promoters & turnkey builders',
@@ -35,7 +35,7 @@ export const MEMBERSHIP_PLANS: Record<string, MembershipPlan> = {
       'Eligibility for NOVA-H / Macula Healthcare project collaboration',
       'Access to orientation programmes and specialist network events'
     ],
-    recommendedRule: 'Advisors pay for entry membership + qualification and ecosystem participation.'
+    recommendedRule: 'Advisors register via admin vetting & qualification without payment during signup.'
   }
 };
 
@@ -117,13 +117,13 @@ export const VENDOR_PRICING_OPTIONS: VendorPricingOption[] = [
 ];
 
 export const ADVISOR_QUALIFICATION_DETAILS = {
-  memberFee: 1000,
-  memberFeeDisplay: '₹1,000/year',
+  memberFee: 0,
+  memberFeeDisplay: '₹XXXX/year',
   workshopFeeRange: '₹2,500 - ₹5,000 per workshop',
   advisorTypes: [
     {
       title: 'NOVA-H Advisor Member',
-      fee: '₹1,000/year',
+      fee: '₹XXXX/year',
       description: 'Can create a profile, access the ecosystem, receive relevant hospital information, and attend network workshops.'
     },
     {
@@ -157,11 +157,11 @@ export const ECOSYSTEM_COMMERCIAL_LOGIC = [
   {
     userType: 'Advisors',
     commercialBasis: 'Entry membership + paid learning + project collaboration',
-    annualFee: '₹1,000/year + workshops',
-    notes: 'Workshops separately chargeable at ₹2,500 - ₹5,000.'
+    annualFee: '₹XXXX/year + workshops',
+    notes: 'Free signup registration; membership vetted and activated by admin. Workshops separately chargeable.'
   },
   {
-    userType: 'NOVA-H Team',
+    userType: 'Macula Healthcare',
     commercialBasis: 'Consulting, project management and execution revenue',
     annualFee: 'Project-based',
     notes: 'Direct advisory & execution when actual hospital projects arise.'

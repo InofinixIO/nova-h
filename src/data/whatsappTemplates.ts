@@ -2,6 +2,180 @@ import { WhatsAppFlow } from '../types';
 
 export const PRESET_WHATSAPP_FLOWS: WhatsAppFlow[] = [
   {
+    id: 'flow-commerce-showcase',
+    name: 'Meta Commerce & Message Types Showcase',
+    description: 'Showcases all 7 Meta-approved WhatsApp message types: Text Buttons, Media Buttons, List, Catalogue Message, Single Product, Multi Product, and Template.',
+    category: 'healthcare',
+    triggerKeyword: 'CATALOG',
+    startNodeId: 'node-tpl-intro',
+    nodes: [
+      {
+        id: 'node-tpl-intro',
+        title: '1. Meta Pre-Approved Template',
+        type: 'template',
+        headerType: 'text',
+        headerContent: 'NOVA HEALTHCARE VERIFIED NOTICE',
+        bodyText: 'Hello {{1}}, your healthcare infrastructure inquiry for {{2}} has been approved with {{3}}.\n\nTap below to explore our verified equipment catalog.',
+        footerText: 'Official Meta Approved Template',
+        templateConfig: {
+          templateName: 'hospital_intake_approval_v1',
+          category: 'UTILITY',
+          language: 'en',
+          bodyVariables: ['Dr. Vivek Sharma', 'Apollo Greenfield Hospital', '3 Empanelled OEMs'],
+          buttons: [
+            { id: 'tbtn-1', type: 'QUICK_REPLY', text: '📦 View Equipment Catalog', nextNodeId: 'node-media-btns' },
+            { id: 'tbtn-2', type: 'URL', text: '🌐 Open Portal', value: 'https://nova-h.in' },
+            { id: 'tbtn-3', type: 'PHONE_NUMBER', text: '📞 Call Liaison', value: '+912249821000' }
+          ]
+        }
+      },
+      {
+        id: 'node-media-btns',
+        title: '2. Media Buttons (Image + Quick Reply)',
+        type: 'media_buttons',
+        headerType: 'image',
+        headerContent: 'https://images.unsplash.com/photo-1586773860418-d37222d8fce3?auto=format&fit=crop&w=800&q=80',
+        bodyText: 'Explore turnkey packages from certified biomedical manufacturers. How would you like to proceed?',
+        footerText: 'Select an option below',
+        buttons: [
+          { id: 'btn-mb-1', title: '📋 Interactive List', nextNodeId: 'node-interactive-list' },
+          { id: 'btn-mb-2', title: '🏪 View Full Catalog', nextNodeId: 'node-catalogue-msg' },
+          { id: 'btn-mb-3', title: '🔬 Single Product Card', nextNodeId: 'node-single-prod' }
+        ]
+      },
+      {
+        id: 'node-interactive-list',
+        title: '3. Interactive List Menu',
+        type: 'list',
+        headerType: 'text',
+        headerContent: 'EQUIPMENT DIRECTORY',
+        bodyText: 'Please select a biomedical or infrastructural domain to view available packages:',
+        footerText: 'Choose from sections below',
+        listButtonText: 'Select Equipment Category',
+        listSections: [
+          {
+            title: 'Critical Care & OT',
+            rows: [
+              { id: 'row-icu', title: 'Modular OT Suites', description: 'NABH compliant laminar airflow OT setup', nextNodeId: 'node-single-prod' },
+              { id: 'row-vent', title: 'Turbine ICU Ventilators', description: 'Dual adult/pediatric invasive & NIV systems', nextNodeId: 'node-multi-prod' }
+            ]
+          },
+          {
+            title: 'Hospital Furniture & MEP',
+            rows: [
+              { id: 'row-beds', title: 'Motorized ICU Beds', description: '5-function remote controlled beds with CPR release', nextNodeId: 'node-multi-prod' }
+            ]
+          }
+        ]
+      },
+      {
+        id: 'node-catalogue-msg',
+        title: '4. Catalogue Message (Commerce)',
+        type: 'catalogue',
+        headerType: 'none',
+        bodyText: 'Browse the official NOVA Medical Catalog with 250+ certified hospital products, live pricing, and instant RFQ submission.',
+        footerText: 'Meta Commerce Manager Connected',
+        catalogConfig: {
+          catalogId: 'meta-cat-nova-01',
+          headerText: 'NOVA Medical Equipment Catalog',
+          bodyText: 'Verified Turnkey Hospital Equipment & MEP Storefront',
+          actionButtonText: 'View Storefront Catalog',
+          thumbnailUrl: 'https://images.unsplash.com/photo-1516549655169-df83a0774514?auto=format&fit=crop&w=600&q=80',
+          nextNodeId: 'node-multi-prod'
+        }
+      },
+      {
+        id: 'node-single-prod',
+        title: '5. Single Product SKU Card',
+        type: 'single_product',
+        headerType: 'none',
+        bodyText: 'Here is the detailed specification card for our top-tier modular OT unit:',
+        footerText: 'OEM Warranty: 3 Years Included',
+        singleProduct: {
+          id: 'prod-ot-01',
+          retailerId: 'SKU-OT-MOD-2026',
+          title: 'Class 100 Modular OT Suite',
+          price: '₹18,50,000',
+          currency: 'INR',
+          description: 'Turnkey Modular Operation Theater with SS 304 anti-microbial wall cladding, HEPA laminar airflow, and digital control panel.',
+          imageUrl: 'https://images.unsplash.com/photo-1519494026892-80bbd2d6fd0d?auto=format&fit=crop&w=600&q=80',
+          category: 'Critical Care',
+          nextNodeId: 'node-multi-prod'
+        }
+      },
+      {
+        id: 'node-multi-prod',
+        title: '6. Multi Product Catalog Showcase',
+        type: 'multi_product',
+        headerType: 'text',
+        headerContent: 'FEATURED BIOMEDICAL BUNDLE',
+        bodyText: 'We have compiled 3 recommended equipment models matching your hospital specification:',
+        footerText: 'Tap below to inspect product bundle',
+        productSections: [
+          {
+            title: 'Ventilators & Monitoring',
+            products: [
+              {
+                id: 'mp-1',
+                retailerId: 'SKU-VENT-ICU-X5',
+                title: 'Turbine ICU Ventilator X5',
+                price: '₹4,50,000',
+                currency: 'INR',
+                description: 'Integrated 12-inch touchscreen with high-flow oxygen therapy.',
+                imageUrl: 'https://images.unsplash.com/photo-1584515979956-d9f6e5d09982?auto=format&fit=crop&w=600&q=80'
+              },
+              {
+                id: 'mp-2',
+                retailerId: 'SKU-MON-12P',
+                title: 'Multi-Para Patient Monitor 12"',
+                price: '₹1,20,000',
+                currency: 'INR',
+                description: 'ECG, SpO2, NIBP, Dual Temp, and EtCO2 ready.',
+                imageUrl: 'https://images.unsplash.com/photo-1579684385127-1ef15d508118?auto=format&fit=crop&w=600&q=80'
+              }
+            ]
+          },
+          {
+            title: 'Patient Positioning',
+            products: [
+              {
+                id: 'mp-3',
+                retailerId: 'SKU-BED-ELEC-5F',
+                title: '5-Function Motorized ICU Bed',
+                price: '₹1,25,000',
+                currency: 'INR',
+                description: 'Linak dual actuator motors with Trendelenburg tilt and X-ray cassette holder.',
+                imageUrl: 'https://images.unsplash.com/photo-1586773860418-d37222d8fce3?auto=format&fit=crop&w=600&q=80'
+              }
+            ]
+          }
+        ],
+        nextNodeId: 'node-text-buttons'
+      },
+      {
+        id: 'node-text-buttons',
+        title: '7. Text Buttons (Quick Reply)',
+        type: 'text_buttons',
+        headerType: 'none',
+        bodyText: 'Would you like to connect directly with our biomedical procurement team or speak with an advisor?',
+        footerText: 'NOVA Hospital Project Liaison',
+        buttons: [
+          { id: 'btn-tb-1', title: '📞 Speak with Advisor', nextNodeId: 'node-handover' },
+          { id: 'btn-tb-2', title: '📄 Generate BOQ Quote', nextNodeId: 'node-tpl-intro' }
+        ]
+      },
+      {
+        id: 'node-handover',
+        title: '8. Agent Escalation',
+        type: 'agent_handover',
+        headerType: 'text',
+        headerContent: 'SPECIALIST DESK',
+        bodyText: 'Our Senior Biomedical Procurement Specialist is reviewing your selections and will join this WhatsApp chat shortly.',
+        footerText: 'Live Support Available 9 AM - 8 PM IST'
+      }
+    ]
+  },
+  {
     id: 'flow-hospital-rfq',
     name: 'Hospital Promoter RFQ & Bed Qualifier',
     description: 'AiSensy-style interactive lead qualification flow with Quick Replies, List Menu, and Native WhatsApp Form Screen.',
@@ -12,7 +186,7 @@ export const PRESET_WHATSAPP_FLOWS: WhatsAppFlow[] = [
       {
         id: 'node-welcome',
         title: '1. Welcome & Project Intent',
-        type: 'button',
+        type: 'text_buttons',
         headerType: 'image',
         headerContent: 'https://images.unsplash.com/photo-1586773860418-d37222d8fce3?auto=format&fit=crop&w=800&q=80',
         bodyText: 'Namaste *{{user_name}}*! Welcome to *NOVA Hospital Project Network* 🏥.\n\nAre you planning a new hospital project, expanding beds, or looking for certified turnkey MEP/Biomedical vendors?',
@@ -103,7 +277,7 @@ export const PRESET_WHATSAPP_FLOWS: WhatsAppFlow[] = [
       {
         id: 'node-vendor-start',
         title: '1. Equipment Catalog Selector',
-        type: 'button',
+        type: 'text_buttons',
         headerType: 'image',
         headerContent: 'https://images.unsplash.com/photo-1516549655169-df83a0774514?auto=format&fit=crop&w=800&q=80',
         bodyText: 'Greetings from *NOVA Empanelled Biomedical Vendors*! 🔬\n\nLooking for turnkey hospital equipment packages with OEM warranty, AERB compliance, and AMC support?\n\nSelect your requirement:',
@@ -176,7 +350,7 @@ export const PRESET_WHATSAPP_FLOWS: WhatsAppFlow[] = [
       {
         id: 'node-adv-start',
         title: '1. Advisory Specialization',
-        type: 'button',
+        type: 'text_buttons',
         headerType: 'text',
         headerContent: 'NOVA HEALTHCARE ADVISORY',
         bodyText: 'Welcome! NOVA empanels leading healthcare management consultants, hospital planners, and NABH lead assessors.\n\nWhich milestone do you need expert guidance for?',

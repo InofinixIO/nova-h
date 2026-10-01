@@ -1,10 +1,9 @@
-import React, { useMemo, useCallback, useEffect } from 'react';
+import React, { useMemo, useCallback, useEffect, useState, useRef } from 'react';
 import {
   ReactFlow,
   Background,
   Controls,
   MiniMap,
-  Panel,
   MarkerType,
   Connection,
   Edge,
@@ -12,7 +11,6 @@ import {
   BackgroundVariant,
   useNodesState,
   useEdgesState,
-  addEdge,
   ConnectionLineType,
   ReactFlowProvider,
   useReactFlow
@@ -25,18 +23,24 @@ import {
   WhatsAppNodeType 
 } from '../../types';
 import { WhatsAppFlowNode, WhatsAppFlowNodeData } from './WhatsAppFlowNode';
+import { MessageTypesPalette, SUPPORTED_MESSAGE_TYPES } from './MessageTypesPalette';
+import { useTheme } from '../../context/ThemeContext';
 import { 
   Plus, 
   LayoutDashboard, 
-  Sparkles, 
-  Zap, 
-  ListFilter, 
-  ShieldCheck, 
-  ExternalLink,
   Maximize2,
-  RefreshCw,
-  Info
+  Minimize2,
+  Info,
+  Layers,
+  X,
+  Zap,
+  Store,
+  ShoppingCart,
+  ShoppingBag,
+  ListFilter,
+  Download
 } from 'lucide-react';
+import { exportFlowAsPng } from '../../utils/xyflowExport';
 
 const nodeTypes = {
   whatsappStep: WhatsAppFlowNode,
@@ -47,7 +51,7 @@ interface FlowCanvasProps {
   activeNodeId: string;
   onSelectNode: (nodeId: string) => void;
   onUpdateFlow: (flow: WhatsAppFlow) => void;
-  onAddNode: (type: WhatsAppNodeType) => void;
+  onAddNode: (type: WhatsAppNodeType, position?: { x: number; y: number }) => void;
   onDeleteNode?: (nodeId: string) => void;
 }
 
@@ -70,6 +74,17 @@ export function computeAutoLayout(flow: WhatsAppFlow): Record<string, { x: numbe
         s.rows.forEach(r => {
           if (r.nextNodeId) targets.push(r.nextNodeId);
         });
+      });
+    }
+    if (node.catalogConfig?.nextNodeId) {
+      targets.push(node.catalogConfig.nextNodeId);
+    }
+    if (node.singleProduct?.nextNodeId) {
+      targets.push(node.singleProduct.nextNodeId);
+    }
+    if (node.templateConfig?.buttons) {
+      node.templateConfig.buttons.forEach(tb => {
+        if (tb.nextNodeId) targets.push(tb.nextNodeId);
       });
     }
     if (node.flowScreen?.nextNodeId) {
@@ -98,37 +113,36 @@ export function computeAutoLayout(flow: WhatsAppFlow): Record<string, { x: numbe
       visited.add(nodeId);
 
       positions[nodeId] = {
-        x: 60 + depth * 430,
-        y: 100 + startY + idx * 390
+        x: 120 + depth * 440,
+        y: 200 + startY + idx * 380
       };
 
-      const children = childrenMap.get(nodeId) || [];
-      children.forEach(c => {
-        if (!visited.has(c) && !nextLayer.includes(c)) {
-          nextLayer.push(c);
+      const targets = childrenMap.get(nodeId) || [];
+      targets.forEach(t => {
+        if (!visited.has(t) && !nextLayer.includes(t)) {
+          nextLayer.push(t);
         }
       });
     });
 
-    currentLayer = nextLayer;
     depth++;
+    currentLayer = nextLayer;
   }
 
-  // Any unreached nodes placed in a secondary column
-  let unreachedY = 100;
-  flow.nodes.forEach(node => {
+  // Position any remaining unlinked / orphan nodes
+  flow.nodes.forEach((node, idx) => {
     if (!positions[node.id]) {
       positions[node.id] = {
-        x: 60 + depth * 430,
-        y: unreachedY
+        x: 120 + depth * 440,
+        y: 100 + idx * 360
       };
-      unreachedY += 390;
     }
   });
 
   return positions;
 }
 
+// Inner Canvas Component wrapped in ReactFlowProvider
 const FlowCanvasInner: React.FC<FlowCanvasProps> = ({
   flow,
   activeNodeId,
@@ -138,29 +152,51 @@ const FlowCanvasInner: React.FC<FlowCanvasProps> = ({
   onDeleteNode
 }) => {
   const reactFlowInstance = useReactFlow();
+  const reactFlowWrapper = useRef<HTMLDivElement>(null);
+  const [paletteOpen, setPaletteOpen] = useState(false);
+  const [isFullscreen, setIsFullscreen] = useState(false);
+  const { isDark } = useTheme();
+
+  // Fullscreen Toggle Handler
+  const handleToggleFullscreen = () => {
+    if (!isFullscreen) {
+      try {
+        if (reactFlowWrapper.current && reactFlowWrapper.current.requestFullscreen) {
+          reactFlowWrapper.current.requestFullscreen().catch(() => {});
+        }
+      } catch {}
+      setIsFullscreen(true);
+    } else {
+      try {
+        if (document.fullscreenElement && document.exitFullscreen) {
+          document.exitFullscreen().catch(() => {});
+        }
+      } catch {}
+      setIsFullscreen(false);
+    }
+    setTimeout(() => reactFlowInstance.fitView({ padding: 0.25, duration: 400 }), 180);
+  };
 
   // Convert WhatsAppFlow nodes into ReactFlow Nodes
-  const initialNodes = useMemo<Node[]>(() => {
-    // If nodes lack coordinates, generate them
-    const autoPositions = computeAutoLayout(flow);
-
+  const initialNodes: Node<WhatsAppFlowNodeData>[] = useMemo(() => {
     return flow.nodes.map((node, index) => {
-      const pos = node.position || autoPositions[node.id] || {
-        x: 80 + index * 420,
-        y: 120 + (index % 2) * 100
+      const pos = node.position || {
+        x: 100 + index * 420,
+        y: 120 + (index % 2) * 80
       };
 
       return {
         id: node.id,
         type: 'whatsappStep',
         position: pos,
+        dragHandle: '.drag-handle',
         data: {
           node,
           isActive: node.id === activeNodeId,
           isStart: node.id === flow.startNodeId,
           onSelectNode,
           onDeleteNode
-        } as unknown as Record<string, unknown>,
+        } as unknown as WhatsAppFlowNodeData,
       };
     });
   }, [flow, activeNodeId, onSelectNode, onDeleteNode]);
@@ -172,8 +208,8 @@ const FlowCanvasInner: React.FC<FlowCanvasProps> = ({
     flow.nodes.forEach(node => {
       const isNodeActive = node.id === activeNodeId;
 
-      // 1. Quick Reply Buttons
-      if (node.type === 'button' && node.buttons) {
+      // 1. Text Buttons / Media Buttons / Buttons
+      if ((node.type === 'text_buttons' || node.type === 'button' || node.type === 'media_buttons') && node.buttons) {
         node.buttons.forEach((btn, idx) => {
           if (btn.nextNodeId && flow.nodes.some(n => n.id === btn.nextNodeId)) {
             edges.push({
@@ -250,7 +286,155 @@ const FlowCanvasInner: React.FC<FlowCanvasProps> = ({
         });
       }
 
-      // 3. WhatsApp Native Form Screen
+      // 3. Catalogue Action Edge
+      if (node.type === 'catalogue' && (node.catalogConfig?.nextNodeId || node.nextNodeId)) {
+        const targetId = node.catalogConfig?.nextNodeId || node.nextNodeId;
+        if (targetId && flow.nodes.some(n => n.id === targetId)) {
+          edges.push({
+            id: `edge-${node.id}-cat-${targetId}`,
+            source: node.id,
+            sourceHandle: 'cat-action',
+            target: targetId,
+            label: node.catalogConfig?.actionButtonText || 'View Catalog',
+            animated: isNodeActive,
+            type: ConnectionLineType.SmoothStep,
+            style: {
+              stroke: isNodeActive ? '#818cf8' : '#4f46e5',
+              strokeWidth: 2,
+            },
+            labelStyle: {
+              fill: '#c7d2fe',
+              fontWeight: 700,
+              fontSize: 11,
+            },
+            labelBgStyle: {
+              fill: '#312e81',
+              fillOpacity: 0.9,
+              rx: 6,
+              ry: 6,
+            },
+            markerEnd: {
+              type: MarkerType.ArrowClosed,
+              color: isNodeActive ? '#818cf8' : '#4f46e5',
+              width: 16,
+              height: 16,
+            }
+          });
+        }
+      }
+
+      // 4. Single Product SKU Action Edge
+      if (node.type === 'single_product' && (node.singleProduct?.nextNodeId || node.nextNodeId)) {
+        const targetId = node.singleProduct?.nextNodeId || node.nextNodeId;
+        if (targetId && flow.nodes.some(n => n.id === targetId)) {
+          edges.push({
+            id: `edge-${node.id}-prod-${targetId}`,
+            source: node.id,
+            sourceHandle: 'prod-view',
+            target: targetId,
+            label: 'On Inquire',
+            animated: isNodeActive,
+            type: ConnectionLineType.SmoothStep,
+            style: {
+              stroke: isNodeActive ? '#34d399' : '#059669',
+              strokeWidth: 2,
+            },
+            labelStyle: {
+              fill: '#a7f3d0',
+              fontWeight: 700,
+              fontSize: 11,
+            },
+            labelBgStyle: {
+              fill: '#064e3b',
+              fillOpacity: 0.9,
+              rx: 6,
+              ry: 6,
+            },
+            markerEnd: {
+              type: MarkerType.ArrowClosed,
+              color: isNodeActive ? '#34d399' : '#059669',
+              width: 16,
+              height: 16,
+            }
+          });
+        }
+      }
+
+      // 5. Multi Product Showcase Action Edge
+      if (node.type === 'multi_product' && node.nextNodeId) {
+        if (flow.nodes.some(n => n.id === node.nextNodeId)) {
+          edges.push({
+            id: `edge-${node.id}-mprod-${node.nextNodeId}`,
+            source: node.id,
+            sourceHandle: 'multi-prod',
+            target: node.nextNodeId,
+            label: 'View Catalog Items',
+            animated: isNodeActive,
+            type: ConnectionLineType.SmoothStep,
+            style: {
+              stroke: isNodeActive ? '#22d3ee' : '#0891b2',
+              strokeWidth: 2,
+            },
+            labelStyle: {
+              fill: '#a5f3fc',
+              fontWeight: 700,
+              fontSize: 11,
+            },
+            labelBgStyle: {
+              fill: '#164e63',
+              fillOpacity: 0.9,
+              rx: 6,
+              ry: 6,
+            },
+            markerEnd: {
+              type: MarkerType.ArrowClosed,
+              color: isNodeActive ? '#22d3ee' : '#0891b2',
+              width: 16,
+              height: 16,
+            }
+          });
+        }
+      }
+
+      // 6. Meta Approved Template Buttons
+      if (node.type === 'template' && node.templateConfig?.buttons) {
+        node.templateConfig.buttons.forEach((tb) => {
+          if (tb.nextNodeId && flow.nodes.some(n => n.id === tb.nextNodeId)) {
+            edges.push({
+              id: `edge-${node.id}-tbtn-${tb.id}-${tb.nextNodeId}`,
+              source: node.id,
+              sourceHandle: `tbtn-${tb.id}`,
+              target: tb.nextNodeId,
+              label: tb.text,
+              animated: isNodeActive,
+              type: ConnectionLineType.SmoothStep,
+              style: {
+                stroke: isNodeActive ? '#f59e0b' : '#d97706',
+                strokeWidth: 2,
+              },
+              labelStyle: {
+                fill: '#fde68a',
+                fontWeight: 700,
+                fontSize: 11,
+              },
+              labelBgStyle: {
+                fill: '#78350f',
+                fillOpacity: 0.9,
+                rx: 6,
+                ry: 6,
+              },
+              markerEnd: {
+                type: MarkerType.ArrowClosed,
+                color: isNodeActive ? '#f59e0b' : '#d97706',
+                width: 16,
+                height: 16,
+              }
+            });
+          }
+        });
+      }
+
+      // 7. WhatsApp Native Form Screen
       if (node.type === 'flow_screen' && node.flowScreen?.nextNodeId) {
         if (flow.nodes.some(n => n.id === node.flowScreen?.nextNodeId)) {
           edges.push({
@@ -286,8 +470,19 @@ const FlowCanvasInner: React.FC<FlowCanvasProps> = ({
         }
       }
 
-      // 4. Default / Direct Next Step
-      if (node.type !== 'button' && node.type !== 'list' && node.type !== 'flow_screen' && node.nextNodeId) {
+      // 8. Default / Direct Next Step
+      if (
+        node.type !== 'text_buttons' && 
+        node.type !== 'button' && 
+        node.type !== 'media_buttons' && 
+        node.type !== 'list' && 
+        node.type !== 'catalogue' &&
+        node.type !== 'single_product' &&
+        node.type !== 'multi_product' &&
+        node.type !== 'template' &&
+        node.type !== 'flow_screen' && 
+        node.nextNodeId
+      ) {
         if (flow.nodes.some(n => n.id === node.nextNodeId)) {
           edges.push({
             id: `edge-${node.id}-next-${node.nextNodeId}`,
@@ -338,13 +533,16 @@ const FlowCanvasInner: React.FC<FlowCanvasProps> = ({
     setEdges(initialEdges);
   }, [initialEdges, setEdges]);
 
-  // Handle Dragging / Moving nodes -> Persist coordinates
-  const handleNodeDragStop = useCallback((_: any, draggedNode: Node) => {
+  // Handle Dragging Node around Canvas - persist coordinates
+  const handleNodeDragStop = useCallback((_: React.MouseEvent, node: Node) => {
     const updatedNodes = flow.nodes.map(n => {
-      if (n.id === draggedNode.id) {
+      if (n.id === node.id) {
         return {
           ...n,
-          position: draggedNode.position
+          position: {
+            x: Math.round(node.position.x),
+            y: Math.round(node.position.y)
+          }
         };
       }
       return n;
@@ -356,7 +554,7 @@ const FlowCanvasInner: React.FC<FlowCanvasProps> = ({
     });
   }, [flow, onUpdateFlow]);
 
-  // Handle Connecting an edge between steps (aiSensy / bot builder style)
+  // Handle Connecting an edge between steps (drag handles to steps)
   const handleConnect = useCallback((connection: Connection) => {
     if (!connection.source || !connection.target) return;
     const sourceNode = flow.nodes.find(n => n.id === connection.source);
@@ -379,6 +577,36 @@ const FlowCanvasInner: React.FC<FlowCanvasProps> = ({
         ...sec,
         rows: sec.rows.map(r => r.id === rowId ? { ...r, nextNodeId: connection.target } : r)
       }));
+    }
+    // If source handle is a template button handle (e.g. "tbtn-xxx")
+    else if (handleId.startsWith('tbtn-') && updatedSource.templateConfig?.buttons) {
+      const tbtnId = handleId.replace('tbtn-', '');
+      updatedSource.templateConfig = {
+        ...updatedSource.templateConfig,
+        buttons: updatedSource.templateConfig.buttons.map(tb =>
+          tb.id === tbtnId ? { ...tb, nextNodeId: connection.target } : tb
+        )
+      };
+    }
+    // If source handle is catalog action
+    else if (handleId === 'cat-action' && updatedSource.catalogConfig) {
+      updatedSource.catalogConfig = {
+        ...updatedSource.catalogConfig,
+        nextNodeId: connection.target
+      };
+      updatedSource.nextNodeId = connection.target;
+    }
+    // If source handle is single product inquiry
+    else if (handleId === 'prod-view' && updatedSource.singleProduct) {
+      updatedSource.singleProduct = {
+        ...updatedSource.singleProduct,
+        nextNodeId: connection.target
+      };
+      updatedSource.nextNodeId = connection.target;
+    }
+    // If source handle is multi-product showcase
+    else if (handleId === 'multi-prod') {
+      updatedSource.nextNodeId = connection.target;
     }
     // If source handle is form screen submit
     else if (handleId === 'submit' && updatedSource.flowScreen) {
@@ -419,6 +647,18 @@ const FlowCanvasInner: React.FC<FlowCanvasProps> = ({
           ...s,
           rows: s.rows.map(r => r.id === rowId ? { ...r, nextNodeId: undefined } : r)
         }));
+      } else if (handleId.startsWith('tbtn-') && mod.templateConfig?.buttons) {
+        const tbtnId = handleId.replace('tbtn-', '');
+        mod.templateConfig = {
+          ...mod.templateConfig,
+          buttons: mod.templateConfig.buttons.map(tb => tb.id === tbtnId ? { ...tb, nextNodeId: undefined } : tb)
+        };
+      } else if (handleId === 'cat-action' && mod.catalogConfig) {
+        mod.catalogConfig = { ...mod.catalogConfig, nextNodeId: undefined };
+        mod.nextNodeId = undefined;
+      } else if (handleId === 'prod-view' && mod.singleProduct) {
+        mod.singleProduct = { ...mod.singleProduct, nextNodeId: undefined };
+        mod.nextNodeId = undefined;
       } else if (handleId === 'submit' && mod.flowScreen) {
         mod.flowScreen = { ...mod.flowScreen, nextNodeId: undefined };
       } else {
@@ -433,6 +673,31 @@ const FlowCanvasInner: React.FC<FlowCanvasProps> = ({
       nodes: updatedNodes
     });
   }, [flow, onUpdateFlow]);
+
+  // Native HTML5 Drag and Drop into React Flow canvas
+  const handleDragOver = useCallback((event: React.DragEvent) => {
+    event.preventDefault();
+    event.dataTransfer.dropEffect = 'move';
+  }, []);
+
+  const handleDrop = useCallback(
+    (event: React.DragEvent) => {
+      event.preventDefault();
+      const type = event.dataTransfer.getData('application/reactflow-type') as WhatsAppNodeType;
+      if (!type) return;
+
+      const bounds = reactFlowWrapper.current?.getBoundingClientRect();
+      if (!bounds) return;
+
+      const position = reactFlowInstance.screenToFlowPosition({
+        x: event.clientX,
+        y: event.clientY,
+      });
+
+      onAddNode(type, position);
+    },
+    [reactFlowInstance, onAddNode]
+  );
 
   // Auto-arrange layout
   const handleAutoArrange = () => {
@@ -452,79 +717,160 @@ const FlowCanvasInner: React.FC<FlowCanvasProps> = ({
     }, 50);
   };
 
+  // Download WhatsApp Flow as PNG image
+  const handleDownloadFlowImage = async () => {
+    if (!reactFlowWrapper.current) return;
+    try {
+      await exportFlowAsPng(reactFlowWrapper.current, {
+        fileName: `${flow.name.toLowerCase().replace(/[^a-z0-9]+/g, '-')}-flow.png`,
+        scope: 'full',
+        theme: isDark ? 'dark' : 'light',
+        pixelRatio: 2,
+        nodes: initialNodes
+      });
+    } catch (err) {
+      console.error('Failed to download flow image:', err);
+    }
+  };
+
   return (
-    <div className="w-full h-full min-h-[620px] relative bg-slate-950 rounded-2xl border border-slate-800 overflow-hidden shadow-inner">
-      
+    <div 
+      ref={reactFlowWrapper}
+      onDragOver={handleDragOver}
+      onDrop={handleDrop}
+      className={`w-full h-full min-h-[620px] relative bg-slate-100 dark:bg-slate-950 overflow-hidden shadow-inner transition-all duration-200 ${
+        isFullscreen
+          ? 'fixed inset-0 z-50 w-screen h-screen rounded-none p-3'
+          : 'rounded-2xl border border-slate-200 dark:border-slate-800'
+      }`}
+    >
       {/* Top Floating Action Panel */}
       <div className="absolute top-3 left-3 z-10 flex flex-wrap items-center gap-2 max-w-[90%]">
-        <div className="bg-slate-900/90 backdrop-blur-md p-1.5 rounded-xl border border-slate-700/80 flex items-center gap-1.5 shadow-lg">
-          <span className="text-[10px] font-black uppercase tracking-wider text-slate-400 px-2 flex items-center gap-1">
-            <Plus className="w-3 h-3 text-emerald-400" />
-            <span>Add:</span>
-          </span>
+        
+        {/* Primary Message Types Drawer Toggle */}
+        <button
+          onClick={() => setPaletteOpen(!paletteOpen)}
+          className={`px-3 py-1.5 text-xs font-black rounded-xl border flex items-center gap-1.5 shadow-lg transition-all cursor-pointer ${
+            paletteOpen 
+              ? 'bg-emerald-600 text-white border-emerald-500 shadow-emerald-950/50' 
+              : 'bg-white/90 dark:bg-slate-900/90 text-emerald-700 dark:text-emerald-400 border-slate-200 dark:border-slate-700/80 hover:bg-slate-50 dark:hover:bg-slate-800'
+          }`}
+          title="Open WhatsApp Message Types Palette"
+        >
+          <Layers className="w-4 h-4" />
+          <span>Message Types ({SUPPORTED_MESSAGE_TYPES.length})</span>
+        </button>
 
+        {/* Quick Add Buttons for Top Types */}
+        <div className="hidden sm:flex bg-white/90 dark:bg-slate-900/90 backdrop-blur-md p-1 rounded-xl border border-slate-200 dark:border-slate-700/80 items-center gap-1 shadow-lg">
           <button
-            onClick={() => onAddNode('button')}
-            className="px-2.5 py-1 text-xs font-bold rounded-lg bg-emerald-500/20 hover:bg-emerald-500/30 text-emerald-300 border border-emerald-500/40 flex items-center gap-1 transition-all cursor-pointer"
-            title="Add Quick Reply Step (Buttons)"
+            onClick={() => onAddNode('text_buttons')}
+            className="px-2 py-1 text-xs font-bold rounded-lg bg-emerald-500/15 hover:bg-emerald-500/25 text-emerald-700 dark:text-emerald-300 border border-emerald-500/40 flex items-center gap-1 transition-all cursor-pointer"
+            title="Add Quick Reply Step (Text Buttons)"
           >
             <Zap className="w-3 h-3" />
-            <span className="hidden sm:inline">Quick Reply</span>
+            <span>Text Buttons</span>
           </button>
 
           <button
             onClick={() => onAddNode('list')}
-            className="px-2.5 py-1 text-xs font-bold rounded-lg bg-blue-500/20 hover:bg-blue-500/30 text-blue-300 border border-blue-500/40 flex items-center gap-1 transition-all cursor-pointer"
-            title="Add Interactive List Menu Step"
+            className="px-2 py-1 text-xs font-bold rounded-lg bg-blue-500/15 hover:bg-blue-500/25 text-blue-700 dark:text-blue-300 border border-blue-500/40 flex items-center gap-1 transition-all cursor-pointer"
+            title="Add Interactive List Menu"
           >
             <ListFilter className="w-3 h-3" />
-            <span className="hidden sm:inline">List Menu</span>
+            <span>List</span>
           </button>
 
           <button
-            onClick={() => onAddNode('flow_screen')}
-            className="px-2.5 py-1 text-xs font-bold rounded-lg bg-purple-500/20 hover:bg-purple-500/30 text-purple-300 border border-purple-500/40 flex items-center gap-1 transition-all cursor-pointer"
-            title="Add Native WhatsApp Form Screen"
+            onClick={() => onAddNode('catalogue')}
+            className="px-2 py-1 text-xs font-bold rounded-lg bg-indigo-500/15 hover:bg-indigo-500/25 text-indigo-700 dark:text-indigo-300 border border-indigo-500/40 flex items-center gap-1 transition-all cursor-pointer"
+            title="Add Catalogue Message"
           >
-            <Sparkles className="w-3 h-3" />
-            <span className="hidden sm:inline">Meta Form</span>
+            <Store className="w-3 h-3" />
+            <span>Catalogue</span>
           </button>
 
           <button
-            onClick={() => onAddNode('agent_handover')}
-            className="px-2.5 py-1 text-xs font-bold rounded-lg bg-rose-500/20 hover:bg-rose-500/30 text-rose-300 border border-rose-500/40 flex items-center gap-1 transition-all cursor-pointer"
-            title="Add Live Agent Escalation Step"
+            onClick={() => onAddNode('single_product')}
+            className="px-2 py-1 text-xs font-bold rounded-lg bg-emerald-500/15 hover:bg-emerald-500/25 text-emerald-700 dark:text-emerald-300 border border-emerald-500/40 flex items-center gap-1 transition-all cursor-pointer"
+            title="Add Single Product Showcase"
           >
-            <ShieldCheck className="w-3 h-3" />
-            <span className="hidden sm:inline">Agent Handover</span>
+            <ShoppingCart className="w-3 h-3" />
+            <span>Product</span>
           </button>
         </div>
 
-        {/* Auto Arrange & Fit View Button */}
-        <div className="bg-slate-900/90 backdrop-blur-md p-1.5 rounded-xl border border-slate-700/80 flex items-center gap-1 shadow-lg">
+        {/* Auto Arrange, Fit View, Fullscreen & Download */}
+        <div className="bg-white/90 dark:bg-slate-900/90 backdrop-blur-md p-1 rounded-xl border border-slate-200 dark:border-slate-700/80 flex items-center gap-1 shadow-lg">
           <button
             onClick={handleAutoArrange}
-            className="px-2.5 py-1 text-xs font-bold rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 flex items-center gap-1.5 transition-colors cursor-pointer"
+            className="px-2.5 py-1 text-xs font-bold rounded-lg bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-800 dark:text-slate-200 border border-slate-200 dark:border-slate-700 flex items-center gap-1.5 transition-colors cursor-pointer"
             title="Auto-organize graph layout"
           >
-            <LayoutDashboard className="w-3 h-3 text-emerald-400" />
+            <LayoutDashboard className="w-3 h-3 text-emerald-600 dark:text-emerald-400" />
             <span>Auto-Arrange</span>
           </button>
 
           <button
             onClick={() => reactFlowInstance.fitView({ padding: 0.2, duration: 600 })}
-            className="p-1.5 text-slate-400 hover:text-white hover:bg-slate-800 rounded-lg transition-colors cursor-pointer"
+            className="p-1.5 text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg transition-colors cursor-pointer"
             title="Fit view"
           >
             <Maximize2 className="w-3.5 h-3.5" />
           </button>
+
+          {/* Fullscreen Toggle */}
+          <button
+            onClick={handleToggleFullscreen}
+            className="p-1.5 text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg transition-colors cursor-pointer"
+            title={isFullscreen ? 'Exit Fullscreen' : 'Fullscreen'}
+          >
+            {isFullscreen ? (
+              <Minimize2 className="w-3.5 h-3.5 text-rose-500 dark:text-rose-400" />
+            ) : (
+              <Maximize2 className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
+            )}
+          </button>
+
+          <div className="w-px h-3.5 bg-slate-300 dark:bg-slate-700" />
+
+          {/* Download Flow Button */}
+          <button
+            onClick={handleDownloadFlowImage}
+            className="px-2.5 py-1 text-xs font-bold rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white flex items-center gap-1.5 transition-colors cursor-pointer shadow-xs"
+            title="Download WhatsApp Flow Canvas as PNG"
+          >
+            <Download className="w-3 h-3" />
+            <span>Download</span>
+          </button>
         </div>
       </div>
 
+      {/* Floating Message Types Palette Overlay Panel */}
+      {paletteOpen && (
+        <div className="absolute top-14 left-3 z-30 w-80 max-h-[80vh] overflow-y-auto shadow-2xl rounded-2xl animate-fadeIn">
+          <div className="relative">
+            <button
+              onClick={() => setPaletteOpen(false)}
+              className="absolute top-3 right-3 z-40 p-1 text-slate-400 hover:text-slate-800 dark:hover:text-white bg-slate-100 dark:bg-slate-800 rounded-lg cursor-pointer"
+              title="Close Palette"
+            >
+              <X className="w-3.5 h-3.5" />
+            </button>
+            <MessageTypesPalette 
+              onSelectType={(type) => {
+                onAddNode(type);
+                setPaletteOpen(false);
+              }}
+            />
+          </div>
+        </div>
+      )}
+
       {/* Helpful Drag Instruction Pill */}
-      <div className="absolute bottom-3 left-3 z-10 pointer-events-none hidden sm:flex items-center gap-2 bg-slate-900/80 backdrop-blur-md px-3 py-1.5 rounded-xl border border-slate-800 text-[11px] text-slate-400">
-        <Info className="w-3.5 h-3.5 text-emerald-400" />
-        <span>Drag handles from buttons/options to target steps to connect interactive branches</span>
+      <div className="absolute bottom-3 left-3 z-10 pointer-events-none hidden sm:flex items-center gap-2 bg-white/90 dark:bg-slate-900/80 backdrop-blur-md px-3 py-1.5 rounded-xl border border-slate-200 dark:border-slate-800 text-[11px] text-slate-600 dark:text-slate-400 shadow-sm">
+        <Info className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
+        <span>Drag any message type to canvas, or link handles from buttons/products to target steps</span>
       </div>
 
       {/* React Flow Core Canvas */}
@@ -534,40 +880,46 @@ const FlowCanvasInner: React.FC<FlowCanvasProps> = ({
         nodeTypes={nodeTypes}
         onNodesChange={onNodesChange}
         onEdgesChange={onEdgesChange}
+        onNodeDragStop={handleNodeDragStop}
         onConnect={handleConnect}
         onEdgesDelete={handleEdgesDelete}
-        onNodeDragStop={handleNodeDragStop}
-        onNodeClick={(_, node) => onSelectNode(node.id)}
         connectionLineType={ConnectionLineType.SmoothStep}
         connectionLineStyle={{ stroke: '#10b981', strokeWidth: 2 }}
         fitView
-        fitViewOptions={{ padding: 0.2 }}
+        fitViewOptions={{ padding: 0.25 }}
         minZoom={0.2}
         maxZoom={1.8}
-        defaultViewport={{ x: 0, y: 0, zoom: 0.85 }}
-        className="react-flow-dark"
+        deleteKeyCode={['Backspace', 'Delete']}
+        proOptions={{ hideAttribution: true }}
       >
         <Background 
-          variant={BackgroundVariant.Dots} 
+          color={isDark ? "#334155" : "#cbd5e1"} 
           gap={24} 
           size={1.5} 
-          color="#334155" 
+          variant={BackgroundVariant.Dots} 
         />
         <Controls 
-          className="!bg-slate-900 !border !border-slate-800 !rounded-xl !shadow-xl !fill-slate-300 [&>button]:!bg-slate-900 [&>button]:!border-b-slate-800 [&>button:hover]:!bg-slate-800 [&>button]:!text-slate-300" 
+          className="!bg-white/95 dark:!bg-slate-900/90 !border !border-slate-200 dark:!border-slate-700 !rounded-xl !shadow-xl !overflow-hidden text-slate-700 dark:text-slate-200" 
+          showInteractive={false}
         />
         <MiniMap 
           nodeColor={(n) => {
             const data = n.data as unknown as WhatsAppFlowNodeData;
             if (data?.isActive) return '#10b981';
-            if (data?.isStart) return '#34d399';
+            if (data?.node?.type === 'text_buttons' || data?.node?.type === 'button') return '#059669';
+            if (data?.node?.type === 'media_buttons') return '#14b8a6';
+            if (data?.node?.type === 'list') return '#2563eb';
+            if (data?.node?.type === 'catalogue') return '#4f46e5';
+            if (data?.node?.type === 'single_product') return '#10b981';
+            if (data?.node?.type === 'multi_product') return '#06b6d4';
+            if (data?.node?.type === 'template') return '#f59e0b';
+            if (data?.node?.type === 'flow_screen') return '#7c3aed';
             return '#475569';
           }}
-          maskColor="rgba(15, 23, 42, 0.75)"
-          className="!bg-slate-900 !border !border-slate-800 !rounded-xl overflow-hidden shadow-2xl !w-36 !h-28" 
+          className="!bg-white dark:!bg-slate-950 !border !border-slate-200 dark:!border-slate-800 !rounded-xl hidden md:block" 
+          maskColor={isDark ? "rgba(15, 23, 42, 0.75)" : "rgba(241, 245, 249, 0.75)"}
         />
       </ReactFlow>
-
     </div>
   );
 };

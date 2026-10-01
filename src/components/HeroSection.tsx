@@ -12,7 +12,7 @@ export const HeroSection: React.FC<HeroSectionProps> = ({ onExplore, onSignUp, o
   const [activeNode, setActiveNode] = useState<'owner' | 'vendor' | 'advisor'>('owner');
 
   return (
-    <section id="hero-section" className="relative pt-8 sm:pt-12 md:pt-16 pb-14 md:pb-20 overflow-hidden bg-gradient-to-b from-slate-50 via-white to-slate-50/50">
+    <section id="hero-section" className="relative pt-8 sm:pt-12 md:pt-16 pb-14 md:pb-20 overflow-hidden bg-gradient-to-b from-slate-50 via-white to-slate-50/50 dark:from-slate-950 dark:via-slate-900 dark:to-slate-950/50 transition-colors duration-200">
       {/* Subtle grid background pattern */}
       <div className="absolute inset-0 bg-[linear-gradient(to_right,#e2e8f015_1px,transparent_1px),linear-gradient(to_bottom,#e2e8f015_1px,transparent_1px)] bg-[size:32px_32px] pointer-events-none" />
 
@@ -21,19 +21,19 @@ export const HeroSection: React.FC<HeroSectionProps> = ({ onExplore, onSignUp, o
           
           {/* Left Column: Heading & Content matching wireframe */}
           <div className="lg:col-span-7 space-y-6">
-            <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-blue-50 border border-blue-200 text-blue-800 text-xs font-semibold tracking-wide">
-              <Sparkles className="w-3.5 h-3.5 text-blue-600" />
+            <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-blue-50 dark:bg-blue-950/60 border border-blue-200 dark:border-blue-800 text-blue-800 dark:text-blue-300 text-xs font-semibold tracking-wide">
+              <Sparkles className="w-3.5 h-3.5 text-blue-600 dark:text-blue-400" />
               <span>Network for Owners, Vendors & Advisors</span>
             </div>
 
-            <h1 className="text-4xl sm:text-5xl lg:text-6xl font-extrabold text-slate-900 tracking-tight leading-[1.15]">
+            <h1 className="text-4xl sm:text-5xl lg:text-6xl font-extrabold text-slate-900 dark:text-white tracking-tight leading-[1.15]">
               Where Hospital Projects <br className="hidden sm:block" />
-              <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-700 via-blue-800 to-indigo-900">
+              <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-700 via-blue-800 to-indigo-900 dark:from-blue-400 dark:via-indigo-300 dark:to-sky-400">
                 Find the Right People
               </span>
             </h1>
 
-            <p className="text-lg sm:text-xl text-slate-600 max-w-2xl font-normal leading-relaxed">
+            <p className="text-lg sm:text-xl text-slate-600 dark:text-slate-300 max-w-2xl font-normal leading-relaxed">
               NOVA is a trusted platform that connects hospital owners, vendors, and advisors to turn healthcare projects into reality.
             </p>
 
@@ -51,46 +51,46 @@ export const HeroSection: React.FC<HeroSectionProps> = ({ onExplore, onSignUp, o
               <button
                 id="hero-signup-btn"
                 onClick={() => onSignUp()}
-                className="px-6 py-3.5 rounded-lg bg-white hover:bg-slate-50 text-slate-800 border border-slate-300 font-semibold text-base hover:border-slate-400 transition-all cursor-pointer shadow-2xs"
+                className="px-6 py-3.5 rounded-lg bg-white dark:bg-slate-800 hover:bg-slate-50 dark:hover:bg-slate-700 text-slate-800 dark:text-slate-100 border border-slate-300 dark:border-slate-700 font-semibold text-base hover:border-slate-400 transition-all cursor-pointer shadow-2xs"
               >
                 Sign Up
               </button>
             </div>
 
             {/* Sub-tagline equation from wireframe */}
-            <div className="pt-4 flex items-center gap-2 text-sm sm:text-base font-bold text-slate-800">
-              <span className="px-3 py-1 rounded-md bg-slate-100 text-blue-900 border border-slate-200">
+            <div className="pt-4 flex items-center gap-2 text-sm sm:text-base font-bold text-slate-800 dark:text-slate-200">
+              <span className="px-3 py-1 rounded-md bg-slate-100 dark:bg-slate-800 text-blue-900 dark:text-blue-300 border border-slate-200 dark:border-slate-700">
                 Owners + Vendors + Advisors = NOVA
               </span>
             </div>
 
             {/* Trust highlights */}
-            <div className="grid grid-cols-3 gap-4 pt-4 border-t border-slate-200/80">
+            <div className="grid grid-cols-3 gap-4 pt-4 border-t border-slate-200/80 dark:border-slate-800">
               <div>
-                <p className="text-2xl sm:text-3xl font-extrabold text-slate-900">15</p>
-                <p className="text-xs text-slate-500 font-medium">Standardized Stages</p>
+                <p className="text-2xl sm:text-3xl font-extrabold text-slate-900 dark:text-white">15</p>
+                <p className="text-xs text-slate-500 dark:text-slate-400 font-medium">Standardized Stages</p>
               </div>
               <div>
-                <p className="text-2xl sm:text-3xl font-extrabold text-slate-900">100%</p>
-                <p className="text-xs text-slate-500 font-medium">Healthcare Focused</p>
+                <p className="text-2xl sm:text-3xl font-extrabold text-slate-900 dark:text-white">100%</p>
+                <p className="text-xs text-slate-500 dark:text-slate-400 font-medium">Healthcare Focused</p>
               </div>
               <div>
-                <p className="text-2xl sm:text-3xl font-extrabold text-slate-900">Free</p>
-                <p className="text-xs text-slate-500 font-medium">Public Directory</p>
+                <p className="text-2xl sm:text-3xl font-extrabold text-slate-900 dark:text-white">Free</p>
+                <p className="text-xs text-slate-500 dark:text-slate-400 font-medium">Public Directory</p>
               </div>
             </div>
           </div>
 
           {/* Right Column: Visual Diagram matching wireframe */}
           <div className="lg:col-span-5 flex flex-col items-center justify-center">
-            <div className="w-full max-w-md bg-white rounded-2xl border border-slate-200 shadow-xl p-6 sm:p-8 relative">
+            <div className="w-full max-w-md bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-xl p-6 sm:p-8 relative">
               
               {/* Header inside diagram card */}
               <div className="text-center mb-6">
-                <span className="text-[11px] font-bold tracking-wider text-blue-600 uppercase bg-blue-50 px-2.5 py-1 rounded-full">
+                <span className="text-[11px] font-bold tracking-wider text-blue-600 dark:text-blue-400 uppercase bg-blue-50 dark:bg-blue-950/60 px-2.5 py-1 rounded-full">
                   The Hospital Project Ecosystem
                 </span>
-                <h3 className="text-lg font-bold text-slate-900 mt-2">
+                <h3 className="text-lg font-bold text-slate-900 dark:text-white mt-2">
                   Integrated Collaboration
                 </h3>
               </div>
@@ -98,10 +98,10 @@ export const HeroSection: React.FC<HeroSectionProps> = ({ onExplore, onSignUp, o
               {/* Triangle / Orbit visualization of the 3 user groups */}
               <div className="relative py-6 flex flex-col items-center">
                 {/* SVG connection lines */}
-                <svg className="absolute inset-0 w-full h-full pointer-events-none stroke-slate-200" style={{ zIndex: 0 }}>
-                  <line x1="50%" y1="20%" x2="25%" y2="78%" strokeWidth="2" strokeDasharray="4 4" className="stroke-blue-300" />
-                  <line x1="50%" y1="20%" x2="75%" y2="78%" strokeWidth="2" strokeDasharray="4 4" className="stroke-indigo-300" />
-                  <line x1="25%" y1="78%" x2="75%" y2="78%" strokeWidth="2" strokeDasharray="4 4" className="stroke-sky-300" />
+                <svg className="absolute inset-0 w-full h-full pointer-events-none stroke-slate-200 dark:stroke-slate-800" style={{ zIndex: 0 }}>
+                  <line x1="50%" y1="20%" x2="25%" y2="78%" strokeWidth="2" strokeDasharray="4 4" className="stroke-blue-300 dark:stroke-blue-800" />
+                  <line x1="50%" y1="20%" x2="75%" y2="78%" strokeWidth="2" strokeDasharray="4 4" className="stroke-indigo-300 dark:stroke-indigo-800" />
+                  <line x1="25%" y1="78%" x2="75%" y2="78%" strokeWidth="2" strokeDasharray="4 4" className="stroke-sky-300 dark:stroke-sky-800" />
                 </svg>
 
                 {/* Top Node: Hospital Owner */}
@@ -114,13 +114,13 @@ export const HeroSection: React.FC<HeroSectionProps> = ({ onExplore, onSignUp, o
                 >
                   <div className={`w-18 h-18 rounded-2xl flex items-center justify-center shadow-md transition-all ${
                     activeNode === 'owner'
-                      ? 'bg-blue-600 text-white ring-4 ring-blue-100 shadow-blue-200'
-                      : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
+                      ? 'bg-blue-600 text-white ring-4 ring-blue-100 dark:ring-blue-900 shadow-blue-200 dark:shadow-none'
+                      : 'bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700'
                   }`}>
                     <Building2 className="w-9 h-9" />
                   </div>
-                  <span className="font-bold text-sm text-slate-900 mt-2">Hospital Owner</span>
-                  <span className="text-[11px] text-slate-500 font-medium">Vision & Capital</span>
+                  <span className="font-bold text-sm text-slate-900 dark:text-white mt-2">Hospital Owner</span>
+                  <span className="text-[11px] text-slate-500 dark:text-slate-400 font-medium">Vision & Capital</span>
                 </div>
 
                 {/* Bottom Row: Vendors & Advisors */}
@@ -135,17 +135,17 @@ export const HeroSection: React.FC<HeroSectionProps> = ({ onExplore, onSignUp, o
                   >
                     <div className={`w-16 h-16 rounded-2xl flex items-center justify-center shadow-md transition-all ${
                       activeNode === 'vendor'
-                        ? 'bg-indigo-600 text-white ring-4 ring-indigo-100 shadow-indigo-200'
-                        : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
+                        ? 'bg-indigo-600 text-white ring-4 ring-indigo-100 dark:ring-indigo-900 shadow-indigo-200 dark:shadow-none'
+                        : 'bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700'
                     }`}>
                       <HardHat className="w-8 h-8" />
                     </div>
-                    <span className="font-bold text-sm text-slate-900 mt-2">Vendors</span>
-                    <span className="text-[11px] text-slate-500 font-medium">Products & Services</span>
+                    <span className="font-bold text-sm text-slate-900 dark:text-white mt-2">Vendors</span>
+                    <span className="text-[11px] text-slate-500 dark:text-slate-400 font-medium">Products & Services</span>
                   </div>
 
                   {/* Center badge in the middle of triangle */}
-                  <div className="w-10 h-10 rounded-full bg-slate-900 text-white flex items-center justify-center text-xs font-black shadow-md border-2 border-white">
+                  <div className="w-10 h-10 rounded-full bg-slate-900 dark:bg-slate-800 text-white flex items-center justify-center text-xs font-black shadow-md border-2 border-white dark:border-slate-700">
                     +
                   </div>
 
@@ -159,19 +159,19 @@ export const HeroSection: React.FC<HeroSectionProps> = ({ onExplore, onSignUp, o
                   >
                     <div className={`w-16 h-16 rounded-2xl flex items-center justify-center shadow-md transition-all ${
                       activeNode === 'advisor'
-                        ? 'bg-sky-600 text-white ring-4 ring-sky-100 shadow-sky-200'
-                        : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
+                        ? 'bg-sky-600 text-white ring-4 ring-sky-100 dark:ring-sky-900 shadow-sky-200 dark:shadow-none'
+                        : 'bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700'
                     }`}>
                       <UserCheck className="w-8 h-8" />
                     </div>
-                    <span className="font-bold text-sm text-slate-900 mt-2">Advisors</span>
-                    <span className="text-[11px] text-slate-500 font-medium">Consultants & Specialists</span>
+                    <span className="font-bold text-sm text-slate-900 dark:text-white mt-2">Advisors</span>
+                    <span className="text-[11px] text-slate-500 dark:text-slate-400 font-medium">Consultants & Specialists</span>
                   </div>
                 </div>
               </div>
 
               {/* Dynamic node insight pill */}
-              <div className="mt-6 p-3 rounded-lg bg-slate-50 border border-slate-200 text-xs text-slate-700 text-center">
+              <div className="mt-6 p-3 rounded-lg bg-slate-50 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700 text-xs text-slate-700 dark:text-slate-300 text-center">
                 {activeNode === 'owner' && (
                   <span><strong>Owners:</strong> Access verified suppliers, specialized architects, and stage-by-stage toolkits.</span>
                 )}
@@ -184,8 +184,8 @@ export const HeroSection: React.FC<HeroSectionProps> = ({ onExplore, onSignUp, o
               </div>
 
               {/* Bottom Tagline from wireframe */}
-              <div className="mt-4 pt-4 border-t border-slate-100 text-center">
-                <span className="text-sm font-bold text-blue-900 tracking-tight">
+              <div className="mt-4 pt-4 border-t border-slate-100 dark:border-slate-800 text-center">
+                <span className="text-sm font-bold text-blue-900 dark:text-blue-400 tracking-tight">
                   Better Hospitals, Brighter Tomorrows
                 </span>
               </div>

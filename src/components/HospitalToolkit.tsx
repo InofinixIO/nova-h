@@ -31,28 +31,28 @@ export const HospitalToolkit: React.FC<HospitalToolkitProps> = ({
   const activeStage = stagesList[safeSlideIndex];
 
   return (
-    <section className={isStandalonePage ? "pt-2 sm:pt-4 pb-12 bg-transparent" : "py-12 sm:py-16 bg-slate-50 border-y border-slate-200"}>
+    <section className={isStandalonePage ? "pt-2 sm:pt-4 pb-12 bg-transparent" : "py-12 sm:py-16 bg-slate-50 dark:bg-slate-950 border-y border-slate-200 dark:border-slate-800 transition-colors duration-200"}>
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         
         {/* Section Header */}
         <div className={`text-center max-w-3xl mx-auto ${isStandalonePage ? 'mb-6 sm:mb-8' : 'mb-10 sm:mb-12'}`}>
-          <span className="text-xs font-bold uppercase tracking-wider text-blue-700 bg-blue-100/70 px-3 py-1 rounded-full">
+          <span className="text-xs font-bold uppercase tracking-wider text-blue-700 dark:text-blue-400 bg-blue-100/70 dark:bg-blue-950/60 px-3 py-1 rounded-full">
             Essential Founder Resource
           </span>
-          <SectionHeading id="toolkit-section" className={`${isStandalonePage ? 'text-2xl sm:text-3xl lg:text-4xl' : 'text-3xl sm:text-4xl'} font-extrabold text-slate-900 tracking-tight mt-2.5`}>
+          <SectionHeading id="toolkit-section" className={`${isStandalonePage ? 'text-2xl sm:text-3xl lg:text-4xl' : 'text-3xl sm:text-4xl'} font-extrabold text-slate-900 dark:text-white tracking-tight mt-2.5`}>
             Hospital Owner's Toolkit
           </SectionHeading>
-          <p className="text-slate-600 text-sm sm:text-base mt-2 max-w-2xl mx-auto">
+          <p className="text-slate-600 dark:text-slate-400 text-sm sm:text-base mt-2 max-w-2xl mx-auto">
             Start with the Hospital Owners Toolkit. Understand the complete 15-stage hospital development journey before committing capital or hiring vendors.
           </p>
         </div>
 
         {/* Quick Stage Pills for Standalone Page */}
         {isStandalonePage && (
-          <div className="mb-6 sm:mb-8 bg-white p-2 sm:p-2.5 rounded-2xl border border-slate-200/80 shadow-xs">
-            <div className="flex items-center justify-between px-2 pb-1.5 text-[11px] text-slate-500 font-medium">
-              <span className="font-bold text-slate-700">15 Project Development Stages:</span>
-              <span className="text-slate-400">Click to preview any stage</span>
+          <div className="mb-6 sm:mb-8 bg-white dark:bg-slate-900 p-2 sm:p-2.5 rounded-2xl border border-slate-200/80 dark:border-slate-800 shadow-xs">
+            <div className="flex items-center justify-between px-2 pb-1.5 text-[11px] text-slate-500 dark:text-slate-400 font-medium">
+              <span className="font-bold text-slate-700 dark:text-slate-200">15 Project Development Stages:</span>
+              <span className="text-slate-400 dark:text-slate-500">Click to preview any stage</span>
             </div>
             <div className="flex items-center gap-1.5 overflow-x-auto pb-1 scrollbar-none">
               {stagesList.map((s, idx) => {
@@ -65,10 +65,10 @@ export const HospitalToolkit: React.FC<HospitalToolkitProps> = ({
                     className={`px-2.5 py-1.5 rounded-lg text-xs font-bold whitespace-nowrap transition-all cursor-pointer flex items-center gap-1.5 shrink-0 ${
                       isSelected
                         ? 'bg-blue-600 text-white shadow-xs'
-                        : 'bg-slate-50 hover:bg-slate-100 text-slate-600 hover:text-slate-900 border border-slate-200/60'
+                        : 'bg-slate-50 dark:bg-slate-800 hover:bg-slate-100 dark:hover:bg-slate-700 text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white border border-slate-200/60 dark:border-slate-700'
                     }`}
                   >
-                    <span className={`w-4 h-4 rounded-full flex items-center justify-center text-[10px] font-mono ${isSelected ? 'bg-white/20 text-white' : 'bg-slate-200 text-slate-700'}`}>
+                    <span className={`w-4 h-4 rounded-full flex items-center justify-center text-[10px] font-mono ${isSelected ? 'bg-white/20 text-white' : 'bg-slate-200 dark:bg-slate-700 text-slate-700 dark:text-slate-300'}`}>
                       {s.stageNumber}
                     </span>
                     <span className="max-w-[110px] truncate">{s.title.split(':')[0] || s.title}</span>
@@ -188,21 +188,21 @@ export const HospitalToolkit: React.FC<HospitalToolkitProps> = ({
           {/* Right: Text & Action Button matching wireframe */}
           <div className="lg:col-span-5 space-y-6">
             <div>
-              <span className="text-xs font-bold text-blue-700 tracking-wider uppercase bg-blue-50 px-2.5 py-1 rounded-full border border-blue-200">
+              <span className="text-xs font-bold text-blue-700 dark:text-blue-400 tracking-wider uppercase bg-blue-50 dark:bg-blue-950/60 px-2.5 py-1 rounded-full border border-blue-200 dark:border-blue-800">
                 Founders Field Guide
               </span>
-              <h3 className="text-3xl font-extrabold text-slate-900 mt-2 tracking-tight">
+              <h3 className="text-3xl font-extrabold text-slate-900 dark:text-white mt-2 tracking-tight">
                 Hospital Owners Toolkit
               </h3>
-              <p className="text-base text-slate-700 font-medium mt-2">
+              <p className="text-base text-slate-700 dark:text-slate-300 font-medium mt-2">
                 A quick guide to the 15 stages of hospital development.
               </p>
             </div>
 
             {/* Bullet points matching wireframe */}
-            <ul className="space-y-3 text-slate-700 text-sm">
+            <ul className="space-y-3 text-slate-700 dark:text-slate-300 text-sm">
               <li className="flex items-start gap-3">
-                <div className="w-5 h-5 rounded-full bg-blue-100 text-blue-700 flex items-center justify-center shrink-0 mt-0.5">
+                <div className="w-5 h-5 rounded-full bg-blue-100 dark:bg-blue-900/60 text-blue-700 dark:text-blue-300 flex items-center justify-center shrink-0 mt-0.5">
                   ✓
                 </div>
                 <span>
@@ -210,7 +210,7 @@ export const HospitalToolkit: React.FC<HospitalToolkitProps> = ({
                 </span>
               </li>
               <li className="flex items-start gap-3">
-                <div className="w-5 h-5 rounded-full bg-blue-100 text-blue-700 flex items-center justify-center shrink-0 mt-0.5">
+                <div className="w-5 h-5 rounded-full bg-blue-100 dark:bg-blue-900/60 text-blue-700 dark:text-blue-300 flex items-center justify-center shrink-0 mt-0.5">
                   ✓
                 </div>
                 <span>
@@ -218,7 +218,7 @@ export const HospitalToolkit: React.FC<HospitalToolkitProps> = ({
                 </span>
               </li>
               <li className="flex items-start gap-3">
-                <div className="w-5 h-5 rounded-full bg-blue-100 text-blue-700 flex items-center justify-center shrink-0 mt-0.5">
+                <div className="w-5 h-5 rounded-full bg-blue-100 dark:bg-blue-900/60 text-blue-700 dark:text-blue-300 flex items-center justify-center shrink-0 mt-0.5">
                   ✓
                 </div>
                 <span>
@@ -227,8 +227,8 @@ export const HospitalToolkit: React.FC<HospitalToolkitProps> = ({
               </li>
             </ul>
 
-            <div className="p-4 rounded-xl bg-blue-50/60 border border-blue-200/80 text-xs text-slate-700 space-y-1">
-              <p className="font-bold text-blue-900">Understand the journey before you begin it.</p>
+            <div className="p-4 rounded-xl bg-blue-50/60 dark:bg-blue-950/40 border border-blue-200/80 dark:border-blue-800/80 text-xs text-slate-700 dark:text-slate-300 space-y-1">
+              <p className="font-bold text-blue-900 dark:text-blue-200">Understand the journey before you begin it.</p>
               <p>Knowing what comes next saves months of civil rework, prevents equipment mismatch, and protects project capital.</p>
             </div>
 

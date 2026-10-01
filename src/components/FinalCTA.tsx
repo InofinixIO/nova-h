@@ -9,32 +9,32 @@ interface FinalCTAProps {
 
 export const FinalCTA: React.FC<FinalCTAProps> = ({ onCreateOwner, onJoinVendorAdvisor }) => {
   return (
-    <section id="final-cta" className="py-16 sm:py-20 bg-slate-50 border-t border-slate-200">
+    <section id="final-cta" className="py-16 sm:py-20 bg-slate-50 dark:bg-slate-900/60 border-t border-slate-200 dark:border-slate-800 transition-colors duration-200">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         
         {/* Dual Cards matching Wireframe Section 9 */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
           
           {/* Card 1: Are You Building a Hospital? */}
-          <div className="bg-white rounded-2xl border border-slate-200 p-8 shadow-xs hover:shadow-md transition-all flex flex-col justify-between group">
+          <div className="bg-white dark:bg-slate-800/90 rounded-2xl border border-slate-200 dark:border-slate-700 p-8 shadow-xs hover:shadow-md transition-all flex flex-col justify-between group">
             <div className="flex flex-col sm:flex-row items-start gap-5 mb-6">
-              <div className="w-16 h-16 rounded-2xl bg-blue-50 text-blue-700 flex items-center justify-center shrink-0 group-hover:bg-blue-600 group-hover:text-white transition-colors">
+              <div className="w-16 h-16 rounded-2xl bg-blue-50 dark:bg-blue-950/70 text-blue-700 dark:text-blue-400 flex items-center justify-center shrink-0 group-hover:bg-blue-600 group-hover:text-white transition-colors">
                 <Building2 className="w-8 h-8" />
               </div>
               <div className="space-y-2">
-                <span className="text-xs font-bold uppercase tracking-wider text-blue-600 bg-blue-50 px-2.5 py-0.5 rounded-full">
+                <span className="text-xs font-bold uppercase tracking-wider text-blue-600 dark:text-blue-300 bg-blue-50 dark:bg-blue-950/80 px-2.5 py-0.5 rounded-full border border-blue-200 dark:border-blue-800">
                   For Hospital Promoters
                 </span>
-                <h3 className="text-2xl font-extrabold text-slate-900">
+                <h3 className="text-2xl font-extrabold text-slate-900 dark:text-white">
                   Are You Building a Hospital?
                 </h3>
-                <p className="text-slate-600 text-sm leading-relaxed">
+                <p className="text-slate-600 dark:text-slate-400 text-sm leading-relaxed">
                   You don&apos;t have to know everything. But you should know <strong>who to ask</strong>. Create your owner account and get started today.
                 </p>
               </div>
             </div>
 
-            <div className="pt-4 border-t border-slate-100">
+            <div className="pt-4 border-t border-slate-100 dark:border-slate-700">
               <button
                 id="create-owner-account-btn"
                 onClick={onCreateOwner}
@@ -47,25 +47,25 @@ export const FinalCTA: React.FC<FinalCTAProps> = ({ onCreateOwner, onJoinVendorA
           </div>
 
           {/* Card 2: Do You Serve Hospitals? */}
-          <div className="bg-white rounded-2xl border border-slate-200 p-8 shadow-xs hover:shadow-md transition-all flex flex-col justify-between group">
+          <div className="bg-white dark:bg-slate-800/90 rounded-2xl border border-slate-200 dark:border-slate-700 p-8 shadow-xs hover:shadow-md transition-all flex flex-col justify-between group">
             <div className="flex flex-col sm:flex-row items-start gap-5 mb-6">
-              <div className="w-16 h-16 rounded-2xl bg-indigo-50 text-indigo-700 flex items-center justify-center shrink-0 group-hover:bg-indigo-600 group-hover:text-white transition-colors">
+              <div className="w-16 h-16 rounded-2xl bg-indigo-50 dark:bg-indigo-950/70 text-indigo-700 dark:text-indigo-400 flex items-center justify-center shrink-0 group-hover:bg-indigo-600 group-hover:text-white transition-colors">
                 <Users2 className="w-8 h-8" />
               </div>
               <div className="space-y-2">
-                <span className="text-xs font-bold uppercase tracking-wider text-indigo-600 bg-indigo-50 px-2.5 py-0.5 rounded-full">
+                <span className="text-xs font-bold uppercase tracking-wider text-indigo-600 dark:text-indigo-300 bg-indigo-50 dark:bg-indigo-950/80 px-2.5 py-0.5 rounded-full border border-indigo-200 dark:border-indigo-800">
                   Vendors & Advisors
                 </span>
-                <h3 className="text-2xl font-extrabold text-slate-900">
+                <h3 className="text-2xl font-extrabold text-slate-900 dark:text-white">
                   Do You Serve Hospitals?
                 </h3>
-                <p className="text-slate-600 text-sm leading-relaxed">
+                <p className="text-slate-600 dark:text-slate-400 text-sm leading-relaxed">
                   If your product, service or expertise can contribute to hospital development or operations, join as a vendor or advisor and be part of NOVA.
                 </p>
               </div>
             </div>
 
-            <div className="pt-4 border-t border-slate-100">
+            <div className="pt-4 border-t border-slate-100 dark:border-slate-700">
               <button
                 id="join-vendor-advisor-btn"
                 onClick={onJoinVendorAdvisor}

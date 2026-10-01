@@ -16,17 +16,17 @@ export const ThreeUserGroups: React.FC<ThreeUserGroupsProps> = ({ onSelectRole, 
   };
 
   return (
-    <section id="three-groups" className="py-16 sm:py-20 bg-slate-50">
+    <section id="three-groups" className="py-16 sm:py-20 bg-slate-50 dark:bg-slate-950 transition-colors duration-200">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         
         <div className="text-center max-w-3xl mx-auto mb-12">
-          <span className="text-xs font-bold uppercase tracking-wider text-blue-700 bg-blue-100/60 px-3 py-1 rounded-full">
+          <span className="text-xs font-bold uppercase tracking-wider text-blue-700 dark:text-blue-400 bg-blue-100/60 dark:bg-blue-950/60 px-3 py-1 rounded-full">
             Ecosystem Stakeholders
           </span>
-          <SectionHeading id="three-groups" className="text-3xl sm:text-4xl font-extrabold text-slate-900 tracking-tight mt-3">
+          <SectionHeading id="three-groups" className="text-3xl sm:text-4xl font-extrabold text-slate-900 dark:text-white tracking-tight mt-3">
             One Network. Three Communities.
           </SectionHeading>
-          <p className="text-slate-600 text-base sm:text-lg mt-2">
+          <p className="text-slate-600 dark:text-slate-400 text-base sm:text-lg mt-2">
             Tailored journeys and dedicated workflows built specifically for healthcare creators, builders, and specialists.
           </p>
         </div>
@@ -37,42 +37,42 @@ export const ThreeUserGroups: React.FC<ThreeUserGroupsProps> = ({ onSelectRole, 
           {/* 1. For Owners */}
           <div 
             id="user-group-owners"
-            className="bg-white rounded-2xl border border-slate-200 p-7 shadow-xs hover:shadow-md transition-all flex flex-col justify-between group"
+            className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 p-7 shadow-xs hover:shadow-md transition-all flex flex-col justify-between group"
           >
             <div>
-              <div className="w-14 h-14 rounded-xl bg-blue-50 text-blue-700 flex items-center justify-center mb-6 group-hover:bg-blue-600 group-hover:text-white transition-colors">
+              <div className="w-14 h-14 rounded-xl bg-blue-50 dark:bg-blue-950/80 text-blue-700 dark:text-blue-400 flex items-center justify-center mb-6 group-hover:bg-blue-600 group-hover:text-white transition-colors">
                 <Building className="w-7 h-7" />
               </div>
 
-              <span className="text-xs font-bold tracking-wider uppercase text-blue-600">Promoters & Operators</span>
-              <h3 className="text-2xl font-bold text-slate-900 mt-1 mb-2">For Owners</h3>
-              <p className="text-slate-600 text-sm mb-4 leading-relaxed font-medium">
+              <span className="text-xs font-bold tracking-wider uppercase text-blue-600 dark:text-blue-400">Promoters & Operators</span>
+              <h3 className="text-2xl font-bold text-slate-900 dark:text-white mt-1 mb-2">For Owners</h3>
+              <p className="text-slate-600 dark:text-slate-300 text-sm mb-4 leading-relaxed font-medium">
                 Planning, expanding or operating hospitals.
               </p>
               
-              <p className="text-xs text-slate-500 mb-6 leading-relaxed">
+              <p className="text-xs text-slate-500 dark:text-slate-400 mb-6 leading-relaxed">
                 Explore resources, identify professionals, and connect with vetted vendors and advisors who can support your hospital project from inception to launch.
               </p>
 
-              <div className="space-y-2.5 pt-4 border-t border-slate-100 text-xs text-slate-700">
+              <div className="space-y-2.5 pt-4 border-t border-slate-100 dark:border-slate-800 text-xs text-slate-700 dark:text-slate-300">
                 <div className="flex items-start gap-2">
-                  <Check className="w-4 h-4 text-emerald-600 shrink-0 mt-0.5" />
+                  <Check className="w-4 h-4 text-emerald-600 dark:text-emerald-400 shrink-0 mt-0.5" />
                   <span>Access the 15-stage Hospital Owners Toolkit</span>
                 </div>
                 <div className="flex items-start gap-2">
-                  <Check className="w-4 h-4 text-emerald-600 shrink-0 mt-0.5" />
+                  <Check className="w-4 h-4 text-emerald-600 dark:text-emerald-400 shrink-0 mt-0.5" />
                   <span>Search verified vendors and advisors by location</span>
                 </div>
                 <div className="flex items-start gap-2">
-                  <Check className="w-4 h-4 text-emerald-600 shrink-0 mt-0.5" />
+                  <Check className="w-4 h-4 text-emerald-600 dark:text-emerald-400 shrink-0 mt-0.5" />
                   <span>Post direct project requirements freely</span>
                 </div>
               </div>
 
               {expandedRole === 'owner' && (
-                <div className="mt-4 p-3 rounded-lg bg-blue-50 text-xs text-blue-950 space-y-1 animate-fadeIn">
+                <div className="mt-4 p-3 rounded-lg bg-blue-50 dark:bg-blue-950/40 text-xs text-blue-950 dark:text-blue-200 space-y-1 animate-fadeIn">
                   <p className="font-semibold">Supported Project Scales:</p>
-                  <ul className="list-disc pl-4 space-y-1 text-slate-700">
+                  <ul className="list-disc pl-4 space-y-1 text-slate-700 dark:text-slate-300">
                     <li>30 to 100 Bed Secondary Care Facilities</li>
                     <li>150 to 500+ Bed Tertiary & Multispecialty Hospitals</li>
                     <li>Single-specialty Daycare, Eye & Maternity Clinics</li>
@@ -82,7 +82,7 @@ export const ThreeUserGroups: React.FC<ThreeUserGroupsProps> = ({ onSelectRole, 
               )}
             </div>
 
-            <div className="pt-6 mt-6 border-t border-slate-100 space-y-2">
+            <div className="pt-6 mt-6 border-t border-slate-100 dark:border-slate-800 space-y-2">
               <button
                 onClick={() => onSelectRole('owner')}
                 className="w-full py-3 px-4 rounded-lg bg-blue-600 hover:bg-blue-700 text-white font-semibold text-sm transition-all flex items-center justify-center gap-2 cursor-pointer shadow-2xs"
@@ -93,7 +93,7 @@ export const ThreeUserGroups: React.FC<ThreeUserGroupsProps> = ({ onSelectRole, 
 
               <button
                 onClick={() => toggleExpand('owner')}
-                className="w-full text-center text-xs text-slate-500 hover:text-slate-800 py-1 flex items-center justify-center gap-1 cursor-pointer"
+                className="w-full text-center text-xs text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200 py-1 flex items-center justify-center gap-1 cursor-pointer"
               >
                 <span>{expandedRole === 'owner' ? 'Show Less' : 'Learn More Details'}</span>
                 {expandedRole === 'owner' ? <ChevronUp className="w-3.5 h-3.5" /> : <ChevronDown className="w-3.5 h-3.5" />}
@@ -104,42 +104,42 @@ export const ThreeUserGroups: React.FC<ThreeUserGroupsProps> = ({ onSelectRole, 
           {/* 2. For Vendors */}
           <div 
             id="user-group-vendors"
-            className="bg-white rounded-2xl border border-slate-200 p-7 shadow-xs hover:shadow-md transition-all flex flex-col justify-between group"
+            className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 p-7 shadow-xs hover:shadow-md transition-all flex flex-col justify-between group"
           >
             <div>
-              <div className="w-14 h-14 rounded-xl bg-indigo-50 text-indigo-700 flex items-center justify-center mb-6 group-hover:bg-indigo-600 group-hover:text-white transition-colors">
+              <div className="w-14 h-14 rounded-xl bg-indigo-50 dark:bg-indigo-950/80 text-indigo-700 dark:text-indigo-400 flex items-center justify-center mb-6 group-hover:bg-indigo-600 group-hover:text-white transition-colors">
                 <Cog className="w-7 h-7" />
               </div>
 
-              <span className="text-xs font-bold tracking-wider uppercase text-indigo-600">Suppliers & Manufacturers</span>
-              <h3 className="text-2xl font-bold text-slate-900 mt-1 mb-2">For Vendors</h3>
-              <p className="text-slate-600 text-sm mb-4 leading-relaxed font-medium">
+              <span className="text-xs font-bold tracking-wider uppercase text-indigo-600 dark:text-indigo-400">Suppliers & Manufacturers</span>
+              <h3 className="text-2xl font-bold text-slate-900 dark:text-white mt-1 mb-2">For Vendors</h3>
+              <p className="text-slate-600 dark:text-slate-300 text-sm mb-4 leading-relaxed font-medium">
                 Products & services for hospitals.
               </p>
 
-              <p className="text-xs text-slate-500 mb-6 leading-relaxed">
+              <p className="text-xs text-slate-500 dark:text-slate-400 mb-6 leading-relaxed">
                 Hospitals require hundreds of products and specialised services during development and operations. NOVA helps relevant businesses become discoverable.
               </p>
 
-              <div className="space-y-2.5 pt-4 border-t border-slate-100 text-xs text-slate-700">
+              <div className="space-y-2.5 pt-4 border-t border-slate-100 dark:border-slate-800 text-xs text-slate-700 dark:text-slate-300">
                 <div className="flex items-start gap-2">
-                  <Check className="w-4 h-4 text-emerald-600 shrink-0 mt-0.5" />
+                  <Check className="w-4 h-4 text-emerald-600 dark:text-emerald-400 shrink-0 mt-0.5" />
                   <span>Reach active hospital promoters and decision-makers</span>
                 </div>
                 <div className="flex items-start gap-2">
-                  <Check className="w-4 h-4 text-emerald-600 shrink-0 mt-0.5" />
+                  <Check className="w-4 h-4 text-emerald-600 dark:text-emerald-400 shrink-0 mt-0.5" />
                   <span>Showcase products, catalogs and certified equipment</span>
                 </div>
                 <div className="flex items-start gap-2">
-                  <Check className="w-4 h-4 text-emerald-600 shrink-0 mt-0.5" />
+                  <Check className="w-4 h-4 text-emerald-600 dark:text-emerald-400 shrink-0 mt-0.5" />
                   <span>Highlight geographic service locations</span>
                 </div>
               </div>
 
               {expandedRole === 'vendor' && (
-                <div className="mt-4 p-3 rounded-lg bg-indigo-50 text-xs text-indigo-950 space-y-1 animate-fadeIn">
+                <div className="mt-4 p-3 rounded-lg bg-indigo-50 dark:bg-indigo-950/40 text-xs text-indigo-950 dark:text-indigo-200 space-y-1 animate-fadeIn">
                   <p className="font-semibold">Top In-Demand Categories:</p>
-                  <ul className="list-disc pl-4 space-y-1 text-slate-700">
+                  <ul className="list-disc pl-4 space-y-1 text-slate-700 dark:text-slate-300">
                     <li>Medical Gas Pipeline Systems (MGPS)</li>
                     <li>Modular Operating Theatres & HVAC AHUs</li>
                     <li>Radiology & Imaging (MRI, CT, Cath Lab)</li>
@@ -149,7 +149,7 @@ export const ThreeUserGroups: React.FC<ThreeUserGroupsProps> = ({ onSelectRole, 
               )}
             </div>
 
-            <div className="pt-6 mt-6 border-t border-slate-100 space-y-2">
+            <div className="pt-6 mt-6 border-t border-slate-100 dark:border-slate-800 space-y-2">
               <button
                 onClick={() => onSelectRole('vendor')}
                 className="w-full py-3 px-4 rounded-lg bg-indigo-600 hover:bg-indigo-700 text-white font-semibold text-sm transition-all flex items-center justify-center gap-2 cursor-pointer shadow-2xs"
@@ -160,7 +160,7 @@ export const ThreeUserGroups: React.FC<ThreeUserGroupsProps> = ({ onSelectRole, 
 
               <button
                 onClick={() => toggleExpand('vendor')}
-                className="w-full text-center text-xs text-slate-500 hover:text-slate-800 py-1 flex items-center justify-center gap-1 cursor-pointer"
+                className="w-full text-center text-xs text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200 py-1 flex items-center justify-center gap-1 cursor-pointer"
               >
                 <span>{expandedRole === 'vendor' ? 'Show Less' : 'Learn More Details'}</span>
                 {expandedRole === 'vendor' ? <ChevronUp className="w-3.5 h-3.5" /> : <ChevronDown className="w-3.5 h-3.5" />}
@@ -171,42 +171,42 @@ export const ThreeUserGroups: React.FC<ThreeUserGroupsProps> = ({ onSelectRole, 
           {/* 3. For Advisors */}
           <div 
             id="user-group-advisors"
-            className="bg-white rounded-2xl border border-slate-200 p-7 shadow-xs hover:shadow-md transition-all flex flex-col justify-between group"
+            className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 p-7 shadow-xs hover:shadow-md transition-all flex flex-col justify-between group"
           >
             <div>
-              <div className="w-14 h-14 rounded-xl bg-sky-50 text-sky-700 flex items-center justify-center mb-6 group-hover:bg-sky-600 group-hover:text-white transition-colors">
+              <div className="w-14 h-14 rounded-xl bg-sky-50 dark:bg-sky-950/80 text-sky-700 dark:text-sky-400 flex items-center justify-center mb-6 group-hover:bg-sky-600 group-hover:text-white transition-colors">
                 <UserCheck className="w-7 h-7" />
               </div>
 
-              <span className="text-xs font-bold tracking-wider uppercase text-sky-600">Consultants & Experts</span>
-              <h3 className="text-2xl font-bold text-slate-900 mt-1 mb-2">For Advisors</h3>
-              <p className="text-slate-600 text-sm mb-4 leading-relaxed font-medium">
+              <span className="text-xs font-bold tracking-wider uppercase text-sky-600 dark:text-sky-400">Consultants & Experts</span>
+              <h3 className="text-2xl font-bold text-slate-900 dark:text-white mt-1 mb-2">For Advisors</h3>
+              <p className="text-slate-600 dark:text-slate-300 text-sm mb-4 leading-relaxed font-medium">
                 Consultants & specialists in healthcare infrastructure.
               </p>
 
-              <p className="text-xs text-slate-500 mb-6 leading-relaxed">
+              <p className="text-xs text-slate-500 dark:text-slate-400 mb-6 leading-relaxed">
                 Hospital projects require specialised professional advice across multiple stages. Build your profile and make your expertise accessible.
               </p>
 
-              <div className="space-y-2.5 pt-4 border-t border-slate-100 text-xs text-slate-700">
+              <div className="space-y-2.5 pt-4 border-t border-slate-100 dark:border-slate-800 text-xs text-slate-700 dark:text-slate-300">
                 <div className="flex items-start gap-2">
-                  <Check className="w-4 h-4 text-emerald-600 shrink-0 mt-0.5" />
+                  <Check className="w-4 h-4 text-emerald-600 dark:text-emerald-400 shrink-0 mt-0.5" />
                   <span>Advise on NABH, AERB & statutory compliance</span>
                 </div>
                 <div className="flex items-start gap-2">
-                  <Check className="w-4 h-4 text-emerald-600 shrink-0 mt-0.5" />
+                  <Check className="w-4 h-4 text-emerald-600 dark:text-emerald-400 shrink-0 mt-0.5" />
                   <span>Provide architectural and MEP engineering planning</span>
                 </div>
                 <div className="flex items-start gap-2">
-                  <Check className="w-4 h-4 text-emerald-600 shrink-0 mt-0.5" />
+                  <Check className="w-4 h-4 text-emerald-600 dark:text-emerald-400 shrink-0 mt-0.5" />
                   <span>Collaborate with fellow domain specialists</span>
                 </div>
               </div>
 
               {expandedRole === 'advisor' && (
-                <div className="mt-4 p-3 rounded-lg bg-sky-50 text-xs text-sky-950 space-y-1 animate-fadeIn">
+                <div className="mt-4 p-3 rounded-lg bg-sky-50 dark:bg-sky-950/40 text-xs text-sky-950 dark:text-sky-200 space-y-1 animate-fadeIn">
                   <p className="font-semibold">Specialist Disciplines Welcomed:</p>
-                  <ul className="list-disc pl-4 space-y-1 text-slate-700">
+                  <ul className="list-disc pl-4 space-y-1 text-slate-700 dark:text-slate-300">
                     <li>Healthcare Architects & Structural Planners</li>
                     <li>Hospital Project Management Consultants (PMC)</li>
                     <li>NABH / JCI Accreditation Assessors</li>
@@ -216,7 +216,7 @@ export const ThreeUserGroups: React.FC<ThreeUserGroupsProps> = ({ onSelectRole, 
               )}
             </div>
 
-            <div className="pt-6 mt-6 border-t border-slate-100 space-y-2">
+            <div className="pt-6 mt-6 border-t border-slate-100 dark:border-slate-800 space-y-2">
               <button
                 onClick={() => onSelectRole('advisor')}
                 className="w-full py-3 px-4 rounded-lg bg-sky-700 hover:bg-sky-800 text-white font-semibold text-sm transition-all flex items-center justify-center gap-2 cursor-pointer shadow-2xs"
@@ -227,7 +227,7 @@ export const ThreeUserGroups: React.FC<ThreeUserGroupsProps> = ({ onSelectRole, 
 
               <button
                 onClick={() => toggleExpand('advisor')}
-                className="w-full text-center text-xs text-slate-500 hover:text-slate-800 py-1 flex items-center justify-center gap-1 cursor-pointer"
+                className="w-full text-center text-xs text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200 py-1 flex items-center justify-center gap-1 cursor-pointer"
               >
                 <span>{expandedRole === 'advisor' ? 'Show Less' : 'Learn More Details'}</span>
                 {expandedRole === 'advisor' ? <ChevronUp className="w-3.5 h-3.5" /> : <ChevronDown className="w-3.5 h-3.5" />}

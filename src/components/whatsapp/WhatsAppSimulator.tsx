@@ -3,12 +3,13 @@ import {
   WhatsAppFlow, 
   WhatsAppNode, 
   WhatsAppButton, 
-  WhatsAppListItem 
+  WhatsAppListItem,
+  WhatsAppProductItem,
+  WhatsAppTemplateButton
 } from '../../types';
 import { 
   Phone, 
   Video, 
-  MoreVertical, 
   ArrowLeft, 
   CheckCheck, 
   RotateCcw, 
@@ -19,7 +20,14 @@ import {
   X, 
   FileText, 
   ShieldCheck,
-  CheckCircle2
+  CheckCircle2,
+  Store,
+  ShoppingCart,
+  ShoppingBag,
+  Zap,
+  Tag,
+  ChevronRight,
+  Info
 } from 'lucide-react';
 
 interface ChatMessage {
@@ -29,6 +37,7 @@ interface ChatMessage {
   timestamp: string;
   nodeData?: WhatsAppNode;
   userSelection?: string;
+  productPayload?: WhatsAppProductItem;
 }
 
 interface WhatsAppSimulatorProps {
@@ -46,6 +55,7 @@ export const WhatsAppSimulator: React.FC<WhatsAppSimulatorProps> = ({
     user_name: 'Dr. Vivek Sharma',
     hospital_name: 'Apollo Greenfield Hospital',
     city: 'Pune',
+    bed_count: '150 Beds',
     ref_id: '8942'
   }
 }) => {
@@ -53,6 +63,8 @@ export const WhatsAppSimulator: React.FC<WhatsAppSimulatorProps> = ({
   const [isTyping, setIsTyping] = useState(false);
   const [activeListSheet, setActiveListSheet] = useState<WhatsAppNode | null>(null);
   const [activeFlowScreen, setActiveFlowScreen] = useState<WhatsAppNode | null>(null);
+  const [activeCatalogSheet, setActiveCatalogSheet] = useState<WhatsAppNode | null>(null);
+  const [activeMultiProductSheet, setActiveMultiProductSheet] = useState<WhatsAppNode | null>(null);
   const [customInputText, setCustomInputText] = useState('');
   const [formInputs, setFormInputs] = useState<Record<string, string>>({});
   const messagesEndRef = useRef<HTMLDivElement>(null);
@@ -68,6 +80,29 @@ export const WhatsAppSimulator: React.FC<WhatsAppSimulatorProps> = ({
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+  };
+
+  // Transition to a target node
+  const transitionToNode = (targetNodeId?: string) => {
+    if (!targetNodeId) return;
+    const nextNode = flow.nodes.find(n => n.id === targetNodeId);
+    if (nextNode) {
+      onSelectNode(targetNodeId);
+      setIsTyping(true);
+      setTimeout(() => {
+        setIsTyping(false);
+        setMessages(prev => [
+          ...prev,
+          {
+            id: `bot-${Date.now()}`,
+            sender: 'bot',
+            text: nextNode.bodyText,
+            timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+            nodeData: nextNode
+          }
+        ]);
+      }, 650);
+    }
   };
 
   // Reset chat flow to beginning
@@ -86,6 +121,8 @@ export const WhatsAppSimulator: React.FC<WhatsAppSimulatorProps> = ({
     ]);
     setActiveListSheet(null);
     setActiveFlowScreen(null);
+    setActiveCatalogSheet(null);
+    setActiveMultiProductSheet(null);
     setFormInputs({});
   };
 
@@ -95,9 +132,9 @@ export const WhatsAppSimulator: React.FC<WhatsAppSimulatorProps> = ({
 
   useEffect(() => {
     scrollToBottom();
-  }, [messages, isTyping, activeListSheet, activeFlowScreen]);
+  }, [messages, isTyping, activeListSheet, activeFlowScreen, activeCatalogSheet, activeMultiProductSheet]);
 
-  // Handle user clicking an interactive button
+  // Handle user clicking an interactive button (Text Buttons, Media Buttons)
   const handleButtonClick = (button: WhatsAppButton, currentNode: WhatsAppNode) => {
     const userMsg: ChatMessage = {
       id: `user-btn-${Date.now()}`,
@@ -108,28 +145,8 @@ export const WhatsAppSimulator: React.FC<WhatsAppSimulatorProps> = ({
     };
 
     setMessages(prev => [...prev, userMsg]);
-
     const targetNodeId = button.nextNodeId || currentNode.nextNodeId;
-    if (targetNodeId) {
-      const nextNode = flow.nodes.find(n => n.id === targetNodeId);
-      if (nextNode) {
-        onSelectNode(targetNodeId);
-        setIsTyping(true);
-        setTimeout(() => {
-          setIsTyping(false);
-          setMessages(prev => [
-            ...prev,
-            {
-              id: `bot-${Date.now()}`,
-              sender: 'bot',
-              text: nextNode.bodyText,
-              timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-              nodeData: nextNode
-            }
-          ]);
-        }, 650);
-      }
-    }
+    transitionToNode(targetNodeId);
   };
 
   // Handle user selecting an item from the Interactive List Menu
@@ -145,28 +162,66 @@ export const WhatsAppSimulator: React.FC<WhatsAppSimulatorProps> = ({
     };
 
     setMessages(prev => [...prev, userMsg]);
-
     const targetNodeId = item.nextNodeId || currentNode.nextNodeId;
-    if (targetNodeId) {
-      const nextNode = flow.nodes.find(n => n.id === targetNodeId);
-      if (nextNode) {
-        onSelectNode(targetNodeId);
-        setIsTyping(true);
-        setTimeout(() => {
-          setIsTyping(false);
-          setMessages(prev => [
-            ...prev,
-            {
-              id: `bot-${Date.now()}`,
-              sender: 'bot',
-              text: nextNode.bodyText,
-              timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-              nodeData: nextNode
-            }
-          ]);
-        }, 700);
-      }
+    transitionToNode(targetNodeId);
+  };
+
+  // Handle Single Product card inquiry
+  const handleProductInquiry = (product: WhatsAppProductItem, currentNode: WhatsAppNode) => {
+    const userMsg: ChatMessage = {
+      id: `user-prod-${Date.now()}`,
+      sender: 'user',
+      text: `Inquiring about ${product.title} (${product.price})`,
+      timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+      userSelection: product.title,
+      productPayload: product
+    };
+
+    setMessages(prev => [...prev, userMsg]);
+    const targetNodeId = product.nextNodeId || currentNode.nextNodeId;
+    transitionToNode(targetNodeId);
+  };
+
+  // Handle Multi Product selection
+  const handleMultiProductSelect = (product: WhatsAppProductItem, currentNode: WhatsAppNode) => {
+    setActiveMultiProductSheet(null);
+
+    const userMsg: ChatMessage = {
+      id: `user-mprod-${Date.now()}`,
+      sender: 'user',
+      text: `Requested quote for: ${product.title} • ${product.price}`,
+      timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+      userSelection: product.title,
+      productPayload: product
+    };
+
+    setMessages(prev => [...prev, userMsg]);
+    const targetNodeId = product.nextNodeId || currentNode.nextNodeId;
+    transitionToNode(targetNodeId);
+  };
+
+  // Handle Meta Template button click
+  const handleTemplateButtonClick = (btn: WhatsAppTemplateButton, currentNode: WhatsAppNode) => {
+    if (btn.type === 'URL' && btn.value) {
+      window.open(btn.value, '_blank');
+      return;
     }
+    if (btn.type === 'PHONE_NUMBER' && btn.value) {
+      window.location.href = `tel:${btn.value}`;
+      return;
+    }
+
+    const userMsg: ChatMessage = {
+      id: `user-tbtn-${Date.now()}`,
+      sender: 'user',
+      text: btn.text,
+      timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+      userSelection: btn.text
+    };
+
+    setMessages(prev => [...prev, userMsg]);
+    const targetNodeId = btn.nextNodeId || currentNode.nextNodeId;
+    transitionToNode(targetNodeId);
   };
 
   // Handle submitting the WhatsApp native flow form
@@ -175,43 +230,24 @@ export const WhatsAppSimulator: React.FC<WhatsAppSimulatorProps> = ({
     setActiveFlowScreen(null);
 
     const summaryText = Object.entries(formInputs)
-      .map(([k, v]) => `${v}`)
+      .map(([, v]) => `${v}`)
       .filter(Boolean)
       .join(' • ') || 'Form Details Submitted';
 
     const userMsg: ChatMessage = {
-      id: `user-form-${Date.now()}`,
+      id: `user-flow-${Date.now()}`,
       sender: 'user',
-      text: `📋 ${node.flowScreen?.title || 'Form Submission'}:\n${summaryText}`,
-      timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+      text: `📋 ${node.flowScreen?.title || 'Form'}: ${summaryText}`,
+      timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+      userSelection: 'form_submitted'
     };
 
     setMessages(prev => [...prev, userMsg]);
-
     const targetNodeId = node.flowScreen?.nextNodeId || node.nextNodeId;
-    if (targetNodeId) {
-      const nextNode = flow.nodes.find(n => n.id === targetNodeId);
-      if (nextNode) {
-        onSelectNode(targetNodeId);
-        setIsTyping(true);
-        setTimeout(() => {
-          setIsTyping(false);
-          setMessages(prev => [
-            ...prev,
-            {
-              id: `bot-${Date.now()}`,
-              sender: 'bot',
-              text: nextNode.bodyText,
-              timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-              nodeData: nextNode
-            }
-          ]);
-        }, 750);
-      }
-    }
+    transitionToNode(targetNodeId);
   };
 
-  // Handle typing a message in the bottom chat bar
+  // Free-form user text test reply
   const handleSendCustomText = (e: React.FormEvent) => {
     e.preventDefault();
     if (!customInputText.trim()) return;
@@ -220,7 +256,7 @@ export const WhatsAppSimulator: React.FC<WhatsAppSimulatorProps> = ({
     setCustomInputText('');
 
     const userMsg: ChatMessage = {
-      id: `user-text-${Date.now()}`,
+      id: `user-custom-${Date.now()}`,
       sender: 'user',
       text: userText,
       timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
@@ -228,40 +264,13 @@ export const WhatsAppSimulator: React.FC<WhatsAppSimulatorProps> = ({
 
     setMessages(prev => [...prev, userMsg]);
 
-    // Check if input matches trigger keyword
-    if (userText.toUpperCase().includes(flow.triggerKeyword)) {
+    // Check if user entered trigger keyword
+    if (userText.toUpperCase() === flow.triggerKeyword.toUpperCase()) {
       startFlow();
       return;
     }
 
-    // Check if last bot message was an input capture
-    const lastBotMsg = [...messages].reverse().find(m => m.sender === 'bot');
-    if (lastBotMsg?.nodeData?.type === 'input_capture') {
-      const nextNodeId = lastBotMsg.nodeData.nextNodeId;
-      if (nextNodeId) {
-        const nextNode = flow.nodes.find(n => n.id === nextNodeId);
-        if (nextNode) {
-          onSelectNode(nextNodeId);
-          setIsTyping(true);
-          setTimeout(() => {
-            setIsTyping(false);
-            setMessages(prev => [
-              ...prev,
-              {
-                id: `bot-${Date.now()}`,
-                sender: 'bot',
-                text: nextNode.bodyText,
-                timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-                nodeData: nextNode
-              }
-            ]);
-          }, 600);
-          return;
-        }
-      }
-    }
-
-    // Fallback general response
+    // Default conversational echo
     setIsTyping(true);
     setTimeout(() => {
       setIsTyping(false);
@@ -278,11 +287,18 @@ export const WhatsAppSimulator: React.FC<WhatsAppSimulatorProps> = ({
   };
 
   // Formatter for WhatsApp markup (*bold*, _italic_)
-  const renderFormattedText = (rawText: string) => {
-    const text = interpolateText(rawText);
+  const renderFormattedText = (rawText: string, node?: WhatsAppNode) => {
+    let text = interpolateText(rawText);
+
+    // If template, replace {{1}}, {{2}}, {{3}}
+    if (node?.type === 'template' && node.templateConfig?.bodyVariables) {
+      node.templateConfig.bodyVariables.forEach((val, idx) => {
+        text = text.replaceAll(`{{${idx + 1}}}`, val);
+      });
+    }
+
     const lines = text.split('\n');
     return lines.map((line, idx) => {
-      // replace *text* with <strong>text</strong>
       const parts = line.split(/(\*[^*]+\*|_[^_]+_)/g);
       return (
         <p key={idx} className={idx > 0 ? 'mt-1.5' : ''}>
@@ -340,7 +356,7 @@ export const WhatsAppSimulator: React.FC<WhatsAppSimulatorProps> = ({
                   <span className="font-bold text-xs text-white tracking-wide">NOVA Healthcare</span>
                   <span className="text-[10px] bg-emerald-600/60 px-1 rounded text-emerald-100 font-semibold">Official</span>
                 </div>
-                <span className="text-[10px] text-emerald-100 block">online • WhatsApp Flow</span>
+                <span className="text-[10px] text-emerald-100 block">online &bull; WhatsApp Flow</span>
               </div>
             </div>
 
@@ -378,20 +394,33 @@ export const WhatsAppSimulator: React.FC<WhatsAppSimulatorProps> = ({
                 <div key={msg.id} className={`flex flex-col ${isBot ? 'items-start' : 'items-end'}`}>
                   {/* Message Bubble */}
                   <div 
-                    className={`max-w-[85%] rounded-2xl p-2.5 shadow-xs text-xs relative ${
+                    className={`max-w-[88%] rounded-2xl p-2.5 shadow-xs text-xs relative ${
                       isBot 
                         ? 'bg-white text-slate-800 rounded-tl-xs border border-slate-200/60' 
                         : 'bg-[#D9FDD3] text-slate-900 rounded-tr-xs border border-emerald-200/70'
                     }`}
                   >
-                    {/* Header preview if bot */}
-                    {isBot && node && node.headerType !== 'none' && (
+                    {/* Meta Template Header & Category Badge */}
+                    {isBot && node && node.type === 'template' && (
+                      <div className="mb-2 pb-1.5 border-b border-amber-100 flex items-center justify-between">
+                        <span className="text-[9px] font-black uppercase tracking-wider px-1.5 py-0.5 rounded bg-amber-100 text-amber-800 border border-amber-200">
+                          {node.templateConfig?.category || 'UTILITY'} TEMPLATE
+                        </span>
+                        <span className="text-[9px] font-mono text-slate-400">
+                          {node.templateConfig?.templateName || 'meta_template'}
+                        </span>
+                      </div>
+                    )}
+
+                    {/* Header attachment preview if bot (Media Buttons, Text Buttons, or Generic Header) */}
+                    {isBot && node && (node.headerType !== 'none' || node.type === 'media_buttons') && (
                       <div className="mb-2 rounded-lg overflow-hidden border border-slate-100">
-                        {node.headerType === 'image' && (
+                        {(node.headerType === 'image' || node.type === 'media_buttons') && (
                           <img 
                             src={node.headerContent || 'https://images.unsplash.com/photo-1586773860418-d37222d8fce3?auto=format&fit=crop&w=600&q=80'} 
                             alt="Header" 
                             className="w-full h-32 object-cover"
+                            referrerPolicy="no-referrer"
                           />
                         )}
                         {node.headerType === 'text' && (
@@ -408,9 +437,47 @@ export const WhatsAppSimulator: React.FC<WhatsAppSimulatorProps> = ({
                       </div>
                     )}
 
+                    {/* Single Product Card Preview inside bubble */}
+                    {isBot && node && node.type === 'single_product' && node.singleProduct && (
+                      <div className="mb-2 rounded-xl overflow-hidden border border-emerald-100 bg-slate-50">
+                        <img 
+                          src={node.singleProduct.imageUrl || 'https://images.unsplash.com/photo-1584515979956-d9f6e5d09982?auto=format&fit=crop&w=600&q=80'}
+                          alt={node.singleProduct.title}
+                          className="w-full h-32 object-cover"
+                          referrerPolicy="no-referrer"
+                        />
+                        <div className="p-2 space-y-0.5">
+                          <div className="flex items-center justify-between">
+                            <span className="text-[10px] font-mono text-slate-500 uppercase">{node.singleProduct.retailerId}</span>
+                            <span className="text-xs font-black text-emerald-700">{node.singleProduct.price}</span>
+                          </div>
+                          <h4 className="font-bold text-xs text-slate-900">{node.singleProduct.title}</h4>
+                          <p className="text-[10px] text-slate-500 line-clamp-2">{node.singleProduct.description}</p>
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Catalogue Card Preview inside bubble */}
+                    {isBot && node && node.type === 'catalogue' && node.catalogConfig && (
+                      <div className="mb-2 rounded-xl overflow-hidden border border-indigo-100 bg-indigo-50/50">
+                        {node.catalogConfig.thumbnailUrl && (
+                          <img 
+                            src={node.catalogConfig.thumbnailUrl}
+                            alt="Catalog"
+                            className="w-full h-28 object-cover"
+                            referrerPolicy="no-referrer"
+                          />
+                        )}
+                        <div className="p-2">
+                          <span className="text-[9px] font-bold text-indigo-700 uppercase tracking-wider block">Meta Catalog Showcase</span>
+                          <h4 className="font-black text-xs text-indigo-950">{node.catalogConfig.headerText || 'Medical Catalog'}</h4>
+                        </div>
+                      </div>
+                    )}
+
                     {/* Main Body Text */}
                     <div className="leading-relaxed text-[12px] break-words">
-                      {renderFormattedText(msg.text)}
+                      {renderFormattedText(msg.text, node)}
                     </div>
 
                     {/* Footer text if configured */}
@@ -429,12 +496,14 @@ export const WhatsAppSimulator: React.FC<WhatsAppSimulatorProps> = ({
                     </div>
                   </div>
 
-                  {/* Interactive Buttons / Action Buttons below bot bubble */}
+                  {/* ========================================================= */}
+                  {/* INTERACTIVE ACTIONS RENDERED OUTSIDE/BELOW BOT BUBBLE      */}
+                  {/* ========================================================= */}
                   {isBot && node && (
-                    <div className="w-[85%] mt-1.5 space-y-1.5">
+                    <div className="w-[88%] mt-1.5 space-y-1.5">
                       
-                      {/* 1. Quick Reply Buttons (Up to 3) */}
-                      {node.type === 'button' && node.buttons && node.buttons.length > 0 && (
+                      {/* 1. Quick Reply Buttons (text_buttons, button, media_buttons) */}
+                      {(node.type === 'text_buttons' || node.type === 'button' || node.type === 'media_buttons') && node.buttons && node.buttons.length > 0 && (
                         <div className="flex flex-col gap-1.5">
                           {node.buttons.map((btn) => (
                             <button
@@ -455,11 +524,64 @@ export const WhatsAppSimulator: React.FC<WhatsAppSimulatorProps> = ({
                           className="w-full py-2.5 px-3 bg-white hover:bg-emerald-50 text-[#00A884] font-bold text-xs rounded-xl shadow-xs border border-slate-200/80 text-center transition-colors cursor-pointer flex items-center justify-center gap-2"
                         >
                           <ListFilter className="w-3.5 h-3.5" />
-                          <span>{node.listButtonText || 'Select Option'}</span>
+                          <span>{node.listButtonText || 'Select Department'}</span>
                         </button>
                       )}
 
-                      {/* 3. WhatsApp Flow Native Screen Trigger */}
+                      {/* 3. Catalogue Message Action */}
+                      {node.type === 'catalogue' && (
+                        <button
+                          onClick={() => setActiveCatalogSheet(node)}
+                          className="w-full py-2.5 px-3 bg-white hover:bg-indigo-50 text-indigo-700 font-bold text-xs rounded-xl shadow-xs border border-indigo-200 text-center transition-colors cursor-pointer flex items-center justify-center gap-2"
+                        >
+                          <Store className="w-3.5 h-3.5 text-indigo-600" />
+                          <span>{node.catalogConfig?.actionButtonText || 'View Catalog'}</span>
+                        </button>
+                      )}
+
+                      {/* 4. Single Product Card Action */}
+                      {node.type === 'single_product' && node.singleProduct && (
+                        <button
+                          onClick={() => handleProductInquiry(node.singleProduct!, node)}
+                          className="w-full py-2.5 px-3 bg-[#00A884] hover:bg-[#009172] text-white font-bold text-xs rounded-xl shadow-xs text-center transition-colors cursor-pointer flex items-center justify-center gap-2"
+                        >
+                          <ShoppingCart className="w-3.5 h-3.5" />
+                          <span>Inquire on WhatsApp</span>
+                        </button>
+                      )}
+
+                      {/* 5. Multi Product Showcase Action */}
+                      {node.type === 'multi_product' && (
+                        <button
+                          onClick={() => setActiveMultiProductSheet(node)}
+                          className="w-full py-2.5 px-3 bg-white hover:bg-cyan-50 text-cyan-800 font-bold text-xs rounded-xl shadow-xs border border-cyan-200 text-center transition-colors cursor-pointer flex items-center justify-center gap-2"
+                        >
+                          <ShoppingBag className="w-3.5 h-3.5 text-cyan-700" />
+                          <span>
+                            View Products ({node.productSections?.reduce((acc, s) => acc + s.products.length, 0) || 0} items)
+                          </span>
+                        </button>
+                      )}
+
+                      {/* 6. Meta Pre-Approved Template Buttons */}
+                      {node.type === 'template' && node.templateConfig?.buttons && (
+                        <div className="flex flex-col gap-1.5">
+                          {node.templateConfig.buttons.map((tbtn) => (
+                            <button
+                              key={tbtn.id}
+                              onClick={() => handleTemplateButtonClick(tbtn, node)}
+                              className="w-full py-2 px-3 bg-white hover:bg-amber-50 active:bg-amber-100 text-amber-900 font-bold text-xs rounded-xl shadow-xs border border-amber-200 text-center transition-colors cursor-pointer flex items-center justify-center gap-1.5"
+                            >
+                              {tbtn.type === 'URL' && <ExternalLink className="w-3.5 h-3.5 text-amber-600" />}
+                              {tbtn.type === 'PHONE_NUMBER' && <Phone className="w-3.5 h-3.5 text-amber-600" />}
+                              {tbtn.type === 'QUICK_REPLY' && <Zap className="w-3.5 h-3.5 text-amber-600" />}
+                              <span>{tbtn.text}</span>
+                            </button>
+                          ))}
+                        </div>
+                      )}
+
+                      {/* 7. WhatsApp Flow Native Screen Trigger */}
                       {node.type === 'flow_screen' && (
                         <button
                           onClick={() => setActiveFlowScreen(node)}
@@ -470,7 +592,7 @@ export const WhatsAppSimulator: React.FC<WhatsAppSimulatorProps> = ({
                         </button>
                       )}
 
-                      {/* 4. Media CTA Button (URL or Phone Call) */}
+                      {/* 8. Media CTA Button */}
                       {node.type === 'media_cta' && node.ctaLabel && (
                         <a
                           href={node.ctaType === 'call' ? `tel:${node.ctaValue}` : node.ctaValue || '#'}
@@ -483,11 +605,11 @@ export const WhatsAppSimulator: React.FC<WhatsAppSimulatorProps> = ({
                         </a>
                       )}
 
-                      {/* 5. Agent Handover indicator */}
+                      {/* 9. Agent Handover indicator */}
                       {node.type === 'agent_handover' && (
                         <div className="bg-emerald-100 text-emerald-900 border border-emerald-300 rounded-xl p-2 text-[10px] flex items-center gap-2 font-medium">
                           <ShieldCheck className="w-4 h-4 text-emerald-700 shrink-0" />
-                          <span>NOVA Concierge Liaison has been notified on WhatsApp.</span>
+                          <span>NOVA Concierge Specialist has joined this WhatsApp chat.</span>
                         </div>
                       )}
 
@@ -509,7 +631,11 @@ export const WhatsAppSimulator: React.FC<WhatsAppSimulatorProps> = ({
             <div ref={messagesEndRef} />
           </div>
 
-          {/* Interactive List Menu Bottom Sheet (WhatsApp Style) */}
+          {/* ========================================================= */}
+          {/* BOTTOM SHEETS FOR INTERACTIVE MENUS                       */}
+          {/* ========================================================= */}
+
+          {/* 1. Interactive List Menu Bottom Sheet (WhatsApp Style) */}
           {activeListSheet && (
             <div className="absolute inset-x-0 bottom-0 top-16 bg-white z-40 rounded-t-2xl shadow-2xl flex flex-col animate-slideUp">
               <div className="p-3 border-b border-slate-200 flex items-center justify-between bg-slate-50 rounded-t-2xl">
@@ -553,7 +679,130 @@ export const WhatsAppSimulator: React.FC<WhatsAppSimulatorProps> = ({
             </div>
           )}
 
-          {/* WhatsApp Native Flow Form Modal Sheet (WhatsApp Style) */}
+          {/* 2. Meta Commerce Catalogue Sheet */}
+          {activeCatalogSheet && (
+            <div className="absolute inset-x-0 bottom-0 top-12 bg-white z-40 rounded-t-3xl shadow-2xl flex flex-col animate-slideUp">
+              <div className="p-3 border-b border-slate-200 flex items-center justify-between bg-indigo-900 text-white rounded-t-3xl">
+                <div className="flex items-center gap-2">
+                  <Store className="w-4 h-4 text-indigo-300" />
+                  <div>
+                    <h4 className="font-black text-xs">{activeCatalogSheet.catalogConfig?.headerText || 'NOVA Catalog'}</h4>
+                    <p className="text-[10px] text-indigo-200">Catalog ID: {activeCatalogSheet.catalogConfig?.catalogId}</p>
+                  </div>
+                </div>
+                <button 
+                  onClick={() => setActiveCatalogSheet(null)}
+                  className="p-1 text-white/80 hover:text-white cursor-pointer"
+                >
+                  <X className="w-4 h-4" />
+                </button>
+              </div>
+
+              <div className="flex-1 overflow-y-auto p-4 space-y-3 text-left">
+                <div className="p-3 rounded-2xl bg-indigo-50 border border-indigo-100 text-center">
+                  <span className="text-[10px] font-bold text-indigo-800 uppercase block mb-1">WhatsApp Verified Storefront</span>
+                  <p className="text-xs text-indigo-950 font-medium">{activeCatalogSheet.catalogConfig?.bodyText}</p>
+                </div>
+
+                <div className="space-y-2">
+                  {[
+                    { title: 'Modular OT Turnkey Suite', price: '₹18,50,000', sku: 'SKU-OT-MOD-01' },
+                    { title: 'Turbine ICU Ventilator X5', price: '₹4,50,000', sku: 'SKU-VENT-02' },
+                    { title: '5-Function Motorized ICU Bed', price: '₹1,25,000', sku: 'SKU-BED-03' }
+                  ].map((item, idx) => (
+                    <div key={idx} className="p-2.5 bg-slate-50 rounded-xl border border-slate-200 flex items-center justify-between">
+                      <div>
+                        <span className="text-[10px] font-mono text-slate-400 block">{item.sku}</span>
+                        <h5 className="text-xs font-bold text-slate-900">{item.title}</h5>
+                        <span className="text-xs font-black text-emerald-700">{item.price}</span>
+                      </div>
+                      <button
+                        onClick={() => {
+                          setActiveCatalogSheet(null);
+                          handleProductInquiry({
+                            id: `cat-prod-${idx}`,
+                            retailerId: item.sku,
+                            title: item.title,
+                            price: item.price,
+                            currency: 'INR',
+                            nextNodeId: activeCatalogSheet.catalogConfig?.nextNodeId || activeCatalogSheet.nextNodeId || ''
+                          }, activeCatalogSheet);
+                        }}
+                        className="py-1 px-2.5 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-[10px] cursor-pointer"
+                      >
+                        Inquire
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* 3. Multi-Product Showcase Sheet */}
+          {activeMultiProductSheet && (
+            <div className="absolute inset-x-0 bottom-0 top-12 bg-white z-40 rounded-t-3xl shadow-2xl flex flex-col animate-slideUp">
+              <div className="p-3 border-b border-slate-200 flex items-center justify-between bg-cyan-950 text-white rounded-t-3xl">
+                <div className="flex items-center gap-2">
+                  <ShoppingBag className="w-4 h-4 text-cyan-400" />
+                  <div>
+                    <h4 className="font-black text-xs">Medical Equipment Catalog</h4>
+                    <p className="text-[10px] text-cyan-200">Select any product to inquire or purchase</p>
+                  </div>
+                </div>
+                <button 
+                  onClick={() => setActiveMultiProductSheet(null)}
+                  className="p-1 text-white/80 hover:text-white cursor-pointer"
+                >
+                  <X className="w-4 h-4" />
+                </button>
+              </div>
+
+              <div className="flex-1 overflow-y-auto p-3 space-y-4 text-left">
+                {activeMultiProductSheet.productSections?.map((section, sIdx) => (
+                  <div key={sIdx} className="space-y-2">
+                    <h5 className="text-[11px] font-black uppercase text-cyan-900 bg-cyan-50 px-2 py-1 rounded">
+                      {section.title}
+                    </h5>
+
+                    <div className="space-y-2">
+                      {section.products.map((prod) => (
+                        <div key={prod.id} className="p-2.5 bg-slate-50 rounded-xl border border-slate-200 flex items-center gap-3">
+                          {prod.imageUrl ? (
+                            <img 
+                              src={prod.imageUrl} 
+                              alt={prod.title} 
+                              className="w-14 h-14 rounded-lg object-cover border border-slate-200 shrink-0" 
+                              referrerPolicy="no-referrer"
+                            />
+                          ) : (
+                            <div className="w-14 h-14 rounded-lg bg-slate-200 flex items-center justify-center text-slate-500 shrink-0">
+                              <ShoppingBag className="w-6 h-6" />
+                            </div>
+                          )}
+
+                          <div className="flex-1 min-w-0">
+                            <span className="text-[9px] font-mono text-slate-400 uppercase">{prod.retailerId}</span>
+                            <h6 className="text-xs font-bold text-slate-900 truncate">{prod.title}</h6>
+                            <span className="text-xs font-black text-emerald-700 block">{prod.price}</span>
+                          </div>
+
+                          <button
+                            onClick={() => handleMultiProductSelect(prod, activeMultiProductSheet)}
+                            className="py-1.5 px-2.5 rounded-lg bg-[#00A884] hover:bg-[#009172] text-white font-bold text-[10px] cursor-pointer shrink-0 shadow-2xs"
+                          >
+                            Inquire
+                          </button>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* 4. WhatsApp Native Flow Form Modal Sheet */}
           {activeFlowScreen && (
             <div className="absolute inset-x-0 bottom-0 top-12 bg-white z-40 rounded-t-3xl shadow-2xl flex flex-col animate-slideUp">
               <div className="p-3 border-b border-slate-200 flex items-center justify-between bg-[#075E54] text-white rounded-t-3xl">
@@ -654,7 +903,7 @@ export const WhatsAppSimulator: React.FC<WhatsAppSimulatorProps> = ({
       {/* Simulator Quick Helper Pill */}
       <div className="mt-3 flex items-center gap-2 text-xs text-slate-600 bg-white/80 py-1 px-3 rounded-full border border-slate-200 shadow-2xs">
         <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
-        <span className="font-semibold text-slate-700">Live Simulator:</span> Click buttons or trigger keywords to test flow.
+        <span className="font-semibold text-slate-700">Live Simulator:</span> Interactive test of all 7 WhatsApp message types.
       </div>
     </div>
   );

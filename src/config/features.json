@@ -1,0 +1,13 @@
+{
+  "features": {
+    "architecture": false,
+    "whatsapp_flow": false,
+    "mjml_studio": false,
+    "procurement_hub": true,
+    "toolkit": true,
+    "comparison_matrix": true,
+    "directory_search": true,
+    "pamphlet_qr": true,
+    "coupons": true
+  }
+}

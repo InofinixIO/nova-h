@@ -94,9 +94,10 @@ export interface AuthUser {
   email: string;
   phone?: string;
   company?: string;
+  specialization?: string;
   isSubscribed?: boolean;
   plan?: string;
-  status?: 'active' | 'disabled';
+  status?: 'active' | 'disabled' | 'pending';
   createdAt?: string;
   lastLoginAt?: string;
 }
@@ -188,10 +189,16 @@ export interface EnquiryItem {
 // ==========================================
 
 export type WhatsAppNodeType = 
-  | 'button'          // Interactive Quick Reply (up to 3 buttons)
-  | 'list'            // Interactive List Menu (Sections & rows)
+  | 'text_buttons'    // 1. Text Buttons: Text message with up to 3 quick-reply buttons
+  | 'media_buttons'   // 2. Media Buttons: Media (image/video/doc) + text + buttons
+  | 'list'            // 3. List: Interactive List Menu (Sections & rows)
+  | 'catalogue'       // 4. Catalogue Message: WhatsApp Catalog showcase with "View catalog"
+  | 'single_product'  // 5. Single Product: Single item showcase with price, image, view action
+  | 'multi_product'   // 6. Multi Product: Multi-item catalog showcase with sectioned items
+  | 'template'        // 7. Template: Meta-approved pre-configured WhatsApp template
+  | 'button'          // Backwards-compatible alias for text_buttons
   | 'flow_screen'     // Meta WhatsApp Flow (Native in-app form screen)
-  | 'media_cta'       // Media Header + Call / URL action
+  | 'media_cta'       // Backwards-compatible alias: Media + Call / URL action
   | 'input_capture'   // Ask user input & store to variable
   | 'agent_handover'; // Route conversation to human representative
 
@@ -212,6 +219,54 @@ export interface WhatsAppListItem {
 export interface WhatsAppListSection {
   title: string;
   rows: WhatsAppListItem[];
+}
+
+// Single / Multi Product item specifications
+export interface WhatsAppProductItem {
+  id: string;
+  retailerId: string; // e.g. "SKU-ICU-VENT-01"
+  title: string;
+  price: string;      // e.g. "₹4,50,000" or "450000"
+  catalogId?: string;
+  currency?: string;  // e.g. "INR"
+  description?: string;
+  imageUrl?: string;
+  category?: string;
+  nextNodeId?: string;
+}
+
+export interface WhatsAppProductSection {
+  title: string;
+  products: WhatsAppProductItem[];
+}
+
+export interface WhatsAppCatalogueConfig {
+  catalogId: string;
+  thumbnailUrl?: string;
+  headerText?: string;
+  bodyText?: string;
+  footerText?: string;
+  actionButtonText?: string;
+  nextNodeId?: string;
+}
+
+export interface WhatsAppTemplateButton {
+  id: string;
+  type: 'QUICK_REPLY' | 'URL' | 'PHONE_NUMBER';
+  text: string;
+  value?: string;
+  nextNodeId?: string;
+}
+
+export interface WhatsAppTemplateConfig {
+  templateName: string;
+  category: 'MARKETING' | 'UTILITY' | 'AUTHENTICATION';
+  language: string;
+  headerType?: 'none' | 'text' | 'image' | 'video' | 'document';
+  headerText?: string;
+  headerMediaUrl?: string;
+  bodyVariables: string[];
+  buttons?: WhatsAppTemplateButton[];
 }
 
 export interface WhatsAppFormField {
@@ -242,6 +297,13 @@ export interface WhatsAppNode {
   buttons?: WhatsAppButton[];
   listButtonText?: string;
   listSections?: WhatsAppListSection[];
+  
+  // E-commerce & Catalogue & Template extensions
+  singleProduct?: WhatsAppProductItem;
+  productSections?: WhatsAppProductSection[];
+  catalogConfig?: WhatsAppCatalogueConfig;
+  templateConfig?: WhatsAppTemplateConfig;
+
   flowScreen?: WhatsAppFlowScreen;
   ctaType?: 'url' | 'call';
   ctaLabel?: string;

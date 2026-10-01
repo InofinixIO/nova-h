@@ -1,16 +1,17 @@
 import React from 'react';
 import { Linkedin, Twitter, Youtube, ExternalLink, GitBranch, QrCode } from 'lucide-react';
+import { isFeatureEnabled } from '../utils/featureFlags';
 
 interface FooterProps {
   onOpenAuth: (mode: 'signin' | 'signup') => void;
   onOpenToolkit: () => void;
   onOpenCicd: () => void;
   onOpenPamphletQr?: () => void;
-  onNavigate?: (slug: 'owners' | 'vendors' | 'advisors' | 'toolkit' | 'how-it-works' | 'pricing' | 'directory' | 'about' | 'admin') => void;
+  onNavigate?: (slug: string) => void;
 }
 
 export const Footer: React.FC<FooterProps> = ({ onOpenAuth, onOpenToolkit, onOpenCicd, onOpenPamphletQr, onNavigate }) => {
-  const handleNav = (slug: 'owners' | 'vendors' | 'advisors' | 'toolkit' | 'how-it-works' | 'pricing' | 'directory' | 'about' | 'admin', fallbackId: string) => {
+  const handleNav = (slug: string, fallbackId: string) => {
     if (onNavigate) {
       onNavigate(slug);
     } else {
@@ -117,6 +118,13 @@ export const Footer: React.FC<FooterProps> = ({ onOpenAuth, onOpenToolkit, onOpe
                   About NOVA
                 </button>
               </li>
+              {isFeatureEnabled('architecture') && (
+                <li>
+                  <button onClick={() => handleNav('architecture', 'nova-footer')} className="hover:text-blue-400 text-blue-400 font-medium transition-colors cursor-pointer flex items-center gap-1">
+                    <span>Backend &amp; Arch Specs</span>
+                  </button>
+                </li>
+              )}
             </ul>
           </div>
 

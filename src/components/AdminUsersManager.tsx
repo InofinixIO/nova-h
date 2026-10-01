@@ -29,6 +29,7 @@ import {
   toggleUserStatus, 
   updateUserPlan, 
   registerOrUpdateUser, 
+  activateAdvisorUser,
   isDevModeActive, 
   setDevMode 
 } from '../utils/userManagement';
@@ -47,7 +48,7 @@ export const AdminUsersManager: React.FC<AdminUsersManagerProps> = ({
   const [users, setUsers] = useState<AuthUser[]>(() => getAllUsers());
   const [searchQuery, setSearchQuery] = useState('');
   const [roleFilter, setRoleFilter] = useState<'all' | UserRole>('all');
-  const [statusFilter, setStatusFilter] = useState<'all' | 'active' | 'disabled'>('all');
+  const [statusFilter, setStatusFilter] = useState<'all' | 'active' | 'disabled' | 'pending'>('all');
   const [devMode, setDevModeState] = useState<boolean>(() => isDevModeActive());
 
   // Plan editing modal / inline state
@@ -91,6 +92,12 @@ export const AdminUsersManager: React.FC<AdminUsersManagerProps> = ({
     } else {
       onNotify('Developer Mode (dev=1) disabled in localStorage.');
     }
+  };
+
+  const handleActivateAdvisor = (targetUser: AuthUser) => {
+    const updated = activateAdvisorUser(targetUser.email);
+    setUsers(updated);
+    onNotify(`Advisor "${targetUser.name}" (${targetUser.email}) has been approved and activated! Membership set to "Advisor Specialist (₹XXXX/yr - Activated)".`);
   };
 
   const handleToggleStatus = (targetUser: AuthUser) => {
@@ -161,6 +168,8 @@ export const AdminUsersManager: React.FC<AdminUsersManagerProps> = ({
 
   const activeCount = users.filter(u => (u.status || 'active') === 'active').length;
   const disabledCount = users.filter(u => u.status === 'disabled').length;
+  const pendingCount = users.filter(u => u.status === 'pending').length;
+  const pendingAdvisors = users.filter(u => u.role === 'advisor' && u.status === 'pending');
   const ownersCount = users.filter(u => u.role === 'owner').length;
   const vendorsCount = users.filter(u => u.role === 'vendor').length;
   const advisorsCount = users.filter(u => u.role === 'advisor').length;
@@ -242,13 +251,17 @@ export const AdminUsersManager: React.FC<AdminUsersManagerProps> = ({
           <div className="text-[11px] text-slate-400 mt-0.5">Accounts in good standing</div>
         </div>
 
-        <div className="bg-white p-4 rounded-xl border border-slate-200 shadow-2xs">
+        <div className={`p-4 rounded-xl border shadow-2xs ${
+          pendingCount > 0 
+            ? 'bg-amber-50/90 border-amber-300' 
+            : 'bg-white border-slate-200'
+        }`}>
           <div className="flex items-center justify-between">
-            <span className="text-xs font-semibold text-slate-500">Disabled</span>
-            <AlertTriangle className="w-4 h-4 text-red-500" />
+            <span className="text-xs font-semibold text-amber-800">Pending Advisors</span>
+            <Sparkles className="w-4 h-4 text-amber-600" />
           </div>
-          <div className="text-2xl font-black text-red-600 mt-1">{disabledCount}</div>
-          <div className="text-[11px] text-slate-400 mt-0.5">Access suspended</div>
+          <div className="text-2xl font-black text-amber-700 mt-1">{pendingCount}</div>
+          <div className="text-[11px] text-amber-600/80 mt-0.5">Awaiting admin activation</div>
         </div>
 
         <div className="bg-white p-4 rounded-xl border border-slate-200 shadow-2xs">
@@ -269,6 +282,45 @@ export const AdminUsersManager: React.FC<AdminUsersManagerProps> = ({
           <div className="text-[11px] text-slate-400 mt-0.5">{vendorsCount} Vendors • {advisorsCount} Advisors</div>
         </div>
       </div>
+
+      {/* Pending Advisors Direct Activation Banner */}
+      {pendingAdvisors.length > 0 && (
+        <div className="bg-gradient-to-r from-amber-500/10 via-amber-500/5 to-transparent border-2 border-amber-400/80 p-4 sm:p-5 rounded-2xl shadow-xs">
+          <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+            <div className="flex items-start gap-3">
+              <div className="w-10 h-10 rounded-xl bg-amber-500 text-slate-950 flex items-center justify-center shrink-0 font-bold shadow-xs">
+                <Sparkles className="w-5 h-5" />
+              </div>
+              <div>
+                <div className="flex items-center gap-2">
+                  <h3 className="font-extrabold text-sm text-amber-950">
+                    {pendingAdvisors.length} Healthcare Advisor{pendingAdvisors.length > 1 ? 's' : ''} Awaiting Admin Activation
+                  </h3>
+                  <span className="px-2 py-0.5 rounded-full text-[10px] font-black uppercase bg-amber-200 text-amber-900 border border-amber-300">
+                    One-Click Approval
+                  </span>
+                </div>
+                <p className="text-xs text-amber-900/80 mt-0.5 max-w-2xl">
+                  Advisors register with ₹XXXX plan for vetting without paying upfront. Once verified by the council, click <strong>Make Active</strong> below to publish their profile in the directory and unlock collaboration.
+                </p>
+              </div>
+            </div>
+            <div className="flex items-center gap-2 flex-wrap">
+              {pendingAdvisors.map(adv => (
+                <button
+                  key={adv.email}
+                  type="button"
+                  onClick={() => handleActivateAdvisor(adv)}
+                  className="px-3 py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs flex items-center gap-1.5 shadow-xs transition-all cursor-pointer"
+                >
+                  <CheckCircle2 className="w-3.5 h-3.5" />
+                  <span>Activate {adv.name.split(' ')[0]}</span>
+                </button>
+              ))}
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Filter and Search Bar */}
       <div className="bg-white p-4 rounded-2xl border border-slate-200 shadow-xs flex flex-col sm:flex-row items-center justify-between gap-3">
@@ -317,6 +369,7 @@ export const AdminUsersManager: React.FC<AdminUsersManagerProps> = ({
             >
               <option value="all">All Statuses</option>
               <option value="active">Active Only</option>
+              <option value="pending">Pending Advisors ({pendingCount})</option>
               <option value="disabled">Disabled Only</option>
             </select>
           </div>
@@ -436,9 +489,9 @@ export const AdminUsersManager: React.FC<AdminUsersManagerProps> = ({
                               <option value="Owner Free Starter">Owner Free Starter</option>
                               <option value="Owner Annual (₹1,000/yr)">Owner Annual (₹1,000/yr)</option>
                               <option value="Vendor Free Starter">Vendor Free Starter</option>
-                              <option value="Vendor Standard (₹2,000/yr)">Vendor Standard (₹2,000/yr)</option>
-                              <option value="Advisor Free Starter">Advisor Free Starter</option>
-                              <option value="Advisor Specialist (₹1,000/yr)">Advisor Specialist (₹1,000/yr)</option>
+                              <option value="Vendor Standard (₹1,000 - ₹5,000/yr)">Vendor Standard (₹1,000 - ₹5,000/yr)</option>
+                              <option value="Advisor Membership (Pending Admin Activation)">Advisor Membership (Pending Admin Activation)</option>
+                              <option value="Advisor Specialist (₹XXXX/yr - Activated)">Advisor Specialist (₹XXXX/yr - Activated)</option>
                               <option value="Administrator Master Access">Administrator Master Access</option>
                             </select>
                             <button
@@ -461,11 +514,13 @@ export const AdminUsersManager: React.FC<AdminUsersManagerProps> = ({
                         ) : (
                           <div className="flex items-center gap-1.5 group">
                             <span className={`px-2 py-0.5 rounded-lg text-[11px] font-semibold border ${
-                              (u.plan || '').toLowerCase().includes('annual') || (u.plan || '').toLowerCase().includes('paid') || (u.plan || '').toLowerCase().includes('standard')
+                              (u.plan || '').toLowerCase().includes('annual') || (u.plan || '').toLowerCase().includes('paid') || (u.plan || '').toLowerCase().includes('standard') || (u.plan || '').toLowerCase().includes('activated')
                                 ? 'bg-emerald-50 text-emerald-800 border-emerald-200 font-bold'
                                 : (u.plan || '').toLowerCase().includes('master')
                                     ? 'bg-purple-50 text-purple-800 border-purple-200 font-bold'
-                                    : 'bg-slate-100 text-slate-700 border-slate-200'
+                                    : (u.plan || '').toLowerCase().includes('pending')
+                                        ? 'bg-amber-50 text-amber-900 border-amber-300 font-bold'
+                                        : 'bg-slate-100 text-slate-700 border-slate-200'
                             }`}>
                               {u.plan || (u.role === 'owner' ? 'Owner Free Starter' : u.role === 'vendor' ? 'Vendor Free Starter' : 'Advisor Free Starter')}
                             </span>
@@ -486,7 +541,12 @@ export const AdminUsersManager: React.FC<AdminUsersManagerProps> = ({
 
                       {/* Status */}
                       <td className="py-3.5 px-4">
-                        {isUserActive ? (
+                        {u.status === 'pending' ? (
+                          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider bg-amber-100 text-amber-800 border border-amber-300">
+                            <span className="w-1.5 h-1.5 rounded-full bg-amber-500 animate-pulse"></span>
+                            <span>Pending Admin Activation</span>
+                          </span>
+                        ) : isUserActive ? (
                           <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider bg-emerald-100 text-emerald-800 border border-emerald-200">
                             <span className="w-1.5 h-1.5 rounded-full bg-emerald-600"></span>
                             <span>Active</span>
@@ -511,6 +571,19 @@ export const AdminUsersManager: React.FC<AdminUsersManagerProps> = ({
                       {/* Actions */}
                       <td className="py-3.5 px-4 text-right">
                         <div className="flex items-center justify-end gap-1.5">
+                          {/* Make Active Button for Pending Advisors */}
+                          {u.status === 'pending' && (
+                            <button
+                              type="button"
+                              onClick={() => handleActivateAdvisor(u)}
+                              className="px-2.5 py-1 rounded-lg text-[11px] font-bold bg-emerald-600 hover:bg-emerald-700 text-white border border-emerald-700 shadow-2xs transition-all cursor-pointer flex items-center gap-1"
+                              title="Approve & activate advisor profile"
+                            >
+                              <CheckCircle2 className="w-3 h-3" />
+                              <span>Make Active</span>
+                            </button>
+                          )}
+
                           {/* Enable / Disable Button */}
                           <button
                             type="button"
@@ -674,9 +747,9 @@ export const AdminUsersManager: React.FC<AdminUsersManagerProps> = ({
                   <option value="Owner Free Starter">Owner Free Starter (Free ₹0)</option>
                   <option value="Owner Annual (₹1,000/yr)">Owner Annual (₹1,000/yr - Activated)</option>
                   <option value="Vendor Free Starter">Vendor Free Starter (Free ₹0)</option>
-                  <option value="Vendor Standard (₹2,000/yr)">Vendor Standard (₹2,000/yr - Activated)</option>
-                  <option value="Advisor Free Starter">Advisor Free Starter (Free ₹0)</option>
-                  <option value="Advisor Specialist (₹1,000/yr)">Advisor Specialist (₹1,000/yr - Activated)</option>
+                  <option value="Vendor Standard (₹1,000 - ₹5,000/yr)">Vendor Standard (₹1,000 - ₹5,000/yr - Activated)</option>
+                  <option value="Advisor Membership (Pending Admin Activation)">Advisor Membership (Pending Admin Activation)</option>
+                  <option value="Advisor Specialist (₹XXXX/yr - Activated)">Advisor Specialist (₹XXXX/yr - Activated)</option>
                 </select>
               </div>
 

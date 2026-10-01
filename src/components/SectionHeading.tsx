@@ -16,7 +16,7 @@ export const SectionHeading: React.FC<SectionHeadingProps> = ({ id, children, cl
       <a 
         href={`#${id}`}
         className={`opacity-0 group-hover:opacity-100 transition-all focus:opacity-100 outline-none shrink-0 ${
-          dark ? 'text-white/40 hover:text-white' : 'text-slate-300 hover:text-blue-600'
+          dark ? 'text-white/40 hover:text-white' : 'text-slate-300 dark:text-slate-500 hover:text-blue-600 dark:hover:text-blue-400'
         }`}
         title="Link to this section"
         aria-label={`Link to ${id}`}

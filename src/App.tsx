@@ -25,17 +25,42 @@ import { AdminDirectoryModal } from './components/AdminDirectoryModal';
 
 // Dedicated Admin Components
 import { AdminLoginForm } from './components/AdminLoginForm';
-import { AdminConsoleView } from './components/AdminConsoleView';
+import { AdminConsoleView, AdminTabType } from './components/AdminConsoleView';
 import { UserDashboard } from './components/UserDashboard';
+import { DashboardShell, DashboardNavItem } from './components/dashboard/DashboardShell';
 import { WhatsAppFlowBuilder } from './components/whatsapp/WhatsAppFlowBuilder';
 import { ProcurementWorkspace } from './components/procurement/ProcurementWorkspace';
 import { CompareProfilesView } from './components/CompareProfilesView';
+import { MjmlTemplateBuilder } from './components/mjml/MjmlTemplateBuilder';
+import { BackendArchitectureView } from './components/architecture/BackendArchitectureView';
 
 import { UserRole, DirectoryItem, ProjectRequirement, PaymentTransaction, AuthUser, StageItem } from './types';
 import { getStoredDirectory, saveStoredDirectory } from './utils/directoryStorage';
 import { getStoredToolkitStages, saveStoredToolkitStages } from './utils/toolkitStorage';
 import { RouteSlug, getSlugFromPath, navigateToSlug } from './utils/routes';
-import { CheckCircle2, ArrowLeft, ShieldCheck, Sparkles, Building2, HardHat, UserCheck, LayoutDashboard, FileText } from 'lucide-react';
+import { isFeatureEnabled } from './utils/featureFlags';
+import { 
+  CheckCircle2, 
+  ArrowLeft, 
+  ShieldCheck, 
+  Sparkles, 
+  Building2, 
+  HardHat, 
+  UserCheck, 
+  LayoutDashboard, 
+  FileText,
+  Inbox,
+  SendHorizontal,
+  Briefcase,
+  Users,
+  UploadCloud,
+  Plus,
+  BookOpen,
+  Gift,
+  QrCode,
+  Mail,
+  Search
+} from 'lucide-react';
 
 export default function App() {
   // Routing state based on URL slug
@@ -50,9 +75,9 @@ export default function App() {
     return () => window.removeEventListener('popstate', handlePopState);
   }, []);
 
-  const handleNavigate = (slug: RouteSlug) => {
-    navigateToSlug(slug);
-    setCurrentSlug(slug);
+  const handleNavigate = (slug: RouteSlug | string) => {
+    navigateToSlug(slug as any);
+    setCurrentSlug(getSlugFromPath());
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
@@ -120,6 +145,54 @@ export default function App() {
     billingBasis: string;
     metadata?: any;
   } | null>(null);
+
+  // Active tab states for persistent sidebar in dashboard and admin console
+  const [userDashboardTab, setUserDashboardTab] = useState<'received_enquiries' | 'sent_enquiries' | 'project_leads' | 'profile'>('received_enquiries');
+  const [adminConsoleTab, setAdminConsoleTab] = useState<AdminTabType>('users');
+
+  // Synchronize active tabs with nested URL slug (deep-linking and browser navigation)
+  useEffect(() => {
+    if (currentSlug.startsWith('admin')) {
+      if (currentSlug === 'admin/users' || currentSlug === 'admin') {
+        setAdminConsoleTab('users');
+      } else if (currentSlug === 'admin/directory' || currentSlug === 'admin/listings') {
+        setAdminConsoleTab('manage');
+      } else if (currentSlug === 'admin/requirements' || currentSlug === 'admin/rfqs') {
+        setAdminConsoleTab('requirements');
+      } else if (currentSlug === 'admin/import-csv') {
+        setAdminConsoleTab('import_csv');
+      } else if (currentSlug === 'admin/add-partner') {
+        setAdminConsoleTab('add_vendor');
+      } else if (currentSlug === 'admin/toolkit') {
+        setAdminConsoleTab('toolkit_stages');
+      } else if (currentSlug === 'admin/coupons') {
+        setAdminConsoleTab('coupons');
+      } else if (currentSlug === 'admin/pamphlet') {
+        setAdminConsoleTab('pamphlet');
+      } else if (currentSlug === 'admin/mjml' && isFeatureEnabled('mjml_studio')) {
+        setAdminConsoleTab('mjml_builder');
+      }
+    } else if (currentSlug.startsWith('dashboard')) {
+      if (currentSlug === 'dashboard/inquiries' || currentSlug === 'dashboard') {
+        setUserDashboardTab('received_enquiries');
+      } else if (currentSlug === 'dashboard/sent') {
+        setUserDashboardTab('sent_enquiries');
+      } else if (currentSlug === 'dashboard/leads') {
+        setUserDashboardTab('project_leads');
+      } else if (currentSlug === 'dashboard/profile') {
+        setUserDashboardTab('profile');
+      }
+    }
+
+    // Safely redirect if user lands on a disabled feature slug
+    if (
+      (!isFeatureEnabled('architecture') && (currentSlug === 'architecture' || currentSlug === 'backend-architecture')) ||
+      (!isFeatureEnabled('whatsapp_flow') && (currentSlug === 'whatsapp-flow' || currentSlug === 'flow-builder')) ||
+      (!isFeatureEnabled('mjml_studio') && (currentSlug === 'mjml-builder' || currentSlug === 'email-templates' || currentSlug === 'admin/mjml'))
+    ) {
+      handleNavigate(currentUser?.role === 'admin' ? 'admin' : '');
+    }
+  }, [currentSlug]);
 
   // Success Toast notification
   const [toastMessage, setToastMessage] = useState<string | null>(null);
@@ -272,21 +345,80 @@ export default function App() {
   const renderPageContent = () => {
     switch (currentSlug) {
       case 'admin':
+      case 'admin/users':
+      case 'admin/directory':
+      case 'admin/listings':
+      case 'admin/requirements':
+      case 'admin/rfqs':
+      case 'admin/import-csv':
+      case 'admin/add-partner':
+      case 'admin/toolkit':
+      case 'admin/coupons':
+      case 'admin/pamphlet':
+      case 'admin/mjml':
         // DEDICATED ADMIN CONSOLE ROUTE (/admin)
         if (currentUser && currentUser.role === 'admin') {
+          const adminNavItems: DashboardNavItem[] = [
+            { id: 'users', slug: 'admin/users', label: 'Users & Subscriptions', icon: Users },
+            { id: 'manage', slug: 'admin/directory', label: 'Partner Directory', icon: Building2 },
+            { id: 'requirements', slug: 'admin/requirements', label: 'Hospital RFQs & Leads', icon: FileText },
+            { id: 'import_csv', slug: 'admin/import-csv', label: 'Bulk CSV Importer', icon: UploadCloud },
+            { id: 'add_vendor', slug: 'admin/add-partner', label: 'Add Single Partner', icon: Plus },
+            { id: 'toolkit_stages', slug: 'admin/toolkit', label: '15-Stage Toolkit', icon: BookOpen },
+            { id: 'coupons', slug: 'admin/coupons', label: 'Coupons & Waivers', icon: Gift },
+            { id: 'pamphlet', slug: 'admin/pamphlet', label: 'Marketing Pamphlet & QR', icon: QrCode },
+            ...(isFeatureEnabled('mjml_studio') ? [
+              { id: 'mjml_builder', slug: 'admin/mjml', label: 'MJML Email Studio', icon: Mail }
+            ] : [])
+          ];
+
+          const activeCrumb = adminNavItems.find(i => i.id === adminConsoleTab)?.label || 'Console';
+
+          const handleAdminTabChange = (tabId: string) => {
+            const tab = tabId as AdminTabType;
+            setAdminConsoleTab(tab);
+            const targetSlug = adminNavItems.find(i => i.id === tab)?.slug;
+            if (targetSlug) {
+              handleNavigate(targetSlug as RouteSlug);
+            }
+          };
+
           return (
-            <AdminConsoleView
-              directoryItems={directoryItems}
-              onUpdateDirectory={(updated) => setDirectoryItems(updated)}
-              toolkitStages={toolkitStages}
-              onUpdateToolkitStages={handleUpdateToolkitStages}
-              onNotify={(msg) => showToast(msg)}
+            <DashboardShell
               currentUser={currentUser}
-              onLogout={handleLogout}
-              onBackToHome={() => handleNavigate('')}
+              activeTab={adminConsoleTab}
+              onTabChange={handleAdminTabChange}
+              roleNavItems={adminNavItems}
+              breadcrumbs={[{ label: activeCrumb }]}
+              primaryAction={{
+                label: '+ Add Partner',
+                icon: Plus,
+                onClick: () => handleNavigate('admin/add-partner')
+              }}
+              secondaryAction={{
+                label: 'Bulk CSV Import',
+                icon: UploadCloud,
+                onClick: () => handleNavigate('admin/import-csv')
+              }}
               onNavigate={handleNavigate}
-              onImpersonateUser={(user) => handleAuthSuccess(user)}
-            />
+              onLogout={handleLogout}
+            >
+              <AdminConsoleView
+                directoryItems={directoryItems}
+                onUpdateDirectory={(updated) => setDirectoryItems(updated)}
+                toolkitStages={toolkitStages}
+                onUpdateToolkitStages={handleUpdateToolkitStages}
+                onNotify={(msg) => showToast(msg)}
+                currentUser={currentUser}
+                onLogout={handleLogout}
+                onBackToHome={() => handleNavigate('')}
+                onNavigate={handleNavigate}
+                onImpersonateUser={(user) => handleAuthSuccess(user)}
+                externalActiveTab={adminConsoleTab}
+                onTabChange={handleAdminTabChange}
+                isFullWidth={true}
+              />
+            </DashboardShell>
           );
         }
         return (
@@ -312,9 +444,36 @@ export default function App() {
 
       case 'whatsapp-flow':
       case 'flow-builder':
+        if (!isFeatureEnabled('whatsapp_flow')) {
+          break;
+        }
         return (
           <WhatsAppFlowBuilder
             onBackToHome={() => handleNavigate('')}
+            onNotify={(msg) => showToast(msg)}
+          />
+        );
+
+      case 'mjml-builder':
+      case 'email-templates':
+        if (!isFeatureEnabled('mjml_studio')) {
+          break;
+        }
+        return (
+          <MjmlTemplateBuilder
+            onBack={() => handleNavigate('admin')}
+            onNotify={(msg) => showToast(msg)}
+          />
+        );
+
+      case 'architecture':
+      case 'backend-architecture':
+        if (!isFeatureEnabled('architecture')) {
+          break;
+        }
+        return (
+          <BackendArchitectureView
+            onBack={() => handleNavigate('')}
             onNotify={(msg) => showToast(msg)}
           />
         );
@@ -387,15 +546,85 @@ export default function App() {
         );
 
       case 'dashboard':
+      case 'dashboard/inquiries':
+      case 'dashboard/sent':
+      case 'dashboard/leads':
+      case 'dashboard/profile':
         if (currentUser) {
+          const getUserNavItems = (): DashboardNavItem[] => {
+            if (currentUser.role === 'vendor') {
+              return [
+                { id: 'received_enquiries', slug: 'dashboard/inquiries', label: 'Received Enquiries', icon: Inbox },
+                { id: 'sent_enquiries', slug: 'dashboard/sent', label: 'Sent Quotes', icon: SendHorizontal },
+                { id: 'project_leads', slug: 'dashboard/leads', label: 'Hospital Project Leads', icon: Briefcase },
+                { id: 'profile', slug: 'dashboard/profile', label: 'Vendor Profile', icon: Building2 },
+              ];
+            }
+            if (currentUser.role === 'advisor') {
+              return [
+                { id: 'received_enquiries', slug: 'dashboard/inquiries', label: 'Advisory Inquiries', icon: Inbox },
+                { id: 'sent_enquiries', slug: 'dashboard/sent', label: 'Sent Advisory Notes', icon: SendHorizontal },
+                { id: 'project_leads', slug: 'dashboard/leads', label: 'Open DPR Opportunities', icon: Briefcase },
+                { id: 'profile', slug: 'dashboard/profile', label: 'Advisor Credentials', icon: Building2 },
+              ];
+            }
+            return [
+              { id: 'received_enquiries', slug: 'dashboard/inquiries', label: 'Received Enquiries', icon: Inbox },
+              { id: 'sent_enquiries', slug: 'dashboard/sent', label: 'Outbox Inquiries', icon: SendHorizontal },
+              { id: 'project_leads', slug: 'dashboard/leads', label: 'My Hospital RFQs', icon: Briefcase },
+              { id: 'profile', slug: 'dashboard/profile', label: 'Promoter Profile', icon: Building2 },
+            ];
+          };
+
+          const userNavItems = getUserNavItems();
+          const activeCrumb = userNavItems.find(i => i.id === userDashboardTab)?.label || 'Workspace';
+
+          const handleUserTabChange = (tabId: string) => {
+            const tab = tabId as 'received_enquiries' | 'sent_enquiries' | 'project_leads' | 'profile';
+            setUserDashboardTab(tab);
+            const targetSlug = userNavItems.find(i => i.id === tab)?.slug;
+            if (targetSlug) {
+              handleNavigate(targetSlug as RouteSlug);
+            }
+          };
+
+          const primaryAction = currentUser.role === 'owner' ? {
+            label: '+ Post Project RFQ',
+            icon: Plus,
+            onClick: handleOpenRequirementModal
+          } : {
+            label: 'Browse Hospital Leads',
+            icon: Briefcase,
+            onClick: () => handleUserTabChange('project_leads')
+          };
+
           return (
-            <UserDashboard
+            <DashboardShell
               currentUser={currentUser}
-              directoryItems={directoryItems}
-              onOpenRequirementModal={handleOpenRequirementModal}
+              activeTab={userDashboardTab}
+              onTabChange={handleUserTabChange}
+              roleNavItems={userNavItems}
+              breadcrumbs={[{ label: activeCrumb }]}
+              primaryAction={primaryAction}
+              secondaryAction={{
+                label: 'Search Directory',
+                icon: Search,
+                onClick: () => handleNavigate('directory')
+              }}
               onNavigate={handleNavigate}
-              onNotify={(msg) => showToast(msg)}
-            />
+              onLogout={handleLogout}
+            >
+              <UserDashboard
+                currentUser={currentUser}
+                directoryItems={directoryItems}
+                onOpenRequirementModal={handleOpenRequirementModal}
+                onNavigate={handleNavigate}
+                onNotify={(msg) => showToast(msg)}
+                externalActiveTab={userDashboardTab}
+                onTabChange={handleUserTabChange}
+                isFullWidth={true}
+              />
+            </DashboardShell>
           );
         }
         return (
@@ -504,13 +733,14 @@ export default function App() {
               </div>
             </div>
             <DirectorySearch
-              directoryItems={directoryItems.filter(i => i.role === 'owner')}
+              directoryItems={directoryItems.filter(i => i.role === 'vendor')}
               onSelectVendor={(v) => setSelectedVendor(v)}
               onPostRequirement={handleOpenRequirementModal}
               autoDetectTrigger={autoDetectTrigger}
               currentUser={currentUser}
               onOpenAuth={handleOpenAuth}
               onOpenAdminDirectory={() => handleNavigate('admin')}
+              onOpenPamphletQr={() => handleNavigate('pamphlet')}
               isStandalonePage={true}
               comparedIds={comparedProfileIds}
               onToggleCompare={handleToggleCompare}
@@ -526,26 +756,26 @@ export default function App() {
             <div className="bg-gradient-to-r from-sky-950 to-slate-900 text-white p-8 sm:p-12 rounded-3xl shadow-xl">
               <div className="max-w-3xl">
                 <span className="px-3 py-1 rounded-full text-xs font-extrabold uppercase tracking-wider bg-sky-500/30 text-sky-200 border border-sky-400/30">
-                  Discover Projects &amp; Equipment Partners
+                  Clinical Planners, NABH Consultants &amp; Architects
                 </span>
                 <h1 className="text-3xl sm:text-4xl font-black mt-4 mb-3 tracking-tight">
-                  Hospital Promoters &amp; Vendor Network
+                  Hospital Advisors &amp; Specialist Directory
                 </h1>
                 <p className="text-slate-300 text-sm sm:text-base leading-relaxed mb-6">
-                  Connect with hospital trustees planning new facilities or expansions. Partner with verified medical equipment vendors to seamlessly execute your healthcare advisory mandates.
+                  Join Macula Healthcare's execution partner pool. Advise hospital trustees on DPR formulation, AERB radiological layouts, NABH accreditations, and commissioning milestones.
                 </p>
                 <div className="flex flex-wrap gap-3">
                   <button
                     onClick={() => handleOpenAuth('signup', 'advisor')}
                     className="px-5 py-2.5 rounded-xl bg-sky-600 hover:bg-sky-500 text-white font-bold text-xs shadow-md transition-all cursor-pointer"
                   >
-                    Join as Healthcare Advisor (₹1,000/yr)
+                    Apply as Healthcare Advisor (₹XXXX/yr)
                   </button>
                 </div>
               </div>
             </div>
             <DirectorySearch
-              directoryItems={directoryItems.filter(i => ['owner', 'vendor'].includes(i.role))}
+              directoryItems={directoryItems.filter(i => i.role === 'advisor')}
               onSelectVendor={(v) => setSelectedVendor(v)}
               onPostRequirement={handleOpenRequirementModal}
               autoDetectTrigger={autoDetectTrigger}
@@ -591,10 +821,13 @@ export default function App() {
                 NOVA-H Annual Membership Plans
               </h1>
               <p className="text-slate-600 text-sm mt-2">
-                Order-value indexed tiers for vendors, flat ₹1,000 project access for promoters and specialist advisors. Instant ₹0 activation via 100% BNI/promo coupons or secure Razorpay checkout.
+                Order-value indexed tiers for vendors, flat ₹1,000 project access for promoters, and vetted ₹XXXX membership for specialist advisors. Free advisor applications activated directly by admin.
               </p>
             </div>
-            <MembershipPricingSection onSelectPlanForPayment={handleInitiatePayment} />
+            <MembershipPricingSection 
+              onSelectPlanForPayment={handleInitiatePayment} 
+              onSignUpAdvisor={() => handleOpenAuth('signup', 'advisor')}
+            />
           </div>
         );
 
@@ -609,6 +842,7 @@ export default function App() {
               currentUser={currentUser}
               onOpenAuth={handleOpenAuth}
               onOpenAdminDirectory={() => handleNavigate('admin')}
+              onOpenPamphletQr={() => handleNavigate('pamphlet')}
               isStandalonePage={true}
               comparedIds={comparedProfileIds}
               onToggleCompare={handleToggleCompare}
@@ -740,6 +974,7 @@ export default function App() {
               currentUser={currentUser}
               onOpenAuth={handleOpenAuth}
               onOpenAdminDirectory={() => handleNavigate('admin')}
+              onOpenPamphletQr={() => handleNavigate('pamphlet')}
               comparedIds={comparedProfileIds}
               onToggleCompare={handleToggleCompare}
               onClearCompare={handleClearCompare}
@@ -749,6 +984,7 @@ export default function App() {
             {/* 6.7 NOVA-H MEMBERSHIP & PRICING MODEL WITH RAZORPAY & 100% COUPONS */}
             <MembershipPricingSection
               onSelectPlanForPayment={handleInitiatePayment}
+              onSignUpAdvisor={() => handleOpenAuth('signup', 'advisor')}
             />
 
             {/* 7. WHY JOIN NOVA? */}
@@ -771,37 +1007,41 @@ export default function App() {
     }
   };
 
+  const isWorkspaceRoute = Boolean(currentUser && (currentSlug.startsWith('dashboard') || currentSlug.startsWith('admin')));
+
   return (
-    <div className="min-h-screen bg-slate-50 text-slate-900 font-sans flex flex-col selection:bg-blue-600 selection:text-white">
+    <div className={`${isWorkspaceRoute ? 'h-screen h-dvh overflow-hidden' : 'min-h-screen'} bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-slate-100 font-sans flex flex-col selection:bg-blue-600 selection:text-white transition-colors duration-200`}>
       
       {/* Toast Alert */}
       {toastMessage && (
-        <div className="fixed bottom-6 right-6 z-50 bg-slate-900 text-white px-5 py-3.5 rounded-xl shadow-2xl border border-slate-800 flex items-center gap-3 animate-fadeIn max-w-md">
+        <div className="fixed bottom-6 right-6 z-50 bg-slate-900 dark:bg-slate-800 text-white px-5 py-3.5 rounded-xl shadow-2xl border border-slate-800 dark:border-slate-700 flex items-center gap-3 animate-fadeIn max-w-md">
           <CheckCircle2 className="w-5 h-5 text-emerald-400 shrink-0" />
           <span className="text-xs font-semibold">{toastMessage}</span>
         </div>
       )}
 
-      {/* Sticky Header with Dynamic URL Slugs */}
-      <Navbar
-        onOpenAuth={handleOpenAuth}
-        onOpenCicd={() => setCicdModalOpen(true)}
-        onOpenToolkit={() => handleOpenToolkit(0)}
-        currentUser={currentUser}
-        onLogout={handleLogout}
-        onOpenAdminDirectory={() => handleNavigate('admin')}
-        activeSlug={currentSlug}
-        onNavigate={handleNavigate}
-        comparedCount={comparedProfileIds.length}
-      />
+      {/* Sticky Header with Dynamic URL Slugs: Hidden on authenticated workspace routes to maximize vertical space */}
+      {!isWorkspaceRoute && (
+        <Navbar
+          onOpenAuth={handleOpenAuth}
+          onOpenCicd={() => setCicdModalOpen(true)}
+          onOpenToolkit={() => handleOpenToolkit(0)}
+          currentUser={currentUser}
+          onLogout={handleLogout}
+          onOpenAdminDirectory={() => handleNavigate('admin')}
+          activeSlug={currentSlug}
+          onNavigate={handleNavigate}
+          comparedCount={comparedProfileIds.length}
+        />
+      )}
 
-      {/* Main Page Layout matching Route Slug */}
-      <main className="flex-1 pt-16 sm:pt-20">
+      {/* Main Page Layout matching Route Slug (pt-0 h-full overflow-hidden for workspace, pt-16 sm:pt-20 for marketing pages) */}
+      <main className={`flex-1 ${isWorkspaceRoute ? 'pt-0 h-full overflow-hidden' : 'pt-16 sm:pt-20'}`}>
         {renderPageContent()}
       </main>
 
       {/* FOOTER */}
-      {currentSlug !== 'whatsapp-flow' && currentSlug !== 'flow-builder' && (
+      {currentSlug !== 'whatsapp-flow' && currentSlug !== 'flow-builder' && !isWorkspaceRoute && (
         <Footer
           onOpenAuth={handleOpenAuth}
           onOpenToolkit={() => handleOpenToolkit(0)}

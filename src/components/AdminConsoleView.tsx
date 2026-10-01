@@ -27,7 +27,8 @@ import {
   Sparkles,
   CreditCard,
   Users,
-  QrCode
+  QrCode,
+  Server
 } from 'lucide-react';
 import { DirectoryItem, AuthUser, StageItem, ProjectRequirement, Coupon, CouponRedemption } from '../types';
 import { 
@@ -43,6 +44,10 @@ import { AdminRequirementsManager } from './AdminRequirementsManager';
 import { AdminUsersManager } from './AdminUsersManager';
 import { PamphletSection } from './PamphletSection';
 import { getAllUsers } from '../utils/userManagement';
+import { MjmlTemplateBuilder } from './mjml/MjmlTemplateBuilder';
+import { isFeatureEnabled } from '../utils/featureFlags';
+
+export type AdminTabType = 'users' | 'manage' | 'requirements' | 'import_csv' | 'add_vendor' | 'toolkit_stages' | 'coupons' | 'pamphlet' | 'mjml_builder';
 
 interface AdminConsoleViewProps {
   directoryItems: DirectoryItem[];
@@ -55,6 +60,9 @@ interface AdminConsoleViewProps {
   onBackToHome?: () => void;
   onNavigate?: (slug: any) => void;
   onImpersonateUser?: (user: AuthUser) => void;
+  externalActiveTab?: AdminTabType;
+  onTabChange?: (tab: AdminTabType) => void;
+  isFullWidth?: boolean;
 }
 
 export const AdminConsoleView: React.FC<AdminConsoleViewProps> = ({
@@ -67,9 +75,19 @@ export const AdminConsoleView: React.FC<AdminConsoleViewProps> = ({
   onLogout,
   onBackToHome,
   onNavigate,
-  onImpersonateUser
+  onImpersonateUser,
+  externalActiveTab,
+  onTabChange,
+  isFullWidth = false
 }) => {
-  const [activeTab, setActiveTab] = useState<'users' | 'manage' | 'requirements' | 'import_csv' | 'add_vendor' | 'toolkit_stages' | 'coupons' | 'pamphlet'>('users');
+  const [internalActiveTab, setInternalActiveTab] = useState<AdminTabType>('users');
+  const activeTab = externalActiveTab || internalActiveTab;
+  const setActiveTab = (tab: AdminTabType) => {
+    setInternalActiveTab(tab);
+    if (onTabChange) {
+      onTabChange(tab);
+    }
+  };
   const [requirements, setRequirements] = useState<ProjectRequirement[]>(() => getStoredRequirements());
   const [couponRedemptions, setCouponRedemptions] = useState<CouponRedemption[]>(() => getStoredCouponRedemptions());
   const [customCoupons, setCustomCoupons] = useState<Coupon[]>(() => {
@@ -265,8 +283,20 @@ export const AdminConsoleView: React.FC<AdminConsoleViewProps> = ({
     }
   };
 
+  const adminSlugMap: Record<AdminTabType, string> = {
+    users: '/admin/users',
+    manage: '/admin/directory',
+    requirements: '/admin/requirements',
+    import_csv: '/admin/import-csv',
+    add_vendor: '/admin/add-partner',
+    toolkit_stages: '/admin/toolkit',
+    coupons: '/admin/coupons',
+    pamphlet: '/admin/pamphlet',
+    mjml_builder: '/admin/mjml'
+  };
+
   return (
-    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 animate-fadeIn">
+    <div className={`animate-fadeIn ${isFullWidth ? 'w-full' : 'max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8'}`}>
       {/* Top Banner with Navigation */}
       <div className="bg-slate-900 text-white rounded-2xl p-6 sm:p-8 shadow-xl border border-slate-800 mb-8">
         <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-6">
@@ -280,7 +310,7 @@ export const AdminConsoleView: React.FC<AdminConsoleViewProps> = ({
                   NOVA Administrative Console
                 </h1>
                 <span className="px-2.5 py-0.5 rounded-full text-xs font-black uppercase tracking-wider bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">
-                  Slug: /admin
+                  {adminSlugMap[activeTab] || '/admin'}
                 </span>
                 <span className="px-2.5 py-0.5 rounded-full text-xs font-bold bg-purple-500/20 text-purple-300 border border-purple-500/30">
                   {currentUser?.email || 'admin@nova-h.in'}
@@ -293,6 +323,16 @@ export const AdminConsoleView: React.FC<AdminConsoleViewProps> = ({
           </div>
 
           <div className="flex items-center gap-3 flex-wrap">
+            {isFeatureEnabled('mjml_studio') && onNavigate && (
+              <button
+                onClick={() => onNavigate('mjml-builder')}
+                className="px-4 py-2 rounded-xl bg-purple-600 hover:bg-purple-500 text-white text-xs font-bold flex items-center gap-1.5 transition-all cursor-pointer shadow-md"
+              >
+                <Mail className="w-4 h-4 text-purple-200" />
+                <span>MJML Email Studio</span>
+              </button>
+            )}
+
             {onNavigate && (
               <button
                 onClick={() => onNavigate('rfp')}
@@ -300,6 +340,16 @@ export const AdminConsoleView: React.FC<AdminConsoleViewProps> = ({
               >
                 <FileText className="w-4 h-4" />
                 <span>RFP &amp; Procurement Hub</span>
+              </button>
+            )}
+
+            {isFeatureEnabled('architecture') && onNavigate && (
+              <button
+                onClick={() => onNavigate('architecture')}
+                className="px-4 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-bold flex items-center gap-1.5 transition-all cursor-pointer border border-slate-700 shadow-md"
+              >
+                <Server className="w-4 h-4 text-blue-400" />
+                <span>Backend &amp; Cost Specs</span>
               </button>
             )}
 
@@ -332,143 +382,6 @@ export const AdminConsoleView: React.FC<AdminConsoleViewProps> = ({
               </button>
             )}
           </div>
-        </div>
-
-        {/* Quick Tab Switcher */}
-        <div className="mt-8 pt-4 border-t border-slate-800 flex items-center gap-3 overflow-x-auto">
-          <button
-            onClick={() => { setActiveTab('users'); setEditingItemId(null); }}
-            className={`px-4 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer flex items-center gap-2 whitespace-nowrap ${
-              activeTab === 'users'
-                ? 'bg-purple-600 text-white shadow-md'
-                : 'text-slate-300 hover:text-white hover:bg-slate-800'
-            }`}
-          >
-            <Users className="w-4 h-4" />
-            <span>Users &amp; Plans ({getAllUsers().length})</span>
-          </button>
-
-          <button
-            onClick={() => { setActiveTab('manage'); setEditingItemId(null); }}
-            className={`px-4 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer flex items-center gap-2 whitespace-nowrap ${
-              activeTab === 'manage'
-                ? 'bg-purple-600 text-white shadow-md'
-                : 'text-slate-300 hover:text-white hover:bg-slate-800'
-            }`}
-          >
-            <ShieldCheck className="w-4 h-4" />
-            <span>Active Listings ({directoryItems.length})</span>
-          </button>
-
-          <button
-            onClick={() => { setActiveTab('requirements'); setEditingItemId(null); }}
-            className={`px-4 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer flex items-center gap-2 whitespace-nowrap ${
-              activeTab === 'requirements'
-                ? 'bg-purple-600 text-white shadow-md'
-                : 'text-slate-300 hover:text-white hover:bg-slate-800'
-            }`}
-          >
-            <Building2 className="w-4 h-4" />
-            <span>Submitted Requirements ({requirements.length})</span>
-          </button>
-
-          <button
-            onClick={() => { setActiveTab('import_csv'); setEditingItemId(null); }}
-            className={`px-4 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer flex items-center gap-2 whitespace-nowrap ${
-              activeTab === 'import_csv'
-                ? 'bg-purple-600 text-white shadow-md'
-                : 'text-slate-300 hover:text-white hover:bg-slate-800'
-            }`}
-          >
-            <UploadCloud className="w-4 h-4" />
-            <span>Bulk CSV Import</span>
-          </button>
-
-          <button
-            onClick={() => {
-              if (activeTab !== 'add_vendor') {
-                setEditingItemId(null);
-                setVendorForm({
-                  name: '',
-                  role: 'vendor',
-                  category: 'Biomedical Equipment',
-                  location: 'Mumbai',
-                  serviceLocations: ['All India'],
-                  projectStages: ['Medical Equipment & Technology'],
-                  productsAndServices: ['Critical Care Solutions'],
-                  description: '',
-                  phone: '+91 98200 11223',
-                  contactEmail: 'partner@domain.in',
-                  website: 'https://domain.in',
-                  yearsOfExperience: 10,
-                  rating: 4.8,
-                  reviewsCount: 15,
-                  verified: true,
-                  gstin: '27AAACP1234K1Z2',
-                  priceRange: 'Commercial Terms on Inquiry',
-                  turnaroundTime: '2 - 4 Weeks',
-                  certifications: ['ISO 9001'],
-                  clientPortfolio: ['City Multispecialty Hospital'],
-                  headquartersAddress: 'Mumbai, India'
-                });
-              }
-              setActiveTab('add_vendor');
-            }}
-            className={`px-4 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer flex items-center gap-2 whitespace-nowrap ${
-              activeTab === 'add_vendor'
-                ? 'bg-purple-600 text-white shadow-md'
-                : 'text-slate-300 hover:text-white hover:bg-slate-800'
-            }`}
-          >
-            <Plus className="w-4 h-4" />
-            <span>{editingItemId ? 'Edit Listing' : 'Add New Listing'}</span>
-          </button>
-
-          <button
-            onClick={() => {
-              setActiveTab('toolkit_stages');
-              setEditingItemId(null);
-            }}
-            className={`px-4 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer flex items-center gap-2 whitespace-nowrap ${
-              activeTab === 'toolkit_stages'
-                ? 'bg-blue-600 text-white shadow-md'
-                : 'text-slate-300 hover:text-white hover:bg-slate-800'
-            }`}
-          >
-            <BookOpen className="w-4 h-4" />
-            <span>15 Stages Toolkit Editor ({toolkitStages.length})</span>
-          </button>
-
-          <button
-            onClick={() => {
-              setActiveTab('coupons');
-              setEditingItemId(null);
-              setCouponRedemptions(getStoredCouponRedemptions());
-            }}
-            className={`px-4 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer flex items-center gap-2 whitespace-nowrap ${
-              activeTab === 'coupons'
-                ? 'bg-emerald-600 text-white shadow-md'
-                : 'text-slate-300 hover:text-white hover:bg-slate-800'
-            }`}
-          >
-            <Tag className="w-4 h-4" />
-            <span>Coupons &amp; Free Redemptions ({couponRedemptions.length})</span>
-          </button>
-
-          <button
-            onClick={() => {
-              setActiveTab('pamphlet');
-              setEditingItemId(null);
-            }}
-            className={`px-4 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer flex items-center gap-2 whitespace-nowrap ${
-              activeTab === 'pamphlet'
-                ? 'bg-purple-600 text-white shadow-md'
-                : 'text-slate-300 hover:text-white hover:bg-slate-800'
-            }`}
-          >
-            <QrCode className="w-4 h-4" />
-            <span>Printable Pamphlet &amp; QR</span>
-          </button>
         </div>
       </div>
 
@@ -1314,6 +1227,16 @@ export const AdminConsoleView: React.FC<AdminConsoleViewProps> = ({
                 if (onNavigate) onNavigate('directory');
                 onNotify('Redirecting to directory in scan simulation mode...');
               }}
+            />
+          </div>
+        )}
+
+        {/* TAB 8: MJML EMAIL BUILDER */}
+        {activeTab === 'mjml_builder' && (
+          <div className="h-[840px] w-full overflow-hidden">
+            <MjmlTemplateBuilder
+              onBack={() => setActiveTab('users')}
+              onNotify={onNotify}
             />
           </div>
         )}

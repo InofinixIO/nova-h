@@ -112,25 +112,25 @@ export const VendorDetailModal: React.FC<VendorDetailModalProps> = ({
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-slate-950/75 backdrop-blur-xs animate-fadeIn overflow-y-auto">
       <div 
-        className="bg-white rounded-2xl max-w-3xl w-full shadow-2xl border border-slate-200 relative my-6 max-h-[94vh] flex flex-col overflow-hidden"
+        className="bg-white dark:bg-slate-800 rounded-2xl max-w-3xl w-full shadow-2xl border border-slate-200 dark:border-slate-700 relative my-6 max-h-[94vh] flex flex-col overflow-hidden transition-colors duration-200"
         id="directory-card-detail-dialog"
       >
         {/* Modal Top Header Bar with Context & Close */}
-        <div className="px-6 py-4 border-b border-slate-100 flex items-center justify-between bg-slate-50/80 shrink-0">
+        <div className="px-6 py-4 border-b border-slate-100 dark:border-slate-700 flex items-center justify-between bg-slate-50/80 dark:bg-slate-900/80 shrink-0">
           <div className="flex items-center gap-2">
             <span className={`px-2.5 py-0.5 rounded-full text-[11px] font-bold uppercase tracking-wider ${
               vendor.role === 'advisor'
-                ? 'bg-sky-100 text-sky-800 border border-sky-200'
-                : 'bg-indigo-100 text-indigo-800 border border-indigo-200'
+                ? 'bg-sky-100 dark:bg-sky-950 text-sky-800 dark:text-sky-300 border border-sky-200 dark:border-sky-800'
+                : 'bg-indigo-100 dark:bg-indigo-950 text-indigo-800 dark:text-indigo-300 border border-indigo-200 dark:border-indigo-800'
             }`}>
               {vendor.role === 'advisor' ? 'Healthcare Advisor' : 'Verified Vendor'}
             </span>
-            <span className="text-xs font-bold text-slate-600 bg-white border border-slate-200 px-2.5 py-0.5 rounded-full">
+            <span className="text-xs font-bold text-slate-600 dark:text-slate-300 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 px-2.5 py-0.5 rounded-full">
               {vendor.category}
             </span>
             {vendor.verified && (
-              <span className="hidden sm:inline-flex items-center gap-1 text-[11px] font-semibold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-full border border-emerald-200">
-                <ShieldCheck className="w-3.5 h-3.5 text-emerald-600" />
+              <span className="hidden sm:inline-flex items-center gap-1 text-[11px] font-semibold text-emerald-700 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950/50 px-2 py-0.5 rounded-full border border-emerald-200 dark:border-emerald-800">
+                <ShieldCheck className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
                 <span>Verified Partner</span>
               </span>
             )}
@@ -138,24 +138,24 @@ export const VendorDetailModal: React.FC<VendorDetailModalProps> = ({
 
           <div className="flex items-center gap-2">
             {/* Status pill showing current user access */}
-            <div className="text-[11px] px-2.5 py-1 rounded-lg font-medium flex items-center gap-1.5 bg-slate-100 text-slate-700 border border-slate-200">
+            <div className="text-[11px] px-2.5 py-1 rounded-lg font-medium flex items-center gap-1.5 bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-slate-700">
               {isLoggedIn ? (
                 <>
                   <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
-                  <span className="hidden sm:inline text-slate-500">Logged in as:</span>
-                  <strong className="text-slate-900 capitalize">{currentUser?.name.split(' ')[0]} ({currentUser?.role})</strong>
+                  <span className="hidden sm:inline text-slate-500 dark:text-slate-400">Logged in as:</span>
+                  <strong className="text-slate-900 dark:text-white capitalize">{currentUser?.name.split(' ')[0]} ({currentUser?.role})</strong>
                 </>
               ) : (
                 <>
-                  <EyeOff className="w-3.5 h-3.5 text-amber-600" />
-                  <span className="text-amber-800 font-semibold">Guest View (Limited Info)</span>
+                  <EyeOff className="w-3.5 h-3.5 text-amber-600 dark:text-amber-400" />
+                  <span className="text-amber-800 dark:text-amber-300 font-semibold">Guest View (Limited Info)</span>
                 </>
               )}
             </div>
 
             <button
               onClick={onClose}
-              className="p-1.5 rounded-lg text-slate-400 hover:text-slate-700 hover:bg-slate-200/60 cursor-pointer transition-colors"
+              className="p-1.5 rounded-lg text-slate-400 hover:text-slate-700 dark:hover:text-white hover:bg-slate-200/60 dark:hover:bg-slate-700 cursor-pointer transition-colors"
               title="Close"
             >
               <X className="w-5 h-5" />
@@ -169,21 +169,21 @@ export const VendorDetailModal: React.FC<VendorDetailModalProps> = ({
           {/* Header Identity Box */}
           <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-4">
             <div>
-              <h2 className="text-2xl sm:text-3xl font-extrabold text-slate-900 tracking-tight flex items-center gap-2">
+              <h2 className="text-2xl sm:text-3xl font-extrabold text-slate-900 dark:text-white tracking-tight flex items-center gap-2">
                 <span>{vendor.name}</span>
                 {vendor.verified && (
-                  <ShieldCheck className="w-6 h-6 text-emerald-600 shrink-0" title="Verified by NOVA Healthcare Network" />
+                  <ShieldCheck className="w-6 h-6 text-emerald-600 dark:text-emerald-400 shrink-0" title="Verified by NOVA Healthcare Network" />
                 )}
               </h2>
-              <div className="flex flex-wrap items-center gap-3 mt-2 text-xs text-slate-500">
-                <div className="flex items-center gap-1 font-medium text-slate-700">
-                  <MapPin className="w-3.5 h-3.5 text-blue-600 shrink-0" />
+              <div className="flex flex-wrap items-center gap-3 mt-2 text-xs text-slate-500 dark:text-slate-400">
+                <div className="flex items-center gap-1 font-medium text-slate-700 dark:text-slate-300">
+                  <MapPin className="w-3.5 h-3.5 text-blue-600 dark:text-blue-400 shrink-0" />
                   <span>HQ: <strong>{vendor.location}</strong></span>
                 </div>
                 <span>•</span>
                 <div className="flex items-center gap-1">
                   <Star className="w-3.5 h-3.5 fill-amber-400 text-amber-400 shrink-0" />
-                  <span className="font-bold text-slate-900">{vendor.rating.toFixed(1)}</span>
+                  <span className="font-bold text-slate-900 dark:text-white">{vendor.rating.toFixed(1)}</span>
                   <span>({vendor.reviewsCount} promoter reviews)</span>
                 </div>
                 <span>•</span>
@@ -195,9 +195,9 @@ export const VendorDetailModal: React.FC<VendorDetailModalProps> = ({
             <div className="flex items-center gap-2 shrink-0">
               <button
                 onClick={onPostRequirement}
-                className="px-3.5 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-800 font-bold text-xs transition-colors cursor-pointer flex items-center gap-1.5"
+                className="px-3.5 py-2 rounded-xl bg-slate-100 dark:bg-slate-700 hover:bg-slate-200 dark:hover:bg-slate-600 text-slate-800 dark:text-slate-200 font-bold text-xs transition-colors cursor-pointer flex items-center gap-1.5"
               >
-                {!isLoggedIn && <Lock className="w-3.5 h-3.5 text-slate-500" />}
+                {!isLoggedIn && <Lock className="w-3.5 h-3.5 text-slate-500 dark:text-slate-400" />}
                 <span>{isLoggedIn ? "Post Hospital RFQ" : "Sign In to Post RFQ"}</span>
               </button>
             </div>
@@ -205,16 +205,16 @@ export const VendorDetailModal: React.FC<VendorDetailModalProps> = ({
 
           {/* Guest Limited Access Notice Bar */}
           {!isLoggedIn && (
-            <div className="p-4 rounded-xl bg-gradient-to-r from-amber-50 to-orange-50 border border-amber-200 text-amber-950 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 shadow-2xs">
+            <div className="p-4 rounded-xl bg-gradient-to-r from-amber-50 to-orange-50 dark:from-amber-950/40 dark:to-orange-950/30 border border-amber-200 dark:border-amber-800 text-amber-950 dark:text-amber-200 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 shadow-2xs">
               <div className="flex items-start gap-3">
                 <div className="w-8 h-8 rounded-lg bg-amber-500 text-white flex items-center justify-center shrink-0 mt-0.5 shadow-2xs">
                   <Lock className="w-4 h-4" />
                 </div>
                 <div>
-                  <h4 className="text-xs font-bold text-amber-900 uppercase tracking-wider">
+                  <h4 className="text-xs font-bold text-amber-900 dark:text-amber-200 uppercase tracking-wider">
                     Guest Preview &bull; Limited Contact &amp; Pricing Data Visible
                   </h4>
-                  <p className="text-xs text-amber-800 mt-0.5 leading-relaxed">
+                  <p className="text-xs text-amber-800 dark:text-amber-300 mt-0.5 leading-relaxed">
                     Direct phone numbers, commercial fee brackets, GSTIN verification, and client lists are locked for unregistered users.
                   </p>
                 </div>
@@ -230,7 +230,7 @@ export const VendorDetailModal: React.FC<VendorDetailModalProps> = ({
                 </button>
                 <button
                   onClick={() => onOpenAuth('signup', 'owner')}
-                  className="hidden md:inline-flex px-3 py-2 rounded-lg bg-white border border-amber-300 text-amber-900 hover:bg-amber-100 font-semibold text-xs transition-colors cursor-pointer"
+                  className="hidden md:inline-flex px-3 py-2 rounded-lg bg-white dark:bg-slate-800 border border-amber-300 dark:border-amber-700 text-amber-900 dark:text-amber-300 hover:bg-amber-100 dark:hover:bg-slate-700 font-semibold text-xs transition-colors cursor-pointer"
                 >
                   Sign Up Free
                 </button>
@@ -239,8 +239,8 @@ export const VendorDetailModal: React.FC<VendorDetailModalProps> = ({
           )}
 
           {/* Business Overview Description */}
-          <div className="p-4 rounded-xl bg-slate-50 border border-slate-200 text-sm text-slate-700 leading-relaxed">
-            <h4 className="text-xs font-bold uppercase tracking-wider text-slate-500 mb-1.5">
+          <div className="p-4 rounded-xl bg-slate-50 dark:bg-slate-900/70 border border-slate-200 dark:border-slate-700 text-sm text-slate-700 dark:text-slate-300 leading-relaxed">
+            <h4 className="text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400 mb-1.5">
               Professional Overview &amp; Practice Scope:
             </h4>
             <p>{vendor.description}</p>
@@ -249,17 +249,17 @@ export const VendorDetailModal: React.FC<VendorDetailModalProps> = ({
           {/* Compliance & Standards Badges */}
           {vendor.complianceBadges && vendor.complianceBadges.length > 0 && (
             <div>
-              <p className="text-xs font-bold text-slate-800 uppercase tracking-wider mb-2 flex items-center gap-1.5">
-                <Award className="w-4 h-4 text-blue-600" />
+              <p className="text-xs font-bold text-slate-800 dark:text-slate-200 uppercase tracking-wider mb-2 flex items-center gap-1.5">
+                <Award className="w-4 h-4 text-blue-600 dark:text-blue-400" />
                 <span>Industry Standards &amp; Healthcare Compliance:</span>
               </p>
               <div className="flex flex-wrap gap-2">
                 {vendor.complianceBadges.map((badge, idx) => (
                   <span
                     key={idx}
-                    className="px-2.5 py-1 rounded-lg bg-emerald-50 text-emerald-800 border border-emerald-200 text-xs font-semibold flex items-center gap-1"
+                    className="px-2.5 py-1 rounded-lg bg-emerald-50 dark:bg-emerald-950/60 text-emerald-800 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800 text-xs font-semibold flex items-center gap-1"
                   >
-                    <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
+                    <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400 shrink-0" />
                     <span>{badge}</span>
                   </span>
                 ))}
@@ -269,17 +269,17 @@ export const VendorDetailModal: React.FC<VendorDetailModalProps> = ({
 
           {/* Key Services & Capabilities */}
           <div className="space-y-2">
-            <p className="text-xs font-bold text-slate-800 uppercase tracking-wider flex items-center gap-1.5">
-              <Briefcase className="w-4 h-4 text-indigo-600" />
+            <p className="text-xs font-bold text-slate-800 dark:text-slate-200 uppercase tracking-wider flex items-center gap-1.5">
+              <Briefcase className="w-4 h-4 text-indigo-600 dark:text-indigo-400" />
               <span>Specialized Products, Systems &amp; Capabilities:</span>
             </p>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
               {vendor.productsAndServices.map((service, idx) => (
                 <div
                   key={idx}
-                  className="p-2.5 rounded-xl bg-white border border-slate-200 text-slate-800 text-xs font-medium flex items-center gap-2 shadow-2xs hover:border-blue-300 transition-colors"
+                  className="p-2.5 rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 text-slate-800 dark:text-slate-200 text-xs font-medium flex items-center gap-2 shadow-2xs hover:border-blue-300 dark:hover:border-blue-600 transition-colors"
                 >
-                  <span className="w-1.5 h-1.5 rounded-full bg-blue-600 shrink-0"></span>
+                  <span className="w-1.5 h-1.5 rounded-full bg-blue-600 dark:bg-blue-400 shrink-0"></span>
                   <span>{service}</span>
                 </div>
               ))}
@@ -288,16 +288,16 @@ export const VendorDetailModal: React.FC<VendorDetailModalProps> = ({
 
           {/* Project Stages & Geographic Service Area */}
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <div className="p-4 rounded-xl bg-slate-50 border border-slate-200 space-y-1.5">
-              <h4 className="text-xs font-bold uppercase tracking-wider text-slate-800 flex items-center gap-1.5">
-                <Layers className="w-4 h-4 text-blue-600" />
+            <div className="p-4 rounded-xl bg-slate-50 dark:bg-slate-900/70 border border-slate-200 dark:border-slate-700 space-y-1.5">
+              <h4 className="text-xs font-bold uppercase tracking-wider text-slate-800 dark:text-slate-200 flex items-center gap-1.5">
+                <Layers className="w-4 h-4 text-blue-600 dark:text-blue-400" />
                 <span>Applicable Toolkit Stages:</span>
               </h4>
               <div className="flex flex-wrap gap-1.5 pt-1">
                 {vendor.projectStages.map((stg, idx) => (
                   <span
                     key={idx}
-                    className="px-2 py-0.5 rounded-md bg-blue-50 text-blue-800 border border-blue-200 text-[11px] font-semibold"
+                    className="px-2 py-0.5 rounded-md bg-blue-50 dark:bg-blue-950/60 text-blue-800 dark:text-blue-300 border border-blue-200 dark:border-blue-800 text-[11px] font-semibold"
                   >
                     {stg}
                   </span>
@@ -305,12 +305,12 @@ export const VendorDetailModal: React.FC<VendorDetailModalProps> = ({
               </div>
             </div>
 
-            <div className="p-4 rounded-xl bg-slate-50 border border-slate-200 space-y-1.5">
-              <h4 className="text-xs font-bold uppercase tracking-wider text-slate-800 flex items-center gap-1.5">
+            <div className="p-4 rounded-xl bg-slate-50 dark:bg-slate-900/70 border border-slate-200 dark:border-slate-700 space-y-1.5">
+              <h4 className="text-xs font-bold uppercase tracking-wider text-slate-800 dark:text-slate-200 flex items-center gap-1.5">
                 <MapPin className="w-4 h-4 text-red-500" />
                 <span>Active Service Cities:</span>
               </h4>
-              <p className="text-xs text-slate-600 pt-1 leading-relaxed">
+              <p className="text-xs text-slate-600 dark:text-slate-400 pt-1 leading-relaxed">
                 {vendor.serviceLocations.join(', ')}
               </p>
             </div>
@@ -318,15 +318,15 @@ export const VendorDetailModal: React.FC<VendorDetailModalProps> = ({
 
           {/* FEATURED HOSPITAL BENCHMARK */}
           {vendor.featuredProject && (
-            <div className="p-4 rounded-xl bg-blue-50/70 border border-blue-200 flex items-start gap-3.5">
+            <div className="p-4 rounded-xl bg-blue-50/70 dark:bg-blue-950/40 border border-blue-200 dark:border-blue-800 flex items-start gap-3.5">
               <div className="w-9 h-9 rounded-xl bg-blue-600 text-white flex items-center justify-center shrink-0 shadow-2xs">
                 <Building2 className="w-5 h-5" />
               </div>
               <div className="flex-1">
-                <p className="text-xs font-bold uppercase tracking-wider text-blue-900">
+                <p className="text-xs font-bold uppercase tracking-wider text-blue-900 dark:text-blue-300">
                   Featured Hospital Project Benchmark:
                 </p>
-                <p className="text-sm font-semibold text-slate-900 mt-0.5">
+                <p className="text-sm font-semibold text-slate-900 dark:text-white mt-0.5">
                   {vendor.featuredProject}
                 </p>
               </div>
@@ -334,70 +334,70 @@ export const VendorDetailModal: React.FC<VendorDetailModalProps> = ({
           )}
 
           {/* PRIVILEGED SECTION: COMMERCIALS, CLIENTS, GSTIN & VERIFICATION (LOGIN GATED) */}
-          <div className="rounded-2xl border border-slate-200 overflow-hidden shadow-2xs">
-            <div className="bg-slate-100 px-5 py-3 border-b border-slate-200 flex items-center justify-between">
+          <div className="rounded-2xl border border-slate-200 dark:border-slate-700 overflow-hidden shadow-2xs">
+            <div className="bg-slate-100 dark:bg-slate-900/90 px-5 py-3 border-b border-slate-200 dark:border-slate-700 flex items-center justify-between">
               <div className="flex items-center gap-2">
-                <ShieldCheck className="w-4 h-4 text-blue-600" />
-                <h4 className="text-xs font-bold uppercase tracking-wider text-slate-900">
+                <ShieldCheck className="w-4 h-4 text-blue-600 dark:text-blue-400" />
+                <h4 className="text-xs font-bold uppercase tracking-wider text-slate-900 dark:text-white">
                   Commercial Details &amp; Verified Institutional Credentials
                 </h4>
               </div>
               {isLoggedIn ? (
-                <span className="text-[11px] font-bold text-emerald-700 bg-emerald-100 px-2 py-0.5 rounded-full flex items-center gap-1">
+                <span className="text-[11px] font-bold text-emerald-700 dark:text-emerald-400 bg-emerald-100 dark:bg-emerald-950/60 px-2 py-0.5 rounded-full flex items-center gap-1">
                   <CheckCircle2 className="w-3 h-3" /> Unlocked
                 </span>
               ) : (
-                <span className="text-[11px] font-bold text-amber-800 bg-amber-100 px-2 py-0.5 rounded-full flex items-center gap-1">
+                <span className="text-[11px] font-bold text-amber-800 dark:text-amber-300 bg-amber-100 dark:bg-amber-950/60 px-2 py-0.5 rounded-full flex items-center gap-1">
                   <Lock className="w-3 h-3" /> Limited
                 </span>
               )}
             </div>
 
-            <div className="p-5 space-y-4 bg-white">
+            <div className="p-5 space-y-4 bg-white dark:bg-slate-850">
               {isLoggedIn ? (
                 /* Full privileged details when logged in */
                 <div className="space-y-4">
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs">
                     {/* Price Range */}
-                    <div className="p-3 rounded-xl bg-slate-50 border border-slate-200">
-                      <div className="flex items-center gap-1.5 text-slate-500 font-semibold mb-1">
-                        <BadgePercent className="w-4 h-4 text-indigo-600" />
+                    <div className="p-3 rounded-xl bg-slate-50 dark:bg-slate-900/60 border border-slate-200 dark:border-slate-700">
+                      <div className="flex items-center gap-1.5 text-slate-500 dark:text-slate-400 font-semibold mb-1">
+                        <BadgePercent className="w-4 h-4 text-indigo-600 dark:text-indigo-400" />
                         <span>Commercial Engagement Sizing</span>
                       </div>
-                      <p className="text-sm font-bold text-slate-900">
+                      <p className="text-sm font-bold text-slate-900 dark:text-white">
                         {vendor.priceRange || 'Contact for Customized Quotation'}
                       </p>
                     </div>
 
                     {/* Turnaround Time */}
-                    <div className="p-3 rounded-xl bg-slate-50 border border-slate-200">
-                      <div className="flex items-center gap-1.5 text-slate-500 font-semibold mb-1">
-                        <Clock className="w-4 h-4 text-sky-600" />
+                    <div className="p-3 rounded-xl bg-slate-50 dark:bg-slate-900/60 border border-slate-200 dark:border-slate-700">
+                      <div className="flex items-center gap-1.5 text-slate-500 dark:text-slate-400 font-semibold mb-1">
+                        <Clock className="w-4 h-4 text-sky-600 dark:text-sky-400" />
                         <span>Execution / Delivery Timeline</span>
                       </div>
-                      <p className="text-sm font-bold text-slate-900">
+                      <p className="text-sm font-bold text-slate-900 dark:text-white">
                         {vendor.turnaroundTime || '2 - 4 Weeks On-boarding'}
                       </p>
                     </div>
 
                     {/* GSTIN */}
-                    <div className="p-3 rounded-xl bg-slate-50 border border-slate-200">
-                      <div className="flex items-center gap-1.5 text-slate-500 font-semibold mb-1">
-                        <FileText className="w-4 h-4 text-blue-600" />
+                    <div className="p-3 rounded-xl bg-slate-50 dark:bg-slate-900/60 border border-slate-200 dark:border-slate-700">
+                      <div className="flex items-center gap-1.5 text-slate-500 dark:text-slate-400 font-semibold mb-1">
+                        <FileText className="w-4 h-4 text-blue-600 dark:text-blue-400" />
                         <span>Verified Corporate GSTIN</span>
                       </div>
-                      <p className="text-sm font-mono font-bold text-slate-900">
+                      <p className="text-sm font-mono font-bold text-slate-900 dark:text-white">
                         {vendor.gstin || '27AAACM0000K1Z0'}
                       </p>
                     </div>
 
                     {/* Certifications */}
-                    <div className="p-3 rounded-xl bg-slate-50 border border-slate-200">
-                      <div className="flex items-center gap-1.5 text-slate-500 font-semibold mb-1">
-                        <Award className="w-4 h-4 text-emerald-600" />
+                    <div className="p-3 rounded-xl bg-slate-50 dark:bg-slate-900/60 border border-slate-200 dark:border-slate-700">
+                      <div className="flex items-center gap-1.5 text-slate-500 dark:text-slate-400 font-semibold mb-1">
+                        <Award className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
                         <span>Key Professional Accreditations</span>
                       </div>
-                      <p className="text-xs font-semibold text-slate-800">
+                      <p className="text-xs font-semibold text-slate-800 dark:text-slate-200">
                         {vendor.certifications?.join(' • ') || 'ISO / Industry Compliant'}
                       </p>
                     </div>
@@ -406,14 +406,14 @@ export const VendorDetailModal: React.FC<VendorDetailModalProps> = ({
                   {/* Client Portfolio */}
                   {vendor.clientPortfolio && vendor.clientPortfolio.length > 0 && (
                     <div className="pt-2">
-                      <h5 className="text-xs font-bold uppercase tracking-wider text-slate-700 mb-2">
+                      <h5 className="text-xs font-bold uppercase tracking-wider text-slate-700 dark:text-slate-300 mb-2">
                         Institutional Client Portfolio &amp; Past Hospital Trust Referrals:
                       </h5>
                       <div className="flex flex-wrap gap-2">
                         {vendor.clientPortfolio.map((client, idx) => (
                           <span
                             key={idx}
-                            className="px-3 py-1 rounded-lg bg-slate-100 text-slate-800 text-xs font-semibold border border-slate-200"
+                            className="px-3 py-1 rounded-lg bg-slate-100 dark:bg-slate-700 text-slate-800 dark:text-slate-200 text-xs font-semibold border border-slate-200 dark:border-slate-600"
                           >
                             {client}
                           </span>
@@ -424,7 +424,7 @@ export const VendorDetailModal: React.FC<VendorDetailModalProps> = ({
 
                   {/* Headquarters Full Address */}
                   {vendor.headquartersAddress && (
-                    <div className="text-xs text-slate-600 bg-slate-50 p-3 rounded-xl border border-slate-200 flex items-start gap-2">
+                    <div className="text-xs text-slate-600 dark:text-slate-400 bg-slate-50 dark:bg-slate-900/60 p-3 rounded-xl border border-slate-200 dark:border-slate-700 flex items-start gap-2">
                       <MapPin className="w-4 h-4 text-slate-400 shrink-0 mt-0.5" />
                       <span><strong>Corporate Address:</strong> {vendor.headquartersAddress}</span>
                     </div>
@@ -436,33 +436,33 @@ export const VendorDetailModal: React.FC<VendorDetailModalProps> = ({
                   <div className="relative">
                     {/* Blurred mock preview */}
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs blur-[3px] select-none opacity-50 pointer-events-none">
-                      <div className="p-3 rounded-xl bg-slate-100 border border-slate-200">
-                        <span className="font-bold text-slate-700">Commercial Engagement Sizing</span>
-                        <p className="text-sm font-bold text-slate-900 mt-1">₹45L - ₹3.8 Cr (Turnkey Package)</p>
+                      <div className="p-3 rounded-xl bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700">
+                        <span className="font-bold text-slate-700 dark:text-slate-300">Commercial Engagement Sizing</span>
+                        <p className="text-sm font-bold text-slate-900 dark:text-white mt-1">₹45L - ₹3.8 Cr (Turnkey Package)</p>
                       </div>
-                      <div className="p-3 rounded-xl bg-slate-100 border border-slate-200">
-                        <span className="font-bold text-slate-700">Execution / Delivery Timeline</span>
-                        <p className="text-sm font-bold text-slate-900 mt-1">30 - 45 Days Implementation</p>
+                      <div className="p-3 rounded-xl bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700">
+                        <span className="font-bold text-slate-700 dark:text-slate-300">Execution / Delivery Timeline</span>
+                        <p className="text-sm font-bold text-slate-900 dark:text-white mt-1">30 - 45 Days Implementation</p>
                       </div>
-                      <div className="p-3 rounded-xl bg-slate-100 border border-slate-200">
-                        <span className="font-bold text-slate-700">Verified Corporate GSTIN</span>
-                        <p className="text-sm font-bold text-slate-900 mt-1">27AAACM••••K1Z0</p>
+                      <div className="p-3 rounded-xl bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700">
+                        <span className="font-bold text-slate-700 dark:text-slate-300">Verified Corporate GSTIN</span>
+                        <p className="text-sm font-bold text-slate-900 dark:text-white mt-1">27AAACM••••K1Z0</p>
                       </div>
-                      <div className="p-3 rounded-xl bg-slate-100 border border-slate-200">
-                        <span className="font-bold text-slate-700">Past Hospital Clients</span>
-                        <p className="text-sm font-bold text-slate-900 mt-1">Fortis, Max Healthcare, Apollo Partner</p>
+                      <div className="p-3 rounded-xl bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700">
+                        <span className="font-bold text-slate-700 dark:text-slate-300">Past Hospital Clients</span>
+                        <p className="text-sm font-bold text-slate-900 dark:text-white mt-1">Fortis, Max Healthcare, Apollo Partner</p>
                       </div>
                     </div>
 
                     {/* Centered unlock overlay button */}
-                    <div className="absolute inset-0 flex flex-col items-center justify-center bg-white/75 backdrop-blur-[1px] rounded-xl p-4 text-center">
+                    <div className="absolute inset-0 flex flex-col items-center justify-center bg-white/80 dark:bg-slate-900/80 backdrop-blur-[1px] rounded-xl p-4 text-center">
                       <div className="w-10 h-10 rounded-full bg-blue-600 text-white flex items-center justify-center mb-2 shadow-sm">
                         <Lock className="w-5 h-5" />
                       </div>
-                      <h5 className="text-sm font-bold text-slate-900">
+                      <h5 className="text-sm font-bold text-slate-900 dark:text-white">
                         Full Institutional Credentials Locked
                       </h5>
-                      <p className="text-xs text-slate-600 max-w-sm mx-auto mt-1 mb-3">
+                      <p className="text-xs text-slate-600 dark:text-slate-300 max-w-sm mx-auto mt-1 mb-3">
                         Sign in as an Owner, Vendor or Advisor to view commercial pricing slabs, past hospital portfolios, and verified tax registrations.
                       </p>
                       <button
@@ -480,13 +480,13 @@ export const VendorDetailModal: React.FC<VendorDetailModalProps> = ({
           </div>
 
           {/* CONTACT & DIRECT CONNECT BOX */}
-          <div className="pt-4 border-t border-slate-200">
+          <div className="pt-4 border-t border-slate-200 dark:border-slate-700">
             <div className="flex items-center justify-between mb-3">
-              <h4 className="text-xs font-bold uppercase tracking-wider text-slate-800">
+              <h4 className="text-xs font-bold uppercase tracking-wider text-slate-800 dark:text-slate-200">
                 Direct Contact &amp; Inquiry Channel:
               </h4>
               {!isLoggedIn && (
-                <span className="text-[11px] text-amber-700 font-semibold flex items-center gap-1">
+                <span className="text-[11px] text-amber-700 dark:text-amber-400 font-semibold flex items-center gap-1">
                   <Lock className="w-3 h-3" /> Contact info partially masked
                 </span>
               )}
@@ -494,17 +494,17 @@ export const VendorDetailModal: React.FC<VendorDetailModalProps> = ({
 
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 mb-5">
               {/* Email item */}
-              <div className="p-3 rounded-xl bg-slate-50 border border-slate-200 flex items-center justify-between gap-2 text-xs">
+              <div className="p-3 rounded-xl bg-slate-50 dark:bg-slate-900/60 border border-slate-200 dark:border-slate-700 flex items-center justify-between gap-2 text-xs">
                 <div className="flex items-center gap-2 overflow-hidden">
-                  <Mail className="w-4 h-4 text-blue-600 shrink-0" />
-                  <span className="font-mono text-slate-700 truncate">
+                  <Mail className="w-4 h-4 text-blue-600 dark:text-blue-400 shrink-0" />
+                  <span className="font-mono text-slate-700 dark:text-slate-300 truncate">
                     {isLoggedIn ? vendor.contactEmail : maskEmail(vendor.contactEmail)}
                   </span>
                 </div>
                 {isLoggedIn && (
                   <button
                     onClick={() => copyToClipboard(vendor.contactEmail, 'email')}
-                    className="text-[10px] text-blue-600 font-bold hover:underline cursor-pointer shrink-0"
+                    className="text-[10px] text-blue-600 dark:text-blue-400 font-bold hover:underline cursor-pointer shrink-0"
                   >
                     {copiedField === 'email' ? 'Copied' : 'Copy'}
                   </button>
@@ -512,17 +512,17 @@ export const VendorDetailModal: React.FC<VendorDetailModalProps> = ({
               </div>
 
               {/* Phone item */}
-              <div className="p-3 rounded-xl bg-slate-50 border border-slate-200 flex items-center justify-between gap-2 text-xs">
+              <div className="p-3 rounded-xl bg-slate-50 dark:bg-slate-900/60 border border-slate-200 dark:border-slate-700 flex items-center justify-between gap-2 text-xs">
                 <div className="flex items-center gap-2 overflow-hidden">
-                  <Phone className="w-4 h-4 text-emerald-600 shrink-0" />
-                  <span className="font-mono text-slate-700 truncate">
+                  <Phone className="w-4 h-4 text-emerald-600 dark:text-emerald-400 shrink-0" />
+                  <span className="font-mono text-slate-700 dark:text-slate-300 truncate">
                     {isLoggedIn ? vendor.phone : maskPhone(vendor.phone)}
                   </span>
                 </div>
                 {isLoggedIn && (
                   <button
                     onClick={() => copyToClipboard(vendor.phone, 'phone')}
-                    className="text-[10px] text-blue-600 font-bold hover:underline cursor-pointer shrink-0"
+                    className="text-[10px] text-blue-600 dark:text-blue-400 font-bold hover:underline cursor-pointer shrink-0"
                   >
                     {copiedField === 'phone' ? 'Copied' : 'Copy'}
                   </button>
@@ -530,10 +530,10 @@ export const VendorDetailModal: React.FC<VendorDetailModalProps> = ({
               </div>
 
               {/* Website */}
-              <div className="p-3 rounded-xl bg-slate-50 border border-slate-200 flex items-center justify-between gap-2 text-xs">
+              <div className="p-3 rounded-xl bg-slate-50 dark:bg-slate-900/60 border border-slate-200 dark:border-slate-700 flex items-center justify-between gap-2 text-xs">
                 <div className="flex items-center gap-2 overflow-hidden">
-                  <Globe className="w-4 h-4 text-indigo-600 shrink-0" />
-                  <span className="font-mono text-slate-700 truncate">
+                  <Globe className="w-4 h-4 text-indigo-600 dark:text-indigo-400 shrink-0" />
+                  <span className="font-mono text-slate-700 dark:text-slate-300 truncate">
                     {vendor.website.replace('https://', '')}
                   </span>
                 </div>
@@ -541,7 +541,7 @@ export const VendorDetailModal: React.FC<VendorDetailModalProps> = ({
                   href={vendor.website}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="text-[10px] text-blue-600 font-bold hover:underline cursor-pointer shrink-0 flex items-center gap-0.5"
+                  className="text-[10px] text-blue-600 dark:text-blue-400 font-bold hover:underline cursor-pointer shrink-0 flex items-center gap-0.5"
                 >
                   <span>Visit</span>
                   <ExternalLink className="w-2.5 h-2.5" />
@@ -550,14 +550,14 @@ export const VendorDetailModal: React.FC<VendorDetailModalProps> = ({
             </div>
 
             {/* Quick Inquiry Form */}
-            <div className="bg-slate-50 rounded-2xl p-4 border border-slate-200">
-              <h5 className="text-xs font-bold text-slate-800 mb-1.5 flex items-center gap-1.5">
-                <Send className="w-3.5 h-3.5 text-blue-600" />
+            <div className="bg-slate-50 dark:bg-slate-900/60 rounded-2xl p-4 border border-slate-200 dark:border-slate-700">
+              <h5 className="text-xs font-bold text-slate-800 dark:text-slate-200 mb-1.5 flex items-center gap-1.5">
+                <Send className="w-3.5 h-3.5 text-blue-600 dark:text-blue-400" />
                 <span>Send Direct Inquiry to {vendor.name}:</span>
               </h5>
               
               {!isLoggedIn && (
-                <p className="text-[11px] text-slate-500 mb-3">
+                <p className="text-[11px] text-slate-500 dark:text-slate-400 mb-3">
                   Please log in or provide your project account details so {vendor.name} can reply with hospital technical documentation.
                 </p>
               )}
@@ -570,9 +570,9 @@ export const VendorDetailModal: React.FC<VendorDetailModalProps> = ({
                       placeholder="Hospital Name / Project City..."
                       value={rfqSubject}
                       onChange={(e) => setRfqSubject(e.target.value)}
-                      className="px-3 py-2 rounded-lg border border-slate-300 bg-white focus:ring-2 focus:ring-blue-500"
+                      className="px-3 py-2 rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-slate-500 focus:ring-2 focus:ring-blue-500"
                     />
-                    <div className="px-3 py-2 rounded-lg border border-slate-200 bg-slate-100 text-slate-600 font-medium truncate flex items-center gap-1">
+                    <div className="px-3 py-2 rounded-lg border border-slate-200 dark:border-slate-700 bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 font-medium truncate flex items-center gap-1">
                       <span className="text-slate-400">Replying as:</span>
                       <strong>{currentUser?.name}</strong> ({currentUser?.email})
                     </div>
@@ -591,7 +591,7 @@ export const VendorDetailModal: React.FC<VendorDetailModalProps> = ({
                     value={messageText}
                     onChange={(e) => setMessageText(e.target.value)}
                     disabled={!isLoggedIn}
-                    className="flex-1 px-3 py-2 text-xs rounded-lg border border-slate-300 bg-white focus:ring-2 focus:ring-blue-500 disabled:bg-slate-100 disabled:cursor-not-allowed"
+                    className="flex-1 px-3 py-2 text-xs rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-slate-500 focus:ring-2 focus:ring-blue-500 disabled:bg-slate-100 dark:disabled:bg-slate-800/50 disabled:text-slate-400 disabled:cursor-not-allowed"
                   />
                   {isLoggedIn ? (
                     <button
@@ -621,7 +621,7 @@ export const VendorDetailModal: React.FC<VendorDetailModalProps> = ({
         </div>
 
         {/* Modal Bottom Fixed Bar */}
-        <div className="px-6 py-3 border-t border-slate-200 bg-slate-50 flex flex-wrap items-center justify-between gap-3 text-xs text-slate-500 shrink-0">
+        <div className="px-6 py-3 border-t border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900 flex flex-wrap items-center justify-between gap-3 text-xs text-slate-500 dark:text-slate-400 shrink-0">
           <div className="flex items-center gap-2">
             <span className="w-2 h-2 rounded-full bg-emerald-500"></span>
             <span>NOVA Verified Healthcare Network</span>
@@ -633,7 +633,7 @@ export const VendorDetailModal: React.FC<VendorDetailModalProps> = ({
                 className={`px-3 py-1.5 rounded-lg font-semibold text-xs flex items-center gap-1.5 cursor-pointer transition-colors ${
                   isCompared
                     ? 'bg-blue-600 text-white hover:bg-blue-700 shadow-2xs'
-                    : 'bg-white border border-slate-300 text-slate-700 hover:bg-slate-100'
+                    : 'bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-600 text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700'
                 }`}
               >
                 <ArrowLeftRight className="w-3.5 h-3.5" />
@@ -646,14 +646,14 @@ export const VendorDetailModal: React.FC<VendorDetailModalProps> = ({
                   onClose();
                   onOpenCompare();
                 }}
-                className="px-3 py-1.5 rounded-lg bg-blue-50 text-blue-700 hover:bg-blue-100 font-bold text-xs flex items-center gap-1 cursor-pointer"
+                className="px-3 py-1.5 rounded-lg bg-blue-50 dark:bg-blue-950/60 text-blue-700 dark:text-blue-300 hover:bg-blue-100 dark:hover:bg-blue-900 font-bold text-xs flex items-center gap-1 cursor-pointer"
               >
                 <span>View Comparison →</span>
               </button>
             )}
             <button
               onClick={onClose}
-              className="px-3.5 py-1.5 rounded-lg border border-slate-300 hover:bg-slate-100 text-slate-700 font-semibold cursor-pointer"
+              className="px-3.5 py-1.5 rounded-lg border border-slate-300 dark:border-slate-600 hover:bg-slate-100 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 font-semibold cursor-pointer"
             >
               Close
             </button>
