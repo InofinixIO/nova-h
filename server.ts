@@ -31,6 +31,101 @@ async function startServer() {
     });
   });
 
+  // 1b. AI Flow Builder Endpoint (Generates WhatsApp flows supporting all 7 message types)
+  app.post('/api/ai/generate-flow', async (req: Request, res: Response) => {
+    try {
+      const { prompt, supportedTypes, flowName, category = 'healthcare' } = req.body;
+      const apiKey = process.env.GEMINI_API_KEY;
+
+      if (!prompt || typeof prompt !== 'string') {
+        return res.status(400).json({ error: 'Prompt is required' });
+      }
+
+      if (!apiKey) {
+        // Return signal to use client-side heuristic generator
+        return res.json({
+          success: false,
+          fallback: true,
+          message: 'GEMINI_API_KEY not set on server. Using built-in healthcare flow synthesizer.'
+        });
+      }
+
+      // Lazy import & initialize Google Gen AI
+      const { GoogleGenAI } = await import('@google/genai');
+      const ai = new GoogleGenAI({ apiKey });
+
+      const typesList = Array.isArray(supportedTypes) && supportedTypes.length > 0
+        ? supportedTypes.join(', ')
+        : 'text_buttons, media_buttons, list, catalogue, single_product, multi_product, template';
+
+      const systemPrompt = `You are an expert conversational architect and WhatsApp Business API flow designer for NOVA Healthcare Network.
+You must generate a structured JSON object representing an interactive WhatsApp Flow.
+The user wants: "${prompt}".
+Name: "${flowName || 'AI Generated Healthcare Flow'}".
+
+CRITICAL REQUIREMENT: You MUST support and synthesize across these WhatsApp message types:
+${typesList}
+
+Message types reference:
+1. "text_buttons": text message with 1-3 buttons (e.g. quick reply, yes/no, actions).
+2. "media_buttons": headerType 'image' with headerContent URL + bodyText + 1-3 buttons.
+3. "list": headerType 'text', listButtonText, listSections (array of sections with title and rows {id, title, description, nextNodeId}).
+4. "catalogue": catalogConfig with catalogId, thumbnailUrl, headerText, bodyText, actionButtonText 'View Catalog'.
+5. "single_product": singleProduct object with retailerId, title, price (e.g. '₹4,50,000'), currency 'INR', description, imageUrl.
+6. "multi_product": headerType 'text', productSections with title and array of products.
+7. "template": templateConfig with templateName, category ('MARKETING'|'UTILITY'), bodyVariables, buttons.
+
+Respond ONLY with valid JSON conforming to this TypeScript interface:
+{
+  "name": string,
+  "description": string,
+  "category": "healthcare" | "rfq" | "vendor" | "support",
+  "triggerKeyword": string,
+  "nodes": Array<{
+    "id": string,
+    "title": string,
+    "type": "text_buttons" | "media_buttons" | "list" | "catalogue" | "single_product" | "multi_product" | "template",
+    "headerType": "none" | "text" | "image",
+    "headerContent"?: string,
+    "bodyText": string,
+    "footerText"?: string,
+    "buttons"?: Array<{ "id": string, "title": string, "nextNodeId"?: string }>,
+    "listButtonText"?: string,
+    "listSections"?: Array<{ "title": string, "rows": Array<{ "id": string, "title": string, "description": string, "nextNodeId"?: string }> }>,
+    "singleProduct"?: { "id": string, "retailerId": string, "title": string, "price": string, "currency": string, "description": string, "imageUrl": string, "nextNodeId"?: string },
+    "productSections"?: Array<{ "title": string, "products": Array<{ "id": string, "retailerId": string, "title": string, "price": string, "currency": string, "description": string, "imageUrl": string, "nextNodeId"?: string }> }>,
+    "catalogConfig"?: { "catalogId": string, "thumbnailUrl": string, "headerText": string, "bodyText": string, "actionButtonText": string, "nextNodeId"?: string },
+    "templateConfig"?: { "templateName": string, "category": string, "language": string, "bodyVariables": string[], "buttons"?: Array<{ "id": string, "type": string, "text": string, "nextNodeId"?: string }> }
+  }>
+}
+Do not include any markdown fences or commentary outside the JSON.`;
+
+      const response = await ai.models.generateContent({
+        model: 'gemini-2.5-flash',
+        contents: systemPrompt,
+        config: {
+          responseMimeType: 'application/json'
+        }
+      });
+
+      const responseText = response.text?.trim() || '{}';
+      const cleanJson = responseText.replace(/^```json\s*/, '').replace(/```$/, '');
+      const parsedFlow = JSON.parse(cleanJson);
+
+      return res.json({
+        success: true,
+        flow: parsedFlow
+      });
+    } catch (err: any) {
+      console.error('Error in /api/ai/generate-flow:', err);
+      return res.status(500).json({
+        success: false,
+        error: err.message || 'Failed to generate flow with AI',
+        fallback: true
+      });
+    }
+  });
+
   // 2. Razorpay Order Creation Route (Optional server-side order generation)
   app.post('/api/create-razorpay-order', async (req: Request, res: Response) => {
     try {
