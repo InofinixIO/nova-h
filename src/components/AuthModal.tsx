@@ -10,11 +10,13 @@ import {
   Phone,
   AlertCircle,
   CheckCircle2,
-  Sparkles
+  Sparkles,
+  Award
 } from 'lucide-react';
-import { UserRole, AuthUser } from '../types';
+import { UserRole, AuthUser, AccreditationProgramme } from '../types';
 import { getSampleLogins } from '../utils/sampleLogins';
 import { registerOrUpdateUser, isUserDisabled } from '../utils/userManagement';
+import { getActiveAccreditationProgrammes } from '../utils/accreditationStorage';
 
 interface AuthModalProps {
   isOpen: boolean;
@@ -41,6 +43,8 @@ export const AuthModal: React.FC<AuthModalProps> = ({
   const [company, setCompany] = useState('');
   const [phone, setPhone] = useState('');
   const [error, setError] = useState('');
+  const [selectedAccreditationId, setSelectedAccreditationId] = useState('');
+  const [accreditationProgrammes, setAccreditationProgrammes] = useState<AccreditationProgramme[]>([]);
 
   // Synchronize active tab whenever dialog is triggered or initialMode changes
   useEffect(() => {
@@ -50,6 +54,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
       if (initialRole) {
         setSelectedRole(initialRole);
       }
+      setAccreditationProgrammes(getActiveAccreditationProgrammes());
     }
   }, [isOpen, initialMode, initialRole]);
 
@@ -119,7 +124,9 @@ export const AuthModal: React.FC<AuthModalProps> = ({
       phone: defaultPhone,
       isSubscribed: true,
       plan: initialPlan,
-      status: 'active'
+      status: 'active',
+      enrolledAccreditationId: (selectedRole === 'owner' && selectedAccreditationId) ? selectedAccreditationId : undefined,
+      enrolledAccreditationDate: (selectedRole === 'owner' && selectedAccreditationId) ? new Date().toISOString() : undefined
     };
 
     // Register or update in user database
@@ -293,6 +300,43 @@ export const AuthModal: React.FC<AuthModalProps> = ({
                   className="w-full pl-9 pr-3 py-2 text-xs rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-900 text-slate-900 dark:text-white placeholder:text-slate-400 dark:placeholder:text-slate-500 focus:ring-2 focus:ring-blue-500"
                 />
               </div>
+            </div>
+          )}
+
+          {/* Accreditation Programme Enrolment for Hospital Owners */}
+          {mode === 'signup' && selectedRole === 'owner' && (
+            <div className="p-3 bg-blue-50/70 dark:bg-blue-950/40 rounded-xl border border-blue-200/80 dark:border-blue-800 space-y-1.5 animate-fadeIn">
+              <div className="flex items-center justify-between">
+                <label className="block text-xs font-bold text-blue-900 dark:text-blue-300 flex items-center gap-1.5">
+                  <Award className="w-3.5 h-3.5 text-blue-600 dark:text-blue-400" />
+                  <span>Target Accreditation Programme (Optional)</span>
+                </label>
+                <span className="text-[10px] text-blue-600 dark:text-blue-400 font-semibold">
+                  Customizes Toolkit
+                </span>
+              </div>
+              <select
+                value={selectedAccreditationId}
+                onChange={(e) => setSelectedAccreditationId(e.target.value)}
+                className="w-full px-3 py-2 text-xs rounded-lg border border-blue-200 dark:border-blue-700 bg-white dark:bg-slate-900 text-slate-900 dark:text-white focus:ring-2 focus:ring-blue-500 cursor-pointer font-medium"
+              >
+                <option value="">None / General 15-Stage Hospital Development Roadmap</option>
+                {accreditationProgrammes.map((prog) => (
+                  <option key={prog.id} value={prog.id}>
+                    {prog.name} ({prog.applicableStageNumbers.length} stages mapped)
+                  </option>
+                ))}
+              </select>
+              {selectedAccreditationId && (() => {
+                const selected = accreditationProgrammes.find(p => p.id === selectedAccreditationId);
+                if (!selected) return null;
+                return (
+                  <div className="text-[11px] text-blue-800 dark:text-blue-300 bg-white/70 dark:bg-slate-900/70 p-2 rounded-lg border border-blue-200/60 dark:border-blue-800 space-y-0.5">
+                    <p className="font-semibold">{selected.authority} • Est. {selected.estimatedDuration}</p>
+                    <p className="text-[10px] text-slate-600 dark:text-slate-400 line-clamp-1">{selected.description}</p>
+                  </div>
+                );
+              })()}
             </div>
           )}
 

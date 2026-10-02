@@ -87,6 +87,22 @@ export interface StageItem {
   keyStakeholders: string[];
 }
 
+export interface AccreditationProgramme {
+  id: string;
+  name: string;
+  code: string; // e.g., 'nabh-entry', 'nabh-full', 'jci', 'nabl'
+  authority: string; // e.g., 'Quality Council of India (QCI)', 'JCI (USA)'
+  category: 'Hospital Accreditation' | 'Laboratory Accreditation' | 'Safety Clearance';
+  description: string;
+  targetBedCapacity: string; // e.g. 'Up to 50 beds (SHCO)', '100+ beds', 'All hospital sizes'
+  estimatedDuration: string; // e.g. '6–9 months', '12–18 months'
+  applicableStageNumbers: number[]; // Array of mapped stage numbers from 1 to 15
+  stageNotes?: Record<number, string>; // Special milestone notes for specific stages
+  active: boolean;
+  createdAt: string;
+  updatedAt: string;
+}
+
 export interface AuthUser {
   id?: string;
   name: string;
@@ -98,6 +114,8 @@ export interface AuthUser {
   isSubscribed?: boolean;
   plan?: string;
   status?: 'active' | 'disabled' | 'pending';
+  enrolledAccreditationId?: string;
+  enrolledAccreditationDate?: string;
   createdAt?: string;
   lastLoginAt?: string;
 }

@@ -19,6 +19,7 @@ export type RouteSlug =
   | 'admin/import-csv'
   | 'admin/add-partner'
   | 'admin/toolkit'
+  | 'admin/accreditation'
   | 'admin/coupons'
   | 'admin/pamphlet'
   | 'admin/mjml'

@@ -379,7 +379,7 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
               <div className="flex gap-2">
                 <input
                   type="text"
-                  placeholder="Enter code (e.g. BNI100, NOVA20)"
+                  placeholder="Enter promo / coupon code"
                   value={couponCode}
                   disabled={Boolean(isCouponApplied)}
                   onChange={(e) => {
@@ -410,34 +410,6 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
                 }`}>
                   {couponFeedback.message}
                 </p>
-              )}
-
-              {/* Suggested quick codes */}
-              {!isCouponApplied && (
-                <div className="mt-2 pt-2 border-t border-slate-200/70 flex flex-wrap items-center gap-1.5 text-[10px]">
-                  <span className="text-slate-400">Quick codes:</span>
-                  <button
-                    type="button"
-                    onClick={() => handleApplyCoupon('BNI100')}
-                    className="px-2 py-0.5 rounded bg-emerald-50 border border-emerald-200 hover:bg-emerald-100 text-emerald-800 font-mono font-bold cursor-pointer transition-colors"
-                  >
-                    BNI100 (100% Free)
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => handleApplyCoupon('LAUNCH100')}
-                    className="px-2 py-0.5 rounded bg-purple-50 border border-purple-200 hover:bg-purple-100 text-purple-800 font-mono font-bold cursor-pointer transition-colors"
-                  >
-                    LAUNCH100 (100% Free)
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => handleApplyCoupon('NOVA20')}
-                    className="px-2 py-0.5 rounded bg-blue-50 border border-blue-200 hover:bg-blue-100 text-blue-800 font-mono font-bold cursor-pointer transition-colors"
-                  >
-                    NOVA20 (20% Off)
-                  </button>
-                </div>
               )}
             </div>
 

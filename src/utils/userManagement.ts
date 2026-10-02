@@ -180,6 +180,8 @@ export const registerOrUpdateUser = (userData: AuthUser): AuthUser => {
       isSubscribed: userData.isSubscribed !== undefined ? userData.isSubscribed : existing.isSubscribed,
       plan: userData.plan || existing.plan || defaultPlanForRole(userData.role),
       status: userData.status || existing.status || (userData.role === 'advisor' ? 'pending' : 'active'),
+      enrolledAccreditationId: userData.enrolledAccreditationId !== undefined ? userData.enrolledAccreditationId : existing.enrolledAccreditationId,
+      enrolledAccreditationDate: userData.enrolledAccreditationDate !== undefined ? userData.enrolledAccreditationDate : existing.enrolledAccreditationDate,
       lastLoginAt: new Date().toISOString()
     };
     users[existingIndex] = updated;
@@ -198,6 +200,8 @@ export const registerOrUpdateUser = (userData: AuthUser): AuthUser => {
       isSubscribed: userData.isSubscribed ?? (userData.role !== 'advisor'),
       plan: userData.plan || defaultPlanForRole(userData.role),
       status: initialStatus,
+      enrolledAccreditationId: userData.enrolledAccreditationId,
+      enrolledAccreditationDate: userData.enrolledAccreditationDate,
       createdAt: new Date().toISOString(),
       lastLoginAt: new Date().toISOString()
     };

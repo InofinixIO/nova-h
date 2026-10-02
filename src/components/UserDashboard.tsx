@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { 
   Building2, 
   Search, 
@@ -24,9 +24,11 @@ import {
   ChevronRight,
   TrendingUp,
   Inbox,
-  SendHorizontal
+  SendHorizontal,
+  Award,
+  Sparkles
 } from 'lucide-react';
-import { AuthUser, EnquiryItem, EnquiryStatus, ProjectRequirement, DirectoryItem } from '../types';
+import { AuthUser, EnquiryItem, EnquiryStatus, ProjectRequirement, DirectoryItem, AccreditationProgramme } from '../types';
 import { 
   getStoredEnquiries, 
   saveStoredEnquiries, 
@@ -35,6 +37,8 @@ import {
   deleteEnquiry 
 } from '../utils/enquiriesStorage';
 import { getStoredRequirements, addRequirement } from '../utils/requirementsStorage';
+import { getActiveAccreditationProgrammes, getAccreditationProgrammeById } from '../utils/accreditationStorage';
+import { registerOrUpdateUser } from '../utils/userManagement';
 
 interface UserDashboardProps {
   currentUser: AuthUser;
@@ -44,6 +48,7 @@ interface UserDashboardProps {
   onNotify: (msg: string) => void;
   externalActiveTab?: 'received_enquiries' | 'sent_enquiries' | 'project_leads' | 'profile';
   onTabChange?: (tab: 'received_enquiries' | 'sent_enquiries' | 'project_leads' | 'profile') => void;
+  onUpdateUser?: (user: AuthUser) => void;
   isFullWidth?: boolean;
 }
 
@@ -55,6 +60,7 @@ export const UserDashboard: React.FC<UserDashboardProps> = ({
   onNotify,
   externalActiveTab,
   onTabChange,
+  onUpdateUser,
   isFullWidth = false
 }) => {
   const [internalActiveTab, setInternalActiveTab] = useState<'received_enquiries' | 'sent_enquiries' | 'project_leads' | 'profile'>('received_enquiries');
@@ -77,6 +83,50 @@ export const UserDashboard: React.FC<UserDashboardProps> = ({
   // Proposal modal for vendors/advisors replying to an open hospital requirement
   const [proposalModalReq, setProposalModalReq] = useState<ProjectRequirement | null>(null);
   const [proposalMessage, setProposalMessage] = useState('');
+
+  // Accreditation programmes & owner enrolment
+  const [accreditationProgrammes, setAccreditationProgrammes] = useState<AccreditationProgramme[]>(() => getActiveAccreditationProgrammes());
+  const [isChangingAccreditation, setIsChangingAccreditation] = useState(false);
+  const [selectedProgToEnrol, setSelectedProgToEnrol] = useState(currentUser.enrolledAccreditationId || '');
+
+  // Keep programmes synced if admin modifies them
+  useEffect(() => {
+    const handleSync = () => {
+      setAccreditationProgrammes(getActiveAccreditationProgrammes());
+    };
+    window.addEventListener('nova_accreditation_updated', handleSync);
+    return () => window.removeEventListener('nova_accreditation_updated', handleSync);
+  }, []);
+
+  const enrolledProgramme = currentUser.enrolledAccreditationId 
+    ? getAccreditationProgrammeById(currentUser.enrolledAccreditationId) || accreditationProgrammes.find(p => p.id === currentUser.enrolledAccreditationId)
+    : null;
+
+  const handleSaveAccreditationEnrolment = (progId: string) => {
+    const prog = accreditationProgrammes.find(p => p.id === progId);
+    const updatedUser: AuthUser = {
+      ...currentUser,
+      enrolledAccreditationId: progId ? progId : undefined,
+      enrolledAccreditationDate: progId ? (currentUser.enrolledAccreditationDate || new Date().toISOString()) : undefined
+    };
+
+    try {
+      localStorage.setItem('nova_h_current_user', JSON.stringify(updatedUser));
+    } catch (e) {}
+
+    registerOrUpdateUser(updatedUser);
+
+    if (onUpdateUser) {
+      onUpdateUser(updatedUser);
+    }
+
+    setIsChangingAccreditation(false);
+    if (prog) {
+      onNotify(`Successfully enrolled in ${prog.name}! Toolkit has adapted to ${prog.applicableStageNumbers.length} mapped stages.`);
+    } else {
+      onNotify('Reverted to full 15-stage general hospital development roadmap.');
+    }
+  };
 
   const userRole = currentUser.role;
 
@@ -918,6 +968,240 @@ export const UserDashboard: React.FC<UserDashboardProps> = ({
                 </p>
               </div>
             </div>
+          </div>
+
+          {/* ACCREDITATION PROGRAMME & CUSTOM ROADMAP SECTION */}
+          <div className="mt-8 pt-6 border-t border-slate-200 dark:border-slate-800 space-y-4">
+            <div className="flex flex-wrap items-center justify-between gap-3">
+              <div className="flex items-center gap-2.5">
+                <div className="w-9 h-9 rounded-xl bg-blue-100 dark:bg-blue-950/60 text-blue-700 dark:text-blue-400 flex items-center justify-center font-bold">
+                  <Award className="w-5 h-5" />
+                </div>
+                <div>
+                  <h4 className="text-base font-black text-slate-900 dark:text-white flex items-center gap-2">
+                    <span>Accreditation Programme &amp; Developmental Toolkit</span>
+                    {enrolledProgramme && (
+                      <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-blue-100 dark:bg-blue-900/60 text-blue-800 dark:text-blue-300">
+                        Active Enrolment
+                      </span>
+                    )}
+                  </h4>
+                  <p className="text-xs text-slate-500 dark:text-slate-400">
+                    Map applicable stages of the 15-stage hospital development journey to your target quality standard.
+                  </p>
+                </div>
+              </div>
+
+              {!isChangingAccreditation && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    setSelectedProgToEnrol(currentUser.enrolledAccreditationId || '');
+                    setIsChangingAccreditation(true);
+                  }}
+                  className="px-3.5 py-1.5 rounded-xl border border-slate-300 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-700 dark:text-slate-200 text-xs font-bold transition-all cursor-pointer flex items-center gap-1.5"
+                >
+                  <Award className="w-3.5 h-3.5 text-blue-600 dark:text-blue-400" />
+                  <span>{enrolledProgramme ? 'Change Programme' : 'Enrol in Programme'}</span>
+                </button>
+              )}
+            </div>
+
+            {/* Switching / Enrolment Mode */}
+            {isChangingAccreditation ? (
+              <div className="p-5 rounded-2xl bg-slate-50 dark:bg-slate-800/60 border border-blue-200 dark:border-blue-800/80 space-y-4 animate-fadeIn">
+                <div className="flex items-center justify-between">
+                  <h5 className="text-xs font-bold text-slate-900 dark:text-white uppercase tracking-wider flex items-center gap-1.5">
+                    <Sparkles className="w-4 h-4 text-blue-600" />
+                    <span>Select Target Accreditation Standard</span>
+                  </h5>
+                  <button
+                    type="button"
+                    onClick={() => setIsChangingAccreditation(false)}
+                    className="text-xs text-slate-400 hover:text-slate-700 dark:hover:text-white font-medium cursor-pointer"
+                  >
+                    Cancel
+                  </button>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                  {/* General Roadmap Option */}
+                  <div
+                    onClick={() => setSelectedProgToEnrol('')}
+                    className={`p-3.5 rounded-xl border cursor-pointer transition-all ${
+                      !selectedProgToEnrol
+                        ? 'bg-blue-50 dark:bg-blue-950/50 border-blue-500 text-blue-900 dark:text-blue-200 ring-2 ring-blue-500/20'
+                        : 'bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-700 hover:border-slate-300 text-slate-700 dark:text-slate-300'
+                    }`}
+                  >
+                    <div className="flex items-center justify-between mb-1">
+                      <span className="font-bold text-xs">General 15-Stage Hospital Roadmap</span>
+                      <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-slate-200/80 dark:bg-slate-800">
+                        All 15 Stages
+                      </span>
+                    </div>
+                    <p className="text-[11px] text-slate-500 dark:text-slate-400">
+                      Standard comprehensive masterguide covering concept, zoning, DPR, civil work, MEP, licensing, and commissioning.
+                    </p>
+                  </div>
+
+                  {/* Active Programmes */}
+                  {accreditationProgrammes.map((prog) => {
+                    const isSelected = selectedProgToEnrol === prog.id;
+                    return (
+                      <div
+                        key={prog.id}
+                        onClick={() => setSelectedProgToEnrol(prog.id)}
+                        className={`p-3.5 rounded-xl border cursor-pointer transition-all ${
+                          isSelected
+                            ? 'bg-blue-50 dark:bg-blue-950/50 border-blue-500 text-blue-900 dark:text-blue-200 ring-2 ring-blue-500/20'
+                            : 'bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-700 hover:border-slate-300 text-slate-700 dark:text-slate-300'
+                        }`}
+                      >
+                        <div className="flex items-start justify-between gap-2 mb-1">
+                          <span className="font-bold text-xs">{prog.name}</span>
+                          <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-300 whitespace-nowrap shrink-0">
+                            {prog.applicableStageNumbers.length} Stages Mapped
+                          </span>
+                        </div>
+                        <p className="text-[11px] text-slate-500 dark:text-slate-400 line-clamp-2 mb-2">
+                          {prog.description}
+                        </p>
+                        <div className="flex items-center gap-3 text-[10px] text-slate-400 dark:text-slate-500 font-medium">
+                          <span>⏱ {prog.estimatedDuration}</span>
+                          <span>🏥 {prog.targetBedCapacity}</span>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+
+                <div className="flex items-center justify-end gap-2 pt-2 border-t border-slate-200 dark:border-slate-700">
+                  <button
+                    type="button"
+                    onClick={() => setIsChangingAccreditation(false)}
+                    className="px-4 py-2 rounded-xl text-xs font-bold text-slate-600 dark:text-slate-400 hover:bg-slate-200 dark:hover:bg-slate-700 cursor-pointer"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => handleSaveAccreditationEnrolment(selectedProgToEnrol)}
+                    className="px-5 py-2 rounded-xl bg-blue-600 hover:bg-blue-500 text-white text-xs font-bold shadow-xs cursor-pointer flex items-center gap-1.5"
+                  >
+                    <Check className="w-3.5 h-3.5" />
+                    <span>Save Enrolment</span>
+                  </button>
+                </div>
+              </div>
+            ) : enrolledProgramme ? (
+              /* Enrolled State Details Card */
+              <div className="p-5 rounded-2xl bg-gradient-to-br from-blue-50/60 via-slate-50 to-indigo-50/40 dark:from-slate-800/80 dark:via-slate-900 dark:to-slate-800/80 border border-blue-200/80 dark:border-slate-700 space-y-4">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-blue-100 dark:border-slate-800 pb-4">
+                  <div>
+                    <span className="text-[10px] font-extrabold uppercase tracking-wider text-blue-700 dark:text-blue-400 bg-blue-100 dark:bg-blue-950/60 px-2.5 py-0.5 rounded">
+                      {enrolledProgramme.category}
+                    </span>
+                    <h5 className="text-lg font-black text-slate-900 dark:text-white mt-1">
+                      {enrolledProgramme.name}
+                    </h5>
+                    <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
+                      Accreditation Body: <strong className="text-slate-700 dark:text-slate-300">{enrolledProgramme.authority}</strong>
+                    </p>
+                  </div>
+
+                  <div className="flex items-center gap-2">
+                    <button
+                      type="button"
+                      onClick={() => onNavigate('toolkit')}
+                      className="px-4 py-2 rounded-xl bg-blue-600 hover:bg-blue-500 text-white text-xs font-bold shadow-xs cursor-pointer flex items-center gap-1.5 shrink-0"
+                    >
+                      <Layers className="w-4 h-4" />
+                      <span>Launch Mapped Toolkit</span>
+                    </button>
+                  </div>
+                </div>
+
+                {/* 3-Column Metrics */}
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 text-xs">
+                  <div className="p-3 bg-white dark:bg-slate-800 rounded-xl border border-slate-200/80 dark:border-slate-700">
+                    <span className="text-[10px] font-bold text-slate-400 block uppercase">Mapped Stages</span>
+                    <span className="text-base font-extrabold text-blue-600 dark:text-blue-400">
+                      {enrolledProgramme.applicableStageNumbers.length} <span className="text-xs font-normal text-slate-500">/ 15 Stages</span>
+                    </span>
+                  </div>
+                  <div className="p-3 bg-white dark:bg-slate-800 rounded-xl border border-slate-200/80 dark:border-slate-700">
+                    <span className="text-[10px] font-bold text-slate-400 block uppercase">Estimated Journey</span>
+                    <span className="text-base font-extrabold text-slate-800 dark:text-slate-200">
+                      {enrolledProgramme.estimatedDuration}
+                    </span>
+                  </div>
+                  <div className="p-3 bg-white dark:bg-slate-800 rounded-xl border border-slate-200/80 dark:border-slate-700">
+                    <span className="text-[10px] font-bold text-slate-400 block uppercase">Facility Scope</span>
+                    <span className="text-xs font-bold text-slate-800 dark:text-slate-200 line-clamp-1 mt-1">
+                      {enrolledProgramme.targetBedCapacity}
+                    </span>
+                  </div>
+                </div>
+
+                {/* Mapped Stage Badges */}
+                <div className="space-y-1.5">
+                  <span className="text-[11px] font-bold text-slate-700 dark:text-slate-300 block">
+                    Applicable Developmental Stages for this Accreditation:
+                  </span>
+                  <div className="flex flex-wrap gap-1.5">
+                    {enrolledProgramme.applicableStageNumbers.map((stageNum) => (
+                      <span
+                        key={stageNum}
+                        className="px-2.5 py-1 rounded-lg bg-blue-100 dark:bg-blue-900/60 text-blue-800 dark:text-blue-300 font-bold text-[11px] border border-blue-200 dark:border-blue-800 flex items-center gap-1"
+                      >
+                        <Check className="w-3 h-3 text-blue-600 dark:text-blue-400 stroke-[3]" />
+                        <span>Stage {stageNum}</span>
+                      </span>
+                    ))}
+                  </div>
+                </div>
+
+                <div className="pt-2 flex flex-wrap items-center justify-between gap-3 text-xs">
+                  <span className="text-slate-500 dark:text-slate-400 text-[11px]">
+                    Enrolled on: {currentUser.enrolledAccreditationDate ? new Date(currentUser.enrolledAccreditationDate).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' }) : 'Active'}
+                  </span>
+                  <button
+                    type="button"
+                    onClick={() => handleSaveAccreditationEnrolment('')}
+                    className="text-xs text-red-600 dark:text-red-400 hover:underline font-semibold cursor-pointer"
+                  >
+                    Revert to General 15-Stage Roadmap
+                  </button>
+                </div>
+              </div>
+            ) : (
+              /* Unenrolled State Callout */
+              <div className="p-5 rounded-2xl bg-slate-50 dark:bg-slate-800/40 border border-slate-200 dark:border-slate-700 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                <div className="space-y-1">
+                  <span className="text-[10px] font-extrabold uppercase tracking-wider text-slate-500 bg-slate-200 dark:bg-slate-700 px-2 py-0.5 rounded">
+                    General Roadmap Active
+                  </span>
+                  <h5 className="text-sm font-bold text-slate-900 dark:text-white">
+                    Currently viewing all 15 stages without quality standard filtering
+                  </h5>
+                  <p className="text-xs text-slate-500 dark:text-slate-400 max-w-xl">
+                    Are you targeting NABH Entry-Level, Full NABH, JCI, or NABL certification? Enrol now to isolate the specific statutory, civil, and clinical stages required for your accreditation.
+                  </p>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setSelectedProgToEnrol(accreditationProgrammes[0]?.id || '');
+                    setIsChangingAccreditation(true);
+                  }}
+                  className="px-4 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-500 text-white text-xs font-bold shadow-xs cursor-pointer shrink-0 flex items-center gap-1.5"
+                >
+                  <Award className="w-4 h-4" />
+                  <span>Enrol in Programme</span>
+                </button>
+              </div>
+            )}
           </div>
         </div>
       )}

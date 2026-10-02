@@ -58,6 +58,7 @@ import {
   Plus,
   BookOpen,
   Gift,
+  Award,
   QrCode,
   Mail,
   Search
@@ -121,6 +122,7 @@ export default function App() {
   // Modal states
   const [toolkitModalOpen, setToolkitModalOpen] = useState(false);
   const [toolkitStageIndex, setToolkitStageIndex] = useState(0);
+  const [toolkitModalProgrammeId, setToolkitModalProgrammeId] = useState<string | undefined>(undefined);
 
   const [requirementModalOpen, setRequirementModalOpen] = useState(false);
   const [pendingRequirementModalAfterAuth, setPendingRequirementModalAfterAuth] = useState(false);
@@ -166,6 +168,8 @@ export default function App() {
         setAdminConsoleTab('add_vendor');
       } else if (currentSlug === 'admin/toolkit') {
         setAdminConsoleTab('toolkit_stages');
+      } else if (currentSlug === 'admin/accreditation') {
+        setAdminConsoleTab('accreditation_programmes');
       } else if (currentSlug === 'admin/coupons') {
         setAdminConsoleTab('coupons');
       } else if (currentSlug === 'admin/pamphlet') {
@@ -248,8 +252,9 @@ export default function App() {
     handleNavigate('compare');
   };
 
-  const handleOpenToolkit = (stageIndex: number = 0) => {
+  const handleOpenToolkit = (stageIndex: number = 0, programmeId?: string) => {
     setToolkitStageIndex(stageIndex);
+    setToolkitModalProgrammeId(programmeId || currentUser?.enrolledAccreditationId);
     setToolkitModalOpen(true);
   };
 
@@ -388,6 +393,7 @@ export default function App() {
       case 'admin/import-csv':
       case 'admin/add-partner':
       case 'admin/toolkit':
+      case 'admin/accreditation':
       case 'admin/coupons':
       case 'admin/pamphlet':
       case 'admin/mjml':
@@ -400,6 +406,7 @@ export default function App() {
             { id: 'import_csv', slug: 'admin/import-csv', label: 'Bulk CSV Importer', icon: UploadCloud },
             { id: 'add_vendor', slug: 'admin/add-partner', label: 'Add Single Partner', icon: Plus },
             { id: 'toolkit_stages', slug: 'admin/toolkit', label: '15-Stage Toolkit', icon: BookOpen },
+            { id: 'accreditation_programmes', slug: 'admin/accreditation', label: 'Accreditation Frameworks', icon: Award },
             { id: 'coupons', slug: 'admin/coupons', label: 'Coupons & Waivers', icon: Gift },
             { id: 'pamphlet', slug: 'admin/pamphlet', label: 'Marketing Pamphlet & QR', icon: QrCode },
             ...(isFeatureEnabled('mjml_studio') ? [
@@ -657,6 +664,12 @@ export default function App() {
                 onNotify={(msg) => showToast(msg)}
                 externalActiveTab={userDashboardTab}
                 onTabChange={handleUserTabChange}
+                onUpdateUser={(updated) => {
+                  setCurrentUser(updated);
+                  try {
+                    localStorage.setItem('nova_h_current_user', JSON.stringify(updated));
+                  } catch (e) {}
+                }}
                 isFullWidth={true}
               />
             </DashboardShell>
@@ -733,7 +746,19 @@ export default function App() {
               onSelectRole={(role) => handleOpenAuth('signup', role)}
               onPostRequirement={handleOpenRequirementModal}
             />
-            <HospitalToolkit onOpenFullToolkit={handleOpenToolkit} stages={toolkitStages} />
+            <HospitalToolkit 
+              onOpenFullToolkit={handleOpenToolkit} 
+              stages={toolkitStages}
+              currentUser={currentUser}
+              onUpdateUser={(updated) => {
+                setCurrentUser(updated);
+                try {
+                  localStorage.setItem('nova_h_current_user', JSON.stringify(updated));
+                } catch (e) {}
+                showToast(`Enrolled in ${updated.enrolledAccreditationId ? 'Accreditation Programme' : 'General Roadmap'}!`);
+              }}
+              onOpenAuth={handleOpenAuth}
+            />
           </div>
         );
 
@@ -833,6 +858,15 @@ export default function App() {
               onOpenFullToolkit={handleOpenToolkit} 
               stages={toolkitStages} 
               isStandalonePage={true} 
+              currentUser={currentUser}
+              onUpdateUser={(updated) => {
+                setCurrentUser(updated);
+                try {
+                  localStorage.setItem('nova_h_current_user', JSON.stringify(updated));
+                } catch (e) {}
+                showToast(`Enrolled in ${updated.enrolledAccreditationId ? 'Accreditation Programme' : 'General Roadmap'}!`);
+              }}
+              onOpenAuth={handleOpenAuth}
             />
           </div>
         );
@@ -998,6 +1032,15 @@ export default function App() {
             <HospitalToolkit
               onOpenFullToolkit={handleOpenToolkit}
               stages={toolkitStages}
+              currentUser={currentUser}
+              onUpdateUser={(updated) => {
+                setCurrentUser(updated);
+                try {
+                  localStorage.setItem('nova_h_current_user', JSON.stringify(updated));
+                } catch (e) {}
+                showToast(`Enrolled in ${updated.enrolledAccreditationId ? 'Accreditation Programme' : 'General Roadmap'}!`);
+              }}
+              onOpenAuth={handleOpenAuth}
             />
 
             {/* 6. LOCATION-BASED SEARCH / DIRECTORY */}
@@ -1092,6 +1135,8 @@ export default function App() {
         onClose={() => setToolkitModalOpen(false)}
         initialStageIndex={toolkitStageIndex}
         stages={toolkitStages}
+        initialProgrammeId={toolkitModalProgrammeId}
+        currentUser={currentUser}
       />
 
       <RequirementModal

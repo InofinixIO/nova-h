@@ -478,7 +478,7 @@ export const MembershipPricingSection: React.FC<MembershipPricingSectionProps> =
                   <ArrowRight className="w-4 h-4 shrink-0" />
                 </button>
                 <p className="text-[11px] text-slate-400 text-center">
-                  100% coupon (BNI100) activates directly at ₹0 • Razorpay checkout for paid balances
+                  Complimentary activation with valid promo coupon • Razorpay checkout for paid balances
                 </p>
               </div>
             </div>

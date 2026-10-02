@@ -42,12 +42,13 @@ import { getStoredCouponRedemptions, PRESET_COUPONS } from '../utils/couponServi
 import { AdminToolkitEditor } from './AdminToolkitEditor';
 import { AdminRequirementsManager } from './AdminRequirementsManager';
 import { AdminUsersManager } from './AdminUsersManager';
+import { AdminAccreditationManager } from './admin/AdminAccreditationManager';
 import { PamphletSection } from './PamphletSection';
 import { getAllUsers } from '../utils/userManagement';
 import { MjmlTemplateBuilder } from './mjml/MjmlTemplateBuilder';
 import { isFeatureEnabled } from '../utils/featureFlags';
 
-export type AdminTabType = 'users' | 'manage' | 'requirements' | 'import_csv' | 'add_vendor' | 'toolkit_stages' | 'coupons' | 'pamphlet' | 'mjml_builder';
+export type AdminTabType = 'users' | 'manage' | 'requirements' | 'import_csv' | 'add_vendor' | 'toolkit_stages' | 'accreditation_programmes' | 'coupons' | 'pamphlet' | 'mjml_builder';
 
 interface AdminConsoleViewProps {
   directoryItems: DirectoryItem[];
@@ -290,6 +291,7 @@ export const AdminConsoleView: React.FC<AdminConsoleViewProps> = ({
     import_csv: '/admin/import-csv',
     add_vendor: '/admin/add-partner',
     toolkit_stages: '/admin/toolkit',
+    accreditation_programmes: '/admin/accreditation',
     coupons: '/admin/coupons',
     pamphlet: '/admin/pamphlet',
     mjml_builder: '/admin/mjml'
@@ -853,6 +855,16 @@ export const AdminConsoleView: React.FC<AdminConsoleViewProps> = ({
             <AdminToolkitEditor
               stages={toolkitStages}
               onUpdateStages={onUpdateToolkitStages}
+              onNotify={onNotify}
+            />
+          </div>
+        )}
+
+        {/* TAB 4.5: ACCREDITATION PROGRAMMES & STAGE MAPPING */}
+        {activeTab === 'accreditation_programmes' && (
+          <div className="p-6 sm:p-8">
+            <AdminAccreditationManager
+              toolkitStages={toolkitStages}
               onNotify={onNotify}
             />
           </div>
