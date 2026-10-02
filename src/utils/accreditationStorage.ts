@@ -122,6 +122,30 @@ export function getAccreditationProgrammeById(id: string): AccreditationProgramm
   return getStoredAccreditationProgrammes().find(p => p.id === id || p.code === id);
 }
 
+// Background API sync helper with Neon PostgreSQL backend
+export async function syncAccreditationWithBackend(): Promise<void> {
+  if (typeof window === 'undefined') return;
+  try {
+    const res = await fetch('/api/accreditations');
+    if (res.ok) {
+      const data = await res.json();
+      if (Array.isArray(data) && data.length > 0) {
+        localStorage.setItem(ACCREDITATION_STORAGE_KEY, JSON.stringify(data));
+        window.dispatchEvent(new CustomEvent('nova_accreditation_updated', { detail: data }));
+      }
+    }
+  } catch (e) {
+    // Offline or running in static mode
+  }
+}
+
+// Automatically initiate sync on client boot
+if (typeof window !== 'undefined') {
+  setTimeout(() => {
+    syncAccreditationWithBackend();
+  }, 100);
+}
+
 export function createAccreditationProgramme(programme: Omit<AccreditationProgramme, 'id' | 'createdAt' | 'updatedAt'>): AccreditationProgramme {
   const current = getStoredAccreditationProgrammes();
   const newProg: AccreditationProgramme = {
@@ -132,6 +156,16 @@ export function createAccreditationProgramme(programme: Omit<AccreditationProgra
   };
   const updated = [newProg, ...current];
   saveStoredAccreditationProgrammes(updated);
+
+  // Sync to Neon API in background
+  if (typeof window !== 'undefined') {
+    fetch('/api/accreditations', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(newProg)
+    }).catch(err => console.warn('[Storage] Background API sync deferred:', err));
+  }
+
   return newProg;
 }
 
@@ -149,6 +183,16 @@ export function updateAccreditationProgramme(id: string, updates: Partial<Accred
 
   current[idx] = updatedProg;
   saveStoredAccreditationProgrammes([...current]);
+
+  // Sync to Neon API in background
+  if (typeof window !== 'undefined') {
+    fetch('/api/accreditations', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(updatedProg)
+    }).catch(err => console.warn('[Storage] Background API sync deferred:', err));
+  }
+
   return updatedProg;
 }
 
@@ -157,6 +201,14 @@ export function deleteAccreditationProgramme(id: string): boolean {
   const filtered = current.filter(p => p.id !== id);
   if (filtered.length === current.length) return false;
   saveStoredAccreditationProgrammes(filtered);
+
+  // Sync to Neon API in background
+  if (typeof window !== 'undefined') {
+    fetch(`/api/accreditations/${encodeURIComponent(id)}`, {
+      method: 'DELETE'
+    }).catch(err => console.warn('[Storage] Background API delete deferred:', err));
+  }
+
   return true;
 }
 
@@ -164,3 +216,4 @@ export function resetAccreditationProgrammesToDefault(): AccreditationProgramme[
   saveStoredAccreditationProgrammes(DEFAULT_ACCREDITATION_PROGRAMMES);
   return DEFAULT_ACCREDITATION_PROGRAMMES;
 }
+

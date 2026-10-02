@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { 
   X, 
   CreditCard, 
@@ -11,6 +11,7 @@ import {
   Receipt,
   Download,
   AlertCircle,
+  AlertTriangle,
   Tag,
   Sparkles,
   Gift,
@@ -47,6 +48,22 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
   const [company, setCompany] = useState('');
   const [gstin, setGstin] = useState('');
 
+  // Auto pre-fill user credentials from active session
+  useEffect(() => {
+    if (isOpen && typeof window !== 'undefined') {
+      try {
+        const stored = localStorage.getItem('nova_h_current_user');
+        if (stored) {
+          const u = JSON.parse(stored);
+          if (u.name && !name) setName(u.name);
+          if (u.email && !email) setEmail(u.email);
+          if (u.phone && !phone) setPhone(u.phone);
+          if (u.company && !company) setCompany(u.company);
+        }
+      } catch (e) {}
+    }
+  }, [isOpen]);
+
   // Coupon state
   const [couponCode, setCouponCode] = useState('');
   const [appliedCouponResult, setAppliedCouponResult] = useState<CouponValidationResult | null>(null);
@@ -71,16 +88,44 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
   const finalPayable = netBase + gstAmount;
   const isComplimentary = finalPayable === 0;
 
-  const handleApplyCoupon = (codeToApply?: string) => {
-    const targetCode = (codeToApply !== undefined ? codeToApply : couponCode).trim();
+  const handleApplyCoupon = async (codeToApply?: string) => {
+    const targetCode = (codeToApply !== undefined ? codeToApply : couponCode).trim().toUpperCase();
     if (!targetCode) {
       setCouponFeedback({ type: 'error', message: 'Please enter a coupon or promotional code.' });
       return;
     }
 
-    const result = validateAndApplyCoupon(targetCode, rawBaseAmount, role);
+    const testEmail = email.trim();
+    const testPhone = phone.trim();
+
+    // 1. Instant local validation with current quotas
+    let result = validateAndApplyCoupon(targetCode, rawBaseAmount, role, testEmail, testPhone);
+
+    // 2. Query live server-side validation if database is connected
+    try {
+      const res = await fetch('/api/coupons/validate', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          code: targetCode,
+          baseAmount: rawBaseAmount,
+          role,
+          userEmail: testEmail,
+          userPhone: testPhone
+        })
+      });
+      if (res.ok) {
+        const serverResult = await res.json();
+        if (serverResult && typeof serverResult.isValid === 'boolean') {
+          result = serverResult;
+        }
+      }
+    } catch {
+      // Continue with local result
+    }
+
     if (result.isValid) {
-      setCouponCode(result.coupon?.code || targetCode.toUpperCase());
+      setCouponCode(result.coupon?.code || targetCode);
       setAppliedCouponResult(result);
       setCouponFeedback({ type: 'success', message: result.message });
       setErrorMsg(null);
@@ -89,6 +134,26 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
       setCouponFeedback({ type: 'error', message: result.message });
     }
   };
+
+  // Re-verify coupon when email or phone changes if coupon is currently applied
+  useEffect(() => {
+    if (appliedCouponResult && appliedCouponResult.coupon) {
+      const recheck = validateAndApplyCoupon(
+        appliedCouponResult.coupon.code,
+        rawBaseAmount,
+        role,
+        email.trim(),
+        phone.trim()
+      );
+      if (!recheck.isValid) {
+        setAppliedCouponResult(null);
+        setCouponFeedback({
+          type: 'error',
+          message: recheck.message
+        });
+      }
+    }
+  }, [email, phone]);
 
   const handleRemoveCoupon = () => {
     setCouponCode('');
@@ -105,6 +170,24 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
     const userEmail = email || 'partner@nova-h.in';
     const userPhone = phone || '9876543210';
     const companyName = company || (role === 'owner' ? 'Healthcare Trust' : 'Nova Partner Firm');
+
+    // Strict final verification against usage limits before processing
+    if (isCouponApplied && appliedCouponResult?.coupon) {
+      const finalCheck = validateAndApplyCoupon(
+        appliedCouponResult.coupon.code,
+        rawBaseAmount,
+        role,
+        userEmail,
+        userPhone
+      );
+      if (!finalCheck.isValid) {
+        setIsProcessing(false);
+        setAppliedCouponResult(null);
+        setCouponFeedback({ type: 'error', message: finalCheck.message });
+        setErrorMsg(`Coupon Redemption Blocked: ${finalCheck.message}`);
+        return;
+      }
+    }
 
     try {
       await processMembershipPayment(
@@ -405,11 +488,25 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
 
               {/* Feedback banner */}
               {couponFeedback && (
-                <p className={`text-[11px] mt-1.5 font-medium ${
-                  couponFeedback.type === 'success' ? 'text-emerald-700' : 'text-red-600'
+                <div className={`mt-2.5 p-3 rounded-xl border text-xs flex items-start gap-2.5 transition-all animate-fadeIn ${
+                  couponFeedback.type === 'success'
+                    ? 'bg-emerald-50 border-emerald-200 text-emerald-900'
+                    : 'bg-red-50 border-red-300 text-red-900 shadow-2xs'
                 }`}>
-                  {couponFeedback.message}
-                </p>
+                  {couponFeedback.type === 'success' ? (
+                    <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0 mt-0.5" />
+                  ) : (
+                    <AlertTriangle className="w-4 h-4 text-red-600 shrink-0 mt-0.5" />
+                  )}
+                  <div className="flex-1">
+                    <span className="font-bold block text-xs">
+                      {couponFeedback.type === 'success' ? 'Coupon Applied Successfully' : 'Coupon Redemption Blocked'}
+                    </span>
+                    <span className="text-[11px] leading-relaxed block mt-0.5 font-medium opacity-95">
+                      {couponFeedback.message}
+                    </span>
+                  </div>
+                </div>
               )}
             </div>
 

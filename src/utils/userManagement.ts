@@ -186,6 +186,15 @@ export const registerOrUpdateUser = (userData: AuthUser): AuthUser => {
     };
     users[existingIndex] = updated;
     saveAllUsers(users);
+
+    if (typeof window !== 'undefined') {
+      fetch('/api/users/sync', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(updated)
+      }).catch(err => console.warn('[Storage] User sync API deferred:', err));
+    }
+
     return updated;
   } else {
     const initialStatus = userData.status || (userData.role === 'advisor' ? 'pending' : 'active');
@@ -207,9 +216,55 @@ export const registerOrUpdateUser = (userData: AuthUser): AuthUser => {
     };
     const updatedList = [newUser, ...users];
     saveAllUsers(updatedList);
+
+    if (typeof window !== 'undefined') {
+      fetch('/api/users/sync', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(newUser)
+      }).catch(err => console.warn('[Storage] User sync API deferred:', err));
+    }
+
     return newUser;
   }
 };
+
+/**
+ * Sync users list from Neon PostgreSQL backend
+ */
+export async function syncUsersWithBackend(): Promise<void> {
+  if (typeof window === 'undefined') return;
+  try {
+    const res = await fetch('/api/users');
+    if (res.ok) {
+      const data = await res.json();
+      if (Array.isArray(data) && data.length > 0) {
+        const local = getAllUsers();
+        // Merge without losing any local unsynced edits
+        const map = new Map<string, AuthUser>();
+        data.forEach((u: AuthUser) => {
+          if (u.email) map.set(u.email.toLowerCase().trim(), u);
+        });
+        local.forEach((u: AuthUser) => {
+          if (u.email && !map.has(u.email.toLowerCase().trim())) {
+            map.set(u.email.toLowerCase().trim(), u);
+          }
+        });
+        const merged = Array.from(map.values());
+        saveAllUsers(merged);
+        window.dispatchEvent(new CustomEvent('nova_users_updated', { detail: merged }));
+      }
+    }
+  } catch (e) {
+    // Offline fallback
+  }
+}
+
+if (typeof window !== 'undefined') {
+  setTimeout(() => {
+    syncUsersWithBackend();
+  }, 300);
+}
 
 /**
  * Activate an advisor from the admin panel
@@ -229,6 +284,19 @@ export const activateAdvisorUser = (email: string): AuthUser[] => {
     return u;
   });
   saveAllUsers(updated);
+
+  if (typeof window !== 'undefined') {
+    fetch(`/api/users/${encodeURIComponent(emailNorm)}/status`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        status: 'active',
+        plan: 'Advisor Specialist (₹XXXX/yr - Activated)',
+        isSubscribed: true
+      })
+    }).catch(err => console.warn('[Storage] Advisor activation API deferred:', err));
+  }
+
   return updated;
 };
 
@@ -238,14 +306,24 @@ export const activateAdvisorUser = (email: string): AuthUser[] => {
 export const toggleUserStatus = (email: string): AuthUser[] => {
   const users = getAllUsers();
   const emailNorm = email.trim().toLowerCase();
+  let nextStatus: 'active' | 'disabled' = 'active';
   const updated = users.map(u => {
     if ((u.email || '').trim().toLowerCase() === emailNorm) {
-      const nextStatus: 'active' | 'disabled' = u.status === 'active' ? 'disabled' : 'active';
+      nextStatus = u.status === 'active' ? 'disabled' : 'active';
       return { ...u, status: nextStatus };
     }
     return u;
   });
   saveAllUsers(updated);
+
+  if (typeof window !== 'undefined') {
+    fetch(`/api/users/${encodeURIComponent(emailNorm)}/status`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ status: nextStatus })
+    }).catch(err => console.warn('[Storage] User status toggle API deferred:', err));
+  }
+
   return updated;
 };
 
@@ -262,6 +340,15 @@ export const updateUserPlan = (email: string, newPlan: string): AuthUser[] => {
     return u;
   });
   saveAllUsers(updated);
+
+  if (typeof window !== 'undefined') {
+    fetch(`/api/users/${encodeURIComponent(emailNorm)}/status`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ plan: newPlan })
+    }).catch(err => console.warn('[Storage] User plan update API deferred:', err));
+  }
+
   return updated;
 };
 

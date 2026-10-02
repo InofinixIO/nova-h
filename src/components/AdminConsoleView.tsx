@@ -1,4 +1,4 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { 
   UploadCloud, 
   FileText, 
@@ -28,9 +28,14 @@ import {
   CreditCard,
   Users,
   QrCode,
-  Server
+  Server,
+  Database,
+  Sliders,
+  AlertTriangle,
+  Layers,
+  X
 } from 'lucide-react';
-import { DirectoryItem, AuthUser, StageItem, ProjectRequirement, Coupon, CouponRedemption } from '../types';
+import { DirectoryItem, AuthUser, StageItem, ProjectRequirement, Coupon, CouponRedemption, UserRole } from '../types';
 import { 
   parseDirectoryCSV, 
   generateSampleDirectoryCSV, 
@@ -38,7 +43,15 @@ import {
   resetDirectoryToDefault 
 } from '../utils/directoryStorage';
 import { getStoredRequirements } from '../utils/requirementsStorage';
-import { getStoredCouponRedemptions, PRESET_COUPONS } from '../utils/couponService';
+import { 
+  getStoredCouponRedemptions, 
+  getAllCoupons, 
+  updateCouponLimits, 
+  createCoupon, 
+  resetCouponLimits, 
+  deleteCustomCoupon,
+  PRESET_COUPONS 
+} from '../utils/couponService';
 import { AdminToolkitEditor } from './AdminToolkitEditor';
 import { AdminRequirementsManager } from './AdminRequirementsManager';
 import { AdminUsersManager } from './AdminUsersManager';
@@ -90,19 +103,168 @@ export const AdminConsoleView: React.FC<AdminConsoleViewProps> = ({
     }
   };
   const [requirements, setRequirements] = useState<ProjectRequirement[]>(() => getStoredRequirements());
+  const [couponsList, setCouponsList] = useState<Coupon[]>(() => getAllCoupons());
   const [couponRedemptions, setCouponRedemptions] = useState<CouponRedemption[]>(() => getStoredCouponRedemptions());
-  const [customCoupons, setCustomCoupons] = useState<Coupon[]>(() => {
-    try {
-      return JSON.parse(localStorage.getItem('novah_custom_coupons') || '[]');
-    } catch {
-      return [];
-    }
-  });
+
+  // Edit Coupon Limit modal/drawer state
+  const [editingCoupon, setEditingCoupon] = useState<Coupon | null>(null);
+  const [editMaxTotalUses, setEditMaxTotalUses] = useState<string>(''); // blank = unlimited
+  const [editMaxUsesPerUser, setEditMaxUsesPerUser] = useState<number>(1);
+  const [editDescription, setEditDescription] = useState<string>('');
+
+  // Create new coupon form state
   const [newCouponCode, setNewCouponCode] = useState('');
+  const [newCouponType, setNewCouponType] = useState<'percentage' | 'flat'>('percentage');
   const [newCouponDiscount, setNewCouponDiscount] = useState('100');
   const [newCouponDesc, setNewCouponDesc] = useState('');
+  const [newCouponMaxTotal, setNewCouponMaxTotal] = useState<string>(''); // blank = unlimited
+  const [newCouponMaxPerUser, setNewCouponMaxPerUser] = useState<number>(1);
+  const [newCouponRoles, setNewCouponRoles] = useState<UserRole[]>(['vendor', 'advisor', 'owner']);
+
+  // Sync coupons with backend & storage
+  useEffect(() => {
+    const handleCouponsChange = () => {
+      setCouponsList(getAllCoupons());
+    };
+    window.addEventListener('nova_coupons_updated', handleCouponsChange);
+
+    fetch('/api/coupons')
+      .then(res => res.json())
+      .then(data => {
+        if (Array.isArray(data) && data.length > 0) {
+          setCouponsList(data);
+        }
+      })
+      .catch(() => {});
+
+    return () => window.removeEventListener('nova_coupons_updated', handleCouponsChange);
+  }, []);
+
+  const handleRefreshCoupons = async () => {
+    setCouponRedemptions(getStoredCouponRedemptions());
+    try {
+      const res = await fetch('/api/coupons');
+      if (res.ok) {
+        const apiCoupons = await res.json();
+        if (Array.isArray(apiCoupons) && apiCoupons.length > 0) {
+          setCouponsList(apiCoupons);
+          onNotify('Refreshed coupon limits & redemptions from database.');
+          return;
+        }
+      }
+    } catch {
+      // fallback
+    }
+    setCouponsList(getAllCoupons());
+    onNotify('Refreshed latest coupon limits & redemptions log.');
+  };
+
+  const handleOpenLimitEditor = (cpn: Coupon) => {
+    setEditingCoupon(cpn);
+    setEditMaxTotalUses(cpn.maxTotalUses !== null && cpn.maxTotalUses !== undefined ? String(cpn.maxTotalUses) : '');
+    setEditMaxUsesPerUser(cpn.maxUsesPerUser !== undefined && cpn.maxUsesPerUser !== null ? cpn.maxUsesPerUser : 1);
+    setEditDescription(cpn.description || '');
+  };
+
+  const handleSaveCouponLimits = () => {
+    if (!editingCoupon) return;
+    const cleanTotal = editMaxTotalUses.trim() === '' ? null : Number(editMaxTotalUses);
+    const cleanPerUser = Math.max(1, Number(editMaxUsesPerUser) || 1);
+
+    const updated = updateCouponLimits(editingCoupon.code, {
+      maxTotalUses: cleanTotal,
+      maxUsesPerUser: cleanPerUser,
+      description: editDescription.trim() || editingCoupon.description
+    });
+    setCouponsList(updated);
+    setEditingCoupon(null);
+    onNotify(`Saved usage limits for coupon "${editingCoupon.code}": Global Limit: ${cleanTotal !== null ? cleanTotal : 'Unlimited'}, Per-User: ${cleanPerUser}.`);
+  };
+
+  const handleResetLimits = (code: string) => {
+    if (window.confirm(`Reset limits for preset code "${code}" to default (Unlimited global pool, 1 use per user)?`)) {
+      const updated = resetCouponLimits(code);
+      setCouponsList(updated);
+      onNotify(`Reset coupon "${code}" to default single redemption per user with unlimited global pool.`);
+    }
+  };
+
+  const handleDeleteCustomCoupon = (code: string) => {
+    if (window.confirm(`Permanently delete coupon code "${code}"?`)) {
+      const updated = deleteCustomCoupon(code);
+      setCouponsList(updated);
+      onNotify(`Deleted custom coupon code "${code}".`);
+    }
+  };
+
+  const handleCreateCouponSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!newCouponCode.trim()) return;
+    const val = Number(newCouponDiscount);
+    if (isNaN(val) || val <= 0) return;
+
+    const parsedMaxTotal = newCouponMaxTotal.trim() === '' ? null : Number(newCouponMaxTotal);
+    const parsedMaxPerUser = Math.max(1, Number(newCouponMaxPerUser) || 1);
+
+    const newCpn: Coupon = {
+      code: newCouponCode.trim().toUpperCase(),
+      discountType: newCouponType,
+      discountValue: val,
+      description: newCouponDesc.trim() || `${val}${newCouponType === 'percentage' ? '%' : ' INR'} Promotional Discount Code`,
+      applicableRoles: newCouponRoles.length > 0 ? newCouponRoles : ['vendor', 'advisor', 'owner'],
+      maxTotalUses: parsedMaxTotal,
+      maxUsesPerUser: parsedMaxPerUser
+    };
+
+    const updated = createCoupon(newCpn);
+    setCouponsList(updated);
+    setNewCouponCode('');
+    setNewCouponDiscount('100');
+    setNewCouponDesc('');
+    setNewCouponMaxTotal('');
+    setNewCouponMaxPerUser(1);
+    onNotify(`Published coupon "${newCpn.code}" with ${parsedMaxTotal !== null ? parsedMaxTotal + ' global limit' : 'unlimited pool'} and ${parsedMaxPerUser} per user.`);
+  };
   const [searchQuery, setSearchQuery] = useState('');
   const [filterRole, setFilterRole] = useState<'all' | 'vendor' | 'advisor'>('all');
+
+  // Database Connection Health State
+  const [dbStatus, setDbStatus] = useState<{
+    configured: boolean;
+    provider: string;
+    urlMasked: string | null;
+  } | null>(null);
+  const [showDbModal, setShowDbModal] = useState(false);
+  const [isTestingDb, setIsTestingDb] = useState(false);
+
+  const checkDbHealth = async (showNotification = false) => {
+    setIsTestingDb(true);
+    try {
+      const res = await fetch('/api/health');
+      if (res.ok) {
+        const data = await res.json();
+        if (data && data.database) {
+          setDbStatus(data.database);
+          if (showNotification) {
+            onNotify(data.database.configured 
+              ? `Connected to ${data.database.provider} (${data.database.urlMasked || 'Active'})`
+              : 'Operating in Local Storage fallback mode. DATABASE_URL not set.'
+            );
+          }
+        }
+      }
+    } catch (err) {
+      if (showNotification) {
+        onNotify('Could not connect to health API. Running offline.');
+      }
+    } finally {
+      setIsTestingDb(false);
+    }
+  };
+
+  useEffect(() => {
+    checkDbHealth();
+  }, []);
 
   // CSV Import states
   const [csvText, setCsvText] = useState('');
@@ -354,6 +516,19 @@ export const AdminConsoleView: React.FC<AdminConsoleViewProps> = ({
                 <span>Backend &amp; Cost Specs</span>
               </button>
             )}
+
+            <button
+              onClick={() => setShowDbModal(true)}
+              className={`px-3.5 py-2 rounded-xl text-xs font-bold flex items-center gap-1.5 transition-all cursor-pointer border shadow-md ${
+                dbStatus?.configured 
+                  ? 'bg-emerald-950/80 border-emerald-600/60 text-emerald-300 hover:bg-emerald-900/80' 
+                  : 'bg-slate-800 border-slate-700 text-slate-200 hover:bg-slate-700'
+              }`}
+              title="View Neon PostgreSQL Database status & configuration"
+            >
+              <Database className={`w-3.5 h-3.5 ${dbStatus?.configured ? 'text-emerald-400' : 'text-amber-400'}`} />
+              <span>{dbStatus?.configured ? 'Neon DB (Active)' : 'Database Setup'}</span>
+            </button>
 
             {onBackToHome && (
               <button
@@ -882,7 +1057,7 @@ export const AdminConsoleView: React.FC<AdminConsoleViewProps> = ({
           </div>
         )}
 
-        {/* TAB 6: COUPONS, BNI CODES & FREE REDEMPTIONS AUDIT */}
+        {/* TAB 6: COUPONS, BNI CODES & USAGE LIMIT CONFIGURATION */}
         {activeTab === 'coupons' && (
           <div className="p-6 sm:p-8 space-y-8">
             <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-slate-100 pb-5">
@@ -892,23 +1067,20 @@ export const AdminConsoleView: React.FC<AdminConsoleViewProps> = ({
                     <Tag className="w-5 h-5" />
                   </span>
                   <h3 className="text-xl font-black text-slate-900">
-                    Coupon, BNI Code &amp; Complimentary Redemptions
+                    Coupon, BNI Code &amp; Usage Limit Configuration
                   </h3>
                 </div>
                 <p className="text-xs text-slate-500 mt-1">
-                  Configure 100% waiver codes for direct ₹0 membership activation without payment gateway, and monitor live redemptions.
+                  Configure promotional &amp; BNI codes, enforce global pool and per-user redemption caps, and audit member activations.
                 </p>
               </div>
 
               <button
-                onClick={() => {
-                  setCouponRedemptions(getStoredCouponRedemptions());
-                  onNotify('Refreshed latest coupon redemptions log.');
-                }}
-                className="px-3.5 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs flex items-center gap-1.5 cursor-pointer self-start md:self-auto"
+                onClick={handleRefreshCoupons}
+                className="px-3.5 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs flex items-center gap-1.5 cursor-pointer self-start md:self-auto transition-colors"
               >
                 <RefreshCw className="w-3.5 h-3.5" />
-                <span>Refresh Logs</span>
+                <span>Refresh Codes &amp; Quotas</span>
               </button>
             </div>
 
@@ -933,7 +1105,7 @@ export const AdminConsoleView: React.FC<AdminConsoleViewProps> = ({
               <div className="p-4 rounded-xl bg-purple-50 border border-purple-200">
                 <span className="text-[11px] font-bold text-purple-800 uppercase tracking-wider block">Active Coupon Codes</span>
                 <span className="text-2xl font-black text-purple-700 mt-1 block">
-                  {PRESET_COUPONS.length + customCoupons.length}
+                  {couponsList.length}
                 </span>
               </div>
             </div>
@@ -943,45 +1115,148 @@ export const AdminConsoleView: React.FC<AdminConsoleViewProps> = ({
               
               {/* Active Codes List (2 cols) */}
               <div className="lg:col-span-2 space-y-4">
-                <h4 className="text-sm font-black text-slate-900 flex items-center gap-2">
-                  <Gift className="w-4 h-4 text-emerald-600" />
-                  <span>Configured Promotional &amp; BNI Codes</span>
-                </h4>
+                <div className="flex items-center justify-between">
+                  <h4 className="text-sm font-black text-slate-900 flex items-center gap-2">
+                    <Gift className="w-4 h-4 text-emerald-600" />
+                    <span>Configured Codes &amp; Usage Limits</span>
+                  </h4>
+                  <span className="text-[11px] text-slate-500">
+                    {couponsList.length} active promo codes
+                  </span>
+                </div>
 
-                <div className="space-y-2.5">
-                  {[...PRESET_COUPONS, ...customCoupons].map((cpn) => (
-                    <div 
-                      key={cpn.code} 
-                      className="p-3.5 rounded-xl border border-slate-200 bg-slate-50/70 hover:bg-slate-50 transition-colors flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs"
-                    >
-                      <div>
-                        <div className="flex items-center gap-2">
-                          <span className="px-2.5 py-1 rounded-md bg-white border border-slate-300 font-mono font-black text-slate-900 tracking-wider text-xs shadow-2xs">
-                            {cpn.code}
-                          </span>
-                          {cpn.discountValue === 100 && cpn.discountType === 'percentage' ? (
-                            <span className="px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-800 font-bold text-[10px] border border-emerald-200 flex items-center gap-1">
-                              <Sparkles className="w-3 h-3 text-emerald-600" />
-                              100% Complimentary (Direct ₹0)
-                            </span>
-                          ) : (
-                            <span className="px-2 py-0.5 rounded-full bg-blue-100 text-blue-800 font-bold text-[10px] border border-blue-200 flex items-center gap-1">
-                              <CreditCard className="w-3 h-3 text-blue-600" />
-                              {cpn.discountType === 'percentage' ? `${cpn.discountValue}% Off` : `₹${cpn.discountValue} Off`} (Razorpay)
-                            </span>
-                          )}
+                <div className="space-y-3">
+                  {couponsList.map((cpn) => {
+                    const isPreset = PRESET_COUPONS.some(p => p.code.toUpperCase() === cpn.code.toUpperCase());
+                    const redemptionsCount = cpn.totalRedemptions || 0;
+                    const hasGlobalCap = cpn.maxTotalUses !== null && cpn.maxTotalUses !== undefined && cpn.maxTotalUses > 0;
+                    const isLimitReached = hasGlobalCap && redemptionsCount >= (cpn.maxTotalUses as number);
+                    const remainingGlobal = hasGlobalCap ? Math.max(0, (cpn.maxTotalUses as number) - redemptionsCount) : null;
+                    const percentUsed = hasGlobalCap ? Math.min(100, Math.round((redemptionsCount / (cpn.maxTotalUses as number)) * 100)) : 0;
+
+                    return (
+                      <div 
+                        key={cpn.code} 
+                        className={`p-4 rounded-xl border transition-all ${
+                          isLimitReached 
+                            ? 'border-red-200 bg-red-50/30' 
+                            : 'border-slate-200 bg-slate-50/70 hover:bg-slate-50'
+                        } text-xs space-y-3`}
+                      >
+                        <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-3">
+                          <div>
+                            <div className="flex flex-wrap items-center gap-2">
+                              <span className="px-2.5 py-1 rounded-md bg-white border border-slate-300 font-mono font-black text-slate-900 tracking-wider text-xs shadow-2xs">
+                                {cpn.code}
+                              </span>
+                              {cpn.discountValue === 100 && cpn.discountType === 'percentage' ? (
+                                <span className="px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-800 font-bold text-[10px] border border-emerald-200 flex items-center gap-1">
+                                  <Sparkles className="w-3 h-3 text-emerald-600" />
+                                  100% Complimentary (Direct ₹0)
+                                </span>
+                              ) : (
+                                <span className="px-2 py-0.5 rounded-full bg-blue-100 text-blue-800 font-bold text-[10px] border border-blue-200 flex items-center gap-1">
+                                  <CreditCard className="w-3 h-3 text-blue-600" />
+                                  {cpn.discountType === 'percentage' ? `${cpn.discountValue}% Off` : `₹${cpn.discountValue} Off`} (Razorpay)
+                                </span>
+                              )}
+
+                              {isLimitReached ? (
+                                <span className="px-2 py-0.5 rounded-full bg-red-100 text-red-800 font-bold text-[10px] border border-red-300 flex items-center gap-1">
+                                  <AlertTriangle className="w-3 h-3 text-red-600" />
+                                  Limit Reached (Blocked)
+                                </span>
+                              ) : hasGlobalCap && remainingGlobal !== null && remainingGlobal <= 5 ? (
+                                <span className="px-2 py-0.5 rounded-full bg-amber-100 text-amber-800 font-bold text-[10px] border border-amber-300">
+                                  {remainingGlobal} remaining
+                                </span>
+                              ) : null}
+                            </div>
+                            <p className="text-slate-600 text-[11px] mt-1.5 font-medium leading-relaxed">
+                              {cpn.description}
+                            </p>
+                          </div>
+
+                          <div className="flex items-center gap-2 self-end sm:self-auto shrink-0">
+                            <button
+                              onClick={() => handleOpenLimitEditor(cpn)}
+                              className="px-2.5 py-1.5 rounded-lg bg-white hover:bg-slate-100 text-slate-700 border border-slate-300 font-bold text-[11px] flex items-center gap-1.5 cursor-pointer shadow-2xs transition-colors"
+                              title="Configure usage limits"
+                            >
+                              <Sliders className="w-3 h-3 text-blue-600" />
+                              <span>Configure Limits</span>
+                            </button>
+
+                            {isPreset ? (
+                              <button
+                                onClick={() => handleResetLimits(cpn.code)}
+                                className="px-2 py-1.5 rounded-lg text-slate-400 hover:text-slate-700 hover:bg-slate-200/60 text-[11px] font-medium transition-colors cursor-pointer"
+                                title="Reset to preset defaults"
+                              >
+                                Reset
+                              </button>
+                            ) : (
+                              <button
+                                onClick={() => handleDeleteCustomCoupon(cpn.code)}
+                                className="p-1.5 rounded-lg text-slate-400 hover:text-red-600 hover:bg-red-50 transition-colors cursor-pointer"
+                                title="Delete custom code"
+                              >
+                                <Trash2 className="w-3.5 h-3.5" />
+                              </button>
+                            )}
+                          </div>
                         </div>
-                        <p className="text-slate-600 text-[11px] mt-1.5 font-medium">
-                          {cpn.description}
-                        </p>
-                      </div>
 
-                      <div className="text-[11px] text-slate-500 shrink-0">
-                        <span className="font-semibold text-slate-700">Roles:</span>{' '}
-                        {cpn.applicableRoles ? cpn.applicableRoles.join(', ') : 'All Roles'}
+                        {/* Quota and Usage Limits Breakdown */}
+                        <div className="pt-2 border-t border-slate-200/80 flex flex-col sm:flex-row sm:items-center justify-between gap-2 text-[11px]">
+                          <div className="flex flex-wrap items-center gap-3">
+                            {/* Global Quota */}
+                            <div className="flex items-center gap-1.5">
+                              <span className="font-semibold text-slate-500">Global Pool:</span>
+                              {hasGlobalCap ? (
+                                <span className={`font-bold ${isLimitReached ? 'text-red-700' : 'text-slate-800'}`}>
+                                  {redemptionsCount} / {cpn.maxTotalUses} used ({remainingGlobal} remaining)
+                                </span>
+                              ) : (
+                                <span className="font-bold text-emerald-700">
+                                  Unlimited Pool ({redemptionsCount} redeemed)
+                                </span>
+                              )}
+                            </div>
+
+                            {/* Per-User Cap */}
+                            <div className="flex items-center gap-1.5 pl-2 border-l border-slate-200">
+                              <span className="font-semibold text-slate-500">Per-User Limit:</span>
+                              <span className="font-bold text-indigo-700">
+                                {cpn.maxUsesPerUser || 1} {Number(cpn.maxUsesPerUser) === 1 ? 'redemption / account' : 'redemptions / account'}
+                              </span>
+                            </div>
+                          </div>
+
+                          <div className="text-slate-500 text-[10px]">
+                            <span className="font-medium text-slate-600">Roles:</span>{' '}
+                            {cpn.applicableRoles ? cpn.applicableRoles.join(', ') : 'All Roles'}
+                          </div>
+                        </div>
+
+                        {/* Visual Progress Bar for Global Cap */}
+                        {hasGlobalCap && (
+                          <div className="w-full bg-slate-200 rounded-full h-1.5 overflow-hidden">
+                            <div 
+                              className={`h-full rounded-full transition-all duration-300 ${
+                                isLimitReached 
+                                  ? 'bg-red-500' 
+                                  : percentUsed > 75 
+                                    ? 'bg-amber-500' 
+                                    : 'bg-emerald-500'
+                              }`}
+                              style={{ width: `${percentUsed}%` }}
+                            />
+                          </div>
+                        )}
                       </div>
-                    </div>
-                  ))}
+                    );
+                  })}
                 </div>
               </div>
 
@@ -992,33 +1267,12 @@ export const AdminConsoleView: React.FC<AdminConsoleViewProps> = ({
                   <span>Issue New Promo / BNI Code</span>
                 </h4>
                 <p className="text-[11px] text-slate-500">
-                  Instantly publish a code for partners, launch campaigns, or chapter invites.
+                  Instantly publish a coupon with custom discount, global pool cap, and per-user limits.
                 </p>
 
                 <form
-                  onSubmit={(e) => {
-                    e.preventDefault();
-                    if (!newCouponCode.trim()) return;
-                    const val = Number(newCouponDiscount);
-                    if (isNaN(val) || val <= 0) return;
-
-                    const newCpn: Coupon = {
-                      code: newCouponCode.trim().toUpperCase(),
-                      discountType: 'percentage',
-                      discountValue: val,
-                      description: newCouponDesc.trim() || `${val}% Promotional Discount Code`,
-                      applicableRoles: ['vendor', 'advisor', 'owner']
-                    };
-
-                    const updated = [newCpn, ...customCoupons];
-                    setCustomCoupons(updated);
-                    localStorage.setItem('novah_custom_coupons', JSON.stringify(updated));
-                    setNewCouponCode('');
-                    setNewCouponDiscount('100');
-                    setNewCouponDesc('');
-                    onNotify(`Published code "${newCpn.code}" (${val}% discount).`);
-                  }}
-                  className="space-y-2.5 pt-1"
+                  onSubmit={handleCreateCouponSubmit}
+                  className="space-y-3 pt-1"
                 >
                   <div>
                     <label className="font-bold text-slate-700 block mb-1">Coupon Code *</label>
@@ -1028,24 +1282,75 @@ export const AdminConsoleView: React.FC<AdminConsoleViewProps> = ({
                       placeholder="e.g. BNIEXPO100"
                       value={newCouponCode}
                       onChange={(e) => setNewCouponCode(e.target.value.toUpperCase())}
-                      className="w-full px-3 py-2 rounded-lg border border-slate-300 font-mono uppercase font-bold focus:ring-2 focus:ring-purple-500"
+                      className="w-full px-3 py-2 rounded-lg border border-slate-300 font-mono uppercase font-bold focus:ring-2 focus:ring-purple-500 bg-white"
                     />
                   </div>
 
-                  <div>
-                    <label className="font-bold text-slate-700 block mb-1">Discount Percentage (%) *</label>
-                    <input
-                      type="number"
-                      required
-                      min={1}
-                      max={100}
-                      value={newCouponDiscount}
-                      onChange={(e) => setNewCouponDiscount(e.target.value)}
-                      className="w-full px-3 py-2 rounded-lg border border-slate-300 font-bold focus:ring-2 focus:ring-purple-500"
-                    />
-                    <span className="text-[10px] text-slate-400 mt-0.5 block">
-                      100% discount skips gateway and activates profile directly at ₹0.
+                  <div className="grid grid-cols-2 gap-2">
+                    <div>
+                      <label className="font-bold text-slate-700 block mb-1">Discount Type</label>
+                      <select
+                        value={newCouponType}
+                        onChange={(e) => setNewCouponType(e.target.value as any)}
+                        className="w-full px-3 py-2 rounded-lg border border-slate-300 font-medium focus:ring-2 focus:ring-purple-500 bg-white"
+                      >
+                        <option value="percentage">% Percentage</option>
+                        <option value="flat">₹ Flat INR</option>
+                      </select>
+                    </div>
+
+                    <div>
+                      <label className="font-bold text-slate-700 block mb-1">
+                        {newCouponType === 'percentage' ? 'Percentage (%) *' : 'Amount (₹) *'}
+                      </label>
+                      <input
+                        type="number"
+                        required
+                        min={1}
+                        max={newCouponType === 'percentage' ? 100 : 100000}
+                        value={newCouponDiscount}
+                        onChange={(e) => setNewCouponDiscount(e.target.value)}
+                        className="w-full px-3 py-2 rounded-lg border border-slate-300 font-bold focus:ring-2 focus:ring-purple-500 bg-white"
+                      />
+                    </div>
+                  </div>
+
+                  {/* Usage Limits Configuration */}
+                  <div className="p-3 bg-white rounded-xl border border-slate-200 space-y-2.5">
+                    <span className="font-bold text-slate-800 text-[11px] block flex items-center gap-1 text-purple-900">
+                      <Sliders className="w-3.5 h-3.5 text-purple-600" />
+                      Usage Limit Quotas
                     </span>
+
+                    <div>
+                      <div className="flex items-center justify-between mb-1">
+                        <label className="font-semibold text-slate-700 text-[11px]">Total Global Redemption Limit</label>
+                        <span className="text-[10px] text-slate-400">Empty = Unlimited</span>
+                      </div>
+                      <input
+                        type="number"
+                        min={1}
+                        placeholder="e.g. 50 (leave empty for unlimited)"
+                        value={newCouponMaxTotal}
+                        onChange={(e) => setNewCouponMaxTotal(e.target.value)}
+                        className="w-full px-2.5 py-1.5 rounded-lg border border-slate-300 focus:ring-2 focus:ring-purple-500 text-xs"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="font-semibold text-slate-700 text-[11px] block mb-1">Per-User Redemption Limit</label>
+                      <input
+                        type="number"
+                        min={1}
+                        required
+                        value={newCouponMaxPerUser}
+                        onChange={(e) => setNewCouponMaxPerUser(Number(e.target.value))}
+                        className="w-full px-2.5 py-1.5 rounded-lg border border-slate-300 focus:ring-2 focus:ring-purple-500 text-xs font-bold"
+                      />
+                      <span className="text-[10px] text-slate-400 block mt-0.5">
+                        Default: 1 redemption per account/phone.
+                      </span>
+                    </div>
                   </div>
 
                   <div>
@@ -1055,8 +1360,35 @@ export const AdminConsoleView: React.FC<AdminConsoleViewProps> = ({
                       placeholder="e.g. BNI Healthcare Conclave Free Access"
                       value={newCouponDesc}
                       onChange={(e) => setNewCouponDesc(e.target.value)}
-                      className="w-full px-3 py-2 rounded-lg border border-slate-300 focus:ring-2 focus:ring-purple-500"
+                      className="w-full px-3 py-2 rounded-lg border border-slate-300 focus:ring-2 focus:ring-purple-500 bg-white"
                     />
+                  </div>
+
+                  {/* Applicable Roles */}
+                  <div>
+                    <label className="font-bold text-slate-700 block mb-1.5">Applicable Roles</label>
+                    <div className="flex flex-wrap gap-2 text-[11px]">
+                      {(['vendor', 'advisor', 'owner'] as UserRole[]).map((r) => {
+                        const isChecked = newCouponRoles.includes(r);
+                        return (
+                          <label key={r} className="flex items-center gap-1.5 cursor-pointer bg-white px-2 py-1 rounded-md border border-slate-200">
+                            <input
+                              type="checkbox"
+                              checked={isChecked}
+                              onChange={(e) => {
+                                if (e.target.checked) {
+                                  setNewCouponRoles([...newCouponRoles, r]);
+                                } else {
+                                  setNewCouponRoles(newCouponRoles.filter(role => role !== r));
+                                }
+                              }}
+                              className="rounded text-purple-600 focus:ring-purple-500"
+                            />
+                            <span className="capitalize">{r === 'owner' ? 'Hospital' : r}</span>
+                          </label>
+                        );
+                      })}
+                    </div>
                   </div>
 
                   <button
@@ -1253,6 +1585,318 @@ export const AdminConsoleView: React.FC<AdminConsoleViewProps> = ({
           </div>
         )}
       </div>
+
+      {/* Database Connection & Architecture Status Modal */}
+      {showDbModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-xs">
+          <div className="relative w-full max-w-2xl bg-white dark:bg-slate-900 rounded-3xl shadow-2xl border border-slate-200 dark:border-slate-800 overflow-hidden flex flex-col max-h-[90vh]">
+            {/* Modal Header */}
+            <div className="flex items-center justify-between px-6 py-5 border-b border-slate-200 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-900/50">
+              <div className="flex items-center gap-3">
+                <div className="p-2.5 rounded-2xl bg-blue-50 dark:bg-blue-950/60 text-blue-600 dark:text-blue-400 border border-blue-200 dark:border-blue-800">
+                  <Database className="w-5 h-5" />
+                </div>
+                <div>
+                  <h3 className="text-base font-bold text-slate-900 dark:text-white">
+                    PostgreSQL Database &amp; Express API
+                  </h3>
+                  <p className="text-xs text-slate-500 dark:text-slate-400">
+                    Live relational storage engine powered by Neon &amp; Drizzle ORM
+                  </p>
+                </div>
+              </div>
+              <button
+                onClick={() => setShowDbModal(false)}
+                className="p-2 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-xl transition-colors cursor-pointer"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            {/* Modal Body */}
+            <div className="p-6 space-y-6 overflow-y-auto">
+              {/* Connection Status Banner */}
+              <div className={`p-4 rounded-2xl border flex items-start justify-between gap-4 ${
+                dbStatus?.configured 
+                  ? 'bg-emerald-50 dark:bg-emerald-950/30 border-emerald-200 dark:border-emerald-800' 
+                  : 'bg-amber-50 dark:bg-amber-950/30 border-amber-200 dark:border-amber-800'
+              }`}>
+                <div className="space-y-1">
+                  <div className="flex items-center gap-2">
+                    <span className={`w-2.5 h-2.5 rounded-full animate-pulse ${
+                      dbStatus?.configured ? 'bg-emerald-500' : 'bg-amber-500'
+                    }`} />
+                    <span className={`text-xs font-bold uppercase tracking-wider ${
+                      dbStatus?.configured ? 'text-emerald-800 dark:text-emerald-300' : 'text-amber-800 dark:text-amber-300'
+                    }`}>
+                      {dbStatus?.configured ? 'Connected & Migrated' : 'Operating in Hybrid Local Mode'}
+                    </span>
+                  </div>
+                  <h4 className="text-sm font-bold text-slate-900 dark:text-white">
+                    Provider: {dbStatus?.provider || 'Neon Serverless PostgreSQL / Local Store'}
+                  </h4>
+                  <p className="text-xs text-slate-600 dark:text-slate-400">
+                    {dbStatus?.configured 
+                      ? `Live PostgreSQL connection active. Endpoint: ${dbStatus.urlMasked || 'neon.tech'}`
+                      : 'DATABASE_URL is not yet set in environment. The platform is running smoothly using durable local fallback, and will instantly connect as soon as DATABASE_URL is supplied.'}
+                  </p>
+                </div>
+
+                <button
+                  onClick={() => checkDbHealth(true)}
+                  disabled={isTestingDb}
+                  className="px-3 py-1.5 rounded-xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-xs font-bold text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors flex items-center gap-1.5 cursor-pointer shadow-xs disabled:opacity-50 shrink-0"
+                >
+                  <RefreshCw className={`w-3.5 h-3.5 ${isTestingDb ? 'animate-spin' : ''}`} />
+                  <span>{isTestingDb ? 'Testing...' : 'Test Health'}</span>
+                </button>
+              </div>
+
+              {/* How to Connect to Neon */}
+              <div className="p-4 rounded-2xl bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 space-y-2.5">
+                <div className="flex items-center gap-2">
+                  <Sparkles className="w-4 h-4 text-purple-600 dark:text-purple-400" />
+                  <h4 className="text-xs font-bold uppercase tracking-wider text-slate-700 dark:text-slate-200">
+                    How to Connect to your Neon Project
+                  </h4>
+                </div>
+                <p className="text-xs text-slate-600 dark:text-slate-400 leading-relaxed">
+                  1. Create a free PostgreSQL project at <span className="font-semibold text-slate-800 dark:text-slate-200">neon.tech</span>.<br />
+                  2. Copy your connection string from the Neon dashboard.<br />
+                  3. Add it as <code className="px-1.5 py-0.5 rounded bg-slate-200 dark:bg-slate-700 font-mono text-[11px] text-slate-800 dark:text-slate-200">DATABASE_URL</code> in your environment or Secrets panel:
+                </p>
+                <div className="p-2.5 rounded-xl bg-slate-900 text-emerald-400 font-mono text-xs overflow-x-auto select-all">
+                  DATABASE_URL="postgresql://user:password@ep-xyz-123.region.aws.neon.tech/neondb?sslmode=require"
+                </div>
+                <p className="text-[11px] text-slate-500 dark:text-slate-400">
+                  On server startup, NOVA automatically creates all tables and seeds the database without requiring manual SQL executions.
+                </p>
+              </div>
+
+              {/* Relational Tables Monitored */}
+              <div className="space-y-3">
+                <h4 className="text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">
+                  Relational Schema Tables
+                </h4>
+                <div className="grid grid-cols-2 gap-2 text-xs">
+                  <div className="p-2.5 rounded-xl bg-slate-50 dark:bg-slate-800/40 border border-slate-200 dark:border-slate-700 flex items-center justify-between">
+                    <span className="font-mono text-slate-800 dark:text-slate-200 font-semibold">users</span>
+                    <span className="text-[10px] px-2 py-0.5 rounded-full bg-blue-100 text-blue-700 dark:bg-blue-900/60 dark:text-blue-300 font-bold">RBAC &amp; Profiles</span>
+                  </div>
+                  <div className="p-2.5 rounded-xl bg-slate-50 dark:bg-slate-800/40 border border-slate-200 dark:border-slate-700 flex items-center justify-between">
+                    <span className="font-mono text-slate-800 dark:text-slate-200 font-semibold">directory_items</span>
+                    <span className="text-[10px] px-2 py-0.5 rounded-full bg-indigo-100 text-indigo-700 dark:bg-indigo-900/60 dark:text-indigo-300 font-bold">Vendors &amp; Advisors</span>
+                  </div>
+                  <div className="p-2.5 rounded-xl bg-slate-50 dark:bg-slate-800/40 border border-slate-200 dark:border-slate-700 flex items-center justify-between">
+                    <span className="font-mono text-slate-800 dark:text-slate-200 font-semibold">accreditation_programmes</span>
+                    <span className="text-[10px] px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-700 dark:bg-emerald-900/60 dark:text-emerald-300 font-bold">NABH, JCI, NABL</span>
+                  </div>
+                  <div className="p-2.5 rounded-xl bg-slate-50 dark:bg-slate-800/40 border border-slate-200 dark:border-slate-700 flex items-center justify-between">
+                    <span className="font-mono text-slate-800 dark:text-slate-200 font-semibold">project_requirements</span>
+                    <span className="text-[10px] px-2 py-0.5 rounded-full bg-amber-100 text-amber-700 dark:bg-amber-900/60 dark:text-amber-300 font-bold">Hospital RFQs</span>
+                  </div>
+                  <div className="p-2.5 rounded-xl bg-slate-50 dark:bg-slate-800/40 border border-slate-200 dark:border-slate-700 flex items-center justify-between">
+                    <span className="font-mono text-slate-800 dark:text-slate-200 font-semibold">enquiries</span>
+                    <span className="text-[10px] px-2 py-0.5 rounded-full bg-sky-100 text-sky-700 dark:bg-sky-900/60 dark:text-sky-300 font-bold">B2B Messaging</span>
+                  </div>
+                  <div className="p-2.5 rounded-xl bg-slate-50 dark:bg-slate-800/40 border border-slate-200 dark:border-slate-700 flex items-center justify-between">
+                    <span className="font-mono text-slate-800 dark:text-slate-200 font-semibold">coupons &amp; redemptions</span>
+                    <span className="text-[10px] px-2 py-0.5 rounded-full bg-purple-100 text-purple-700 dark:bg-purple-900/60 dark:text-purple-300 font-bold">Promos &amp; Audits</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Modal Footer */}
+            <div className="p-4 px-6 border-t border-slate-200 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-900/50 flex justify-end">
+              <button
+                onClick={() => setShowDbModal(false)}
+                className="px-5 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-500 text-white text-xs font-bold transition-colors cursor-pointer shadow-sm"
+              >
+                Close
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* COUPON USAGE LIMITS EDIT MODAL */}
+      {editingCoupon && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-xs">
+          <div className="bg-white dark:bg-slate-900 rounded-2xl shadow-2xl max-w-lg w-full border border-slate-200 dark:border-slate-800 overflow-hidden animate-fadeIn">
+            {/* Modal Header */}
+            <div className="p-5 border-b border-slate-200 dark:border-slate-800 flex items-center justify-between bg-slate-50 dark:bg-slate-900/80">
+              <div className="flex items-center gap-2.5">
+                <span className="p-2 rounded-xl bg-purple-100 dark:bg-purple-900/50 text-purple-700 dark:text-purple-300">
+                  <Sliders className="w-5 h-5" />
+                </span>
+                <div>
+                  <h3 className="text-base font-black text-slate-900 dark:text-white flex items-center gap-2">
+                    <span>Usage Limits:</span>
+                    <span className="px-2 py-0.5 rounded-md bg-purple-100 dark:bg-purple-900/60 text-purple-900 dark:text-purple-200 font-mono text-xs">
+                      {editingCoupon.code}
+                    </span>
+                  </h3>
+                  <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
+                    Configure global total redemption cap and per-user redemption limit.
+                  </p>
+                </div>
+              </div>
+              <button
+                onClick={() => setEditingCoupon(null)}
+                className="p-1.5 rounded-lg text-slate-400 hover:text-slate-600 hover:bg-slate-100 dark:hover:bg-slate-800 cursor-pointer"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            {/* Modal Body */}
+            <div className="p-6 space-y-5 text-xs">
+              {/* Summary Banner */}
+              <div className="p-3 rounded-xl bg-slate-50 dark:bg-slate-800/40 border border-slate-200 dark:border-slate-700/60 flex items-center justify-between">
+                <div>
+                  <span className="font-bold text-slate-900 dark:text-white block text-xs">
+                    {editingCoupon.discountValue === 100 && editingCoupon.discountType === 'percentage'
+                      ? '100% Complimentary Waiver (₹0 Payable)'
+                      : `${editingCoupon.discountType === 'percentage' ? editingCoupon.discountValue + '%' : '₹' + editingCoupon.discountValue} Discount`}
+                  </span>
+                  <span className="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5 block">
+                    Recorded Redemptions: <strong className="text-slate-800 dark:text-slate-200">{editingCoupon.totalRedemptions || 0}</strong>
+                  </span>
+                </div>
+                <span className="text-[10px] px-2.5 py-1 rounded-full bg-emerald-100 text-emerald-800 font-bold border border-emerald-200">
+                  Active
+                </span>
+              </div>
+
+              {/* 1. Global Total Limit */}
+              <div className="space-y-1.5">
+                <div className="flex items-center justify-between">
+                  <label className="font-bold text-slate-800 dark:text-slate-200">
+                    Total Global Redemption Limit
+                  </label>
+                  <span className="text-[10px] text-slate-400">
+                    Leave blank for unlimited global pool
+                  </span>
+                </div>
+                <input
+                  type="number"
+                  min={editingCoupon.totalRedemptions || 0}
+                  placeholder="Unlimited (no global cap)"
+                  value={editMaxTotalUses}
+                  onChange={(e) => setEditMaxTotalUses(e.target.value)}
+                  className="w-full px-3 py-2 rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white font-medium focus:ring-2 focus:ring-purple-500"
+                />
+                <div className="flex items-center gap-1.5 pt-1">
+                  <span className="text-[10px] text-slate-500">Quick Presets:</span>
+                  <button
+                    type="button"
+                    onClick={() => setEditMaxTotalUses('')}
+                    className="px-2 py-0.5 rounded-md bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 text-[10px] text-slate-700 dark:text-slate-300 font-semibold cursor-pointer"
+                  >
+                    Unlimited
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setEditMaxTotalUses('25')}
+                    className="px-2 py-0.5 rounded-md bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 text-[10px] text-slate-700 dark:text-slate-300 font-semibold cursor-pointer"
+                  >
+                    25 Uses
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setEditMaxTotalUses('50')}
+                    className="px-2 py-0.5 rounded-md bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 text-[10px] text-slate-700 dark:text-slate-300 font-semibold cursor-pointer"
+                  >
+                    50 Uses
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setEditMaxTotalUses('100')}
+                    className="px-2 py-0.5 rounded-md bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 text-[10px] text-slate-700 dark:text-slate-300 font-semibold cursor-pointer"
+                  >
+                    100 Uses
+                  </button>
+                </div>
+              </div>
+
+              {/* 2. Per-User Limit */}
+              <div className="space-y-1.5">
+                <label className="font-bold text-slate-800 dark:text-slate-200 block">
+                  Per-User Redemption Limit *
+                </label>
+                <input
+                  type="number"
+                  min={1}
+                  required
+                  value={editMaxUsesPerUser}
+                  onChange={(e) => setEditMaxUsesPerUser(Number(e.target.value))}
+                  className="w-full px-3 py-2 rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white font-bold focus:ring-2 focus:ring-purple-500"
+                />
+                <p className="text-[11px] text-slate-500 dark:text-slate-400">
+                  Maximum number of times an individual member account (email or phone) can redeem this code. Default: 1.
+                </p>
+                <div className="flex items-center gap-1.5 pt-0.5">
+                  <span className="text-[10px] text-slate-500">Presets:</span>
+                  <button
+                    type="button"
+                    onClick={() => setEditMaxUsesPerUser(1)}
+                    className="px-2 py-0.5 rounded-md bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 text-[10px] text-slate-700 dark:text-slate-300 font-semibold cursor-pointer"
+                  >
+                    1 (Single Use)
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setEditMaxUsesPerUser(2)}
+                    className="px-2 py-0.5 rounded-md bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 text-[10px] text-slate-700 dark:text-slate-300 font-semibold cursor-pointer"
+                  >
+                    2 Uses
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setEditMaxUsesPerUser(5)}
+                    className="px-2 py-0.5 rounded-md bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 text-[10px] text-slate-700 dark:text-slate-300 font-semibold cursor-pointer"
+                  >
+                    5 Uses
+                  </button>
+                </div>
+              </div>
+
+              {/* 3. Campaign Description */}
+              <div className="space-y-1.5">
+                <label className="font-bold text-slate-800 dark:text-slate-200 block">
+                  Campaign Description
+                </label>
+                <input
+                  type="text"
+                  value={editDescription}
+                  onChange={(e) => setEditDescription(e.target.value)}
+                  className="w-full px-3 py-2 rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white font-medium focus:ring-2 focus:ring-purple-500"
+                />
+              </div>
+            </div>
+
+            {/* Modal Footer */}
+            <div className="p-4 px-6 border-t border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-900/50 flex items-center justify-between">
+              <button
+                type="button"
+                onClick={() => setEditingCoupon(null)}
+                className="px-4 py-2 rounded-xl border border-slate-300 dark:border-slate-700 text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 font-bold text-xs cursor-pointer"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={handleSaveCouponLimits}
+                className="px-5 py-2.5 rounded-xl bg-purple-700 hover:bg-purple-800 text-white font-bold text-xs flex items-center gap-1.5 cursor-pointer shadow-xs transition-colors"
+              >
+                <Check className="w-4 h-4" />
+                <span>Save Limit Settings</span>
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

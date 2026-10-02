@@ -178,6 +178,29 @@ export const saveStoredEnquiries = (items: EnquiryItem[]) => {
   }
 };
 
+// Background API sync helper with Neon PostgreSQL backend
+export async function syncEnquiriesWithBackend(): Promise<void> {
+  if (typeof window === 'undefined') return;
+  try {
+    const res = await fetch('/api/enquiries');
+    if (res.ok) {
+      const data = await res.json();
+      if (Array.isArray(data) && data.length > 0) {
+        localStorage.setItem(ENQUIRIES_STORAGE_KEY, JSON.stringify(data));
+        window.dispatchEvent(new CustomEvent('nova_enquiries_updated', { detail: data }));
+      }
+    }
+  } catch (e) {
+    // Offline fallback
+  }
+}
+
+if (typeof window !== 'undefined') {
+  setTimeout(() => {
+    syncEnquiriesWithBackend();
+  }, 250);
+}
+
 export const addEnquiry = (
   data: Omit<EnquiryItem, 'id' | 'createdAt' | 'status'>
 ): EnquiryItem => {
@@ -191,6 +214,16 @@ export const addEnquiry = (
   };
   const updated = [newEnquiry, ...current];
   saveStoredEnquiries(updated);
+
+  // Sync to Neon API in background
+  if (typeof window !== 'undefined') {
+    fetch('/api/enquiries', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(newEnquiry)
+    }).catch(err => console.warn('[Storage] Enquiry API sync deferred:', err));
+  }
+
   return newEnquiry;
 };
 
@@ -211,6 +244,21 @@ export const updateEnquiryStatus = (
     return item;
   });
   saveStoredEnquiries(updated);
+
+  if (replyNote && typeof window !== 'undefined') {
+    fetch(`/api/enquiries/${encodeURIComponent(id)}/reply`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ reply: replyNote })
+    }).catch(err => console.warn('[Storage] Enquiry reply API deferred:', err));
+  } else if (typeof window !== 'undefined') {
+    fetch(`/api/enquiries/${encodeURIComponent(id)}/status`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ status })
+    }).catch(err => console.warn('[Storage] Enquiry status API deferred:', err));
+  }
+
   return updated;
 };
 

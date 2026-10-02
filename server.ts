@@ -3,6 +3,9 @@ import path from 'path';
 import crypto from 'crypto';
 import { createServer as createViteServer } from 'vite';
 import dotenv from 'dotenv';
+import cors from 'cors';
+import { apiRouter } from './src/api/routes';
+import { initializeDatabase } from './src/db/init';
 
 dotenv.config();
 
@@ -14,6 +17,15 @@ async function startServer() {
   const app = express();
   const PORT = 3000;
 
+  // Initialize Neon database schema & automated seed
+  try {
+    await initializeDatabase();
+  } catch (dbErr) {
+    console.warn('[Server] Database initialization deferred:', dbErr);
+  }
+
+  app.use(cors());
+
   // Capture raw body for webhook HMAC signature verification
   app.use(express.json({
     verify: (req: RequestWithRawBody, _res, buf) => {
@@ -22,14 +34,8 @@ async function startServer() {
   }));
   app.use(express.urlencoded({ extended: true }));
 
-  // 1. Health check
-  app.get('/api/health', (_req: Request, res: Response) => {
-    res.json({
-      status: 'ok',
-      service: 'NOVA-H Procurement & Membership Server',
-      timestamp: new Date().toISOString()
-    });
-  });
+  // Mount Database REST API Router
+  app.use('/api', apiRouter);
 
   // 1b. AI Flow Builder Endpoint (Generates WhatsApp flows supporting all 7 message types)
   app.post('/api/ai/generate-flow', async (req: Request, res: Response) => {

@@ -118,6 +118,29 @@ export const saveStoredRequirements = (reqs: ProjectRequirement[]) => {
   }
 };
 
+// Background API sync helper with Neon PostgreSQL backend
+export async function syncRequirementsWithBackend(): Promise<void> {
+  if (typeof window === 'undefined') return;
+  try {
+    const res = await fetch('/api/requirements');
+    if (res.ok) {
+      const data = await res.json();
+      if (Array.isArray(data) && data.length > 0) {
+        localStorage.setItem(REQUIREMENTS_STORAGE_KEY, JSON.stringify(data));
+        window.dispatchEvent(new CustomEvent('nova_requirements_updated', { detail: data }));
+      }
+    }
+  } catch (e) {
+    // Offline fallback
+  }
+}
+
+if (typeof window !== 'undefined') {
+  setTimeout(() => {
+    syncRequirementsWithBackend();
+  }, 200);
+}
+
 export const addRequirement = (
   data: Omit<ProjectRequirement, 'id' | 'createdAt'>
 ): ProjectRequirement => {
@@ -130,6 +153,16 @@ export const addRequirement = (
   };
   const updated = [newReq, ...current];
   saveStoredRequirements(updated);
+
+  // Sync to Neon API in background
+  if (typeof window !== 'undefined') {
+    fetch('/api/requirements', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(newReq)
+    }).catch(err => console.warn('[Storage] Requirement API sync deferred:', err));
+  }
+
   return newReq;
 };
 
@@ -142,6 +175,15 @@ export const updateRequirement = (
     item.id === id ? { ...item, ...updates } : item
   );
   saveStoredRequirements(updated);
+
+  if (updates.status && typeof window !== 'undefined') {
+    fetch(`/api/requirements/${encodeURIComponent(id)}/status`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ status: updates.status })
+    }).catch(err => console.warn('[Storage] Status PATCH API deferred:', err));
+  }
+
   return updated;
 };
 

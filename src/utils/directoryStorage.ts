@@ -26,9 +26,44 @@ export function saveStoredDirectory(items: DirectoryItem[]): void {
   try {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(items));
     window.dispatchEvent(new CustomEvent('nova_directory_updated', { detail: items }));
+
+    // Sync to Neon API in background
+    if (typeof window !== 'undefined') {
+      for (const item of items) {
+        fetch('/api/directory', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(item)
+        }).catch(err => console.warn('[Storage] Directory item API sync deferred:', err));
+      }
+    }
   } catch (e) {
     console.error('Failed to save directory items:', e);
   }
+}
+
+// Background API sync helper with Neon PostgreSQL backend
+export async function syncDirectoryWithBackend(): Promise<void> {
+  if (typeof window === 'undefined') return;
+  try {
+    const res = await fetch('/api/directory');
+    if (res.ok) {
+      const data = await res.json();
+      if (Array.isArray(data) && data.length > 0) {
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
+        window.dispatchEvent(new CustomEvent('nova_directory_updated', { detail: data }));
+      }
+    }
+  } catch (e) {
+    // Offline fallback
+  }
+}
+
+// Auto sync on client load
+if (typeof window !== 'undefined') {
+  setTimeout(() => {
+    syncDirectoryWithBackend();
+  }, 150);
 }
 
 export function resetDirectoryToDefault(): DirectoryItem[] {

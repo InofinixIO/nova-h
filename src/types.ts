@@ -32,6 +32,9 @@ export interface Coupon {
   description: string;
   applicableRoles?: UserRole[];
   validUntil?: string;
+  maxTotalUses?: number | null; // Total global redemption limit (null = unlimited)
+  maxUsesPerUser?: number;       // Per-user redemption limit (default: 1)
+  totalRedemptions?: number;     // Current total redemptions recorded
 }
 
 export interface CouponRedemption {
