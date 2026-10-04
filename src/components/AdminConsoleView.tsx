@@ -56,12 +56,13 @@ import { AdminToolkitEditor } from './AdminToolkitEditor';
 import { AdminRequirementsManager } from './AdminRequirementsManager';
 import { AdminUsersManager } from './AdminUsersManager';
 import { AdminAccreditationManager } from './admin/AdminAccreditationManager';
+import { AdminClaimsManager } from './admin/AdminClaimsManager';
 import { PamphletSection } from './PamphletSection';
 import { getAllUsers } from '../utils/userManagement';
 import { MjmlTemplateBuilder } from './mjml/MjmlTemplateBuilder';
 import { isFeatureEnabled } from '../utils/featureFlags';
 
-export type AdminTabType = 'users' | 'manage' | 'requirements' | 'import_csv' | 'add_vendor' | 'toolkit_stages' | 'accreditation_programmes' | 'coupons' | 'pamphlet' | 'mjml_builder';
+export type AdminTabType = 'users' | 'manage' | 'claims' | 'requirements' | 'import_csv' | 'add_vendor' | 'toolkit_stages' | 'accreditation_programmes' | 'coupons' | 'pamphlet' | 'mjml_builder';
 
 interface AdminConsoleViewProps {
   directoryItems: DirectoryItem[];
@@ -449,6 +450,7 @@ export const AdminConsoleView: React.FC<AdminConsoleViewProps> = ({
   const adminSlugMap: Record<AdminTabType, string> = {
     users: '/admin/users',
     manage: '/admin/directory',
+    claims: '/admin/claims',
     requirements: '/admin/requirements',
     import_csv: '/admin/import-csv',
     add_vendor: '/admin/add-partner',
@@ -704,6 +706,17 @@ export const AdminConsoleView: React.FC<AdminConsoleViewProps> = ({
                 </tbody>
               </table>
             </div>
+          </div>
+        )}
+
+        {/* TAB CLAIMS: PROFILE OWNERSHIP AUDIT QUEUE */}
+        {activeTab === 'claims' && (
+          <div className="p-6 sm:p-8">
+            <AdminClaimsManager
+              directoryItems={directoryItems}
+              onUpdateDirectory={onUpdateDirectory}
+              onNotify={onNotify}
+            />
           </div>
         )}
 

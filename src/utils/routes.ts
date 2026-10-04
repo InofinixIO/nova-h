@@ -14,6 +14,7 @@ export type RouteSlug =
   | 'admin/users'
   | 'admin/directory'
   | 'admin/listings'
+  | 'admin/claims'
   | 'admin/requirements'
   | 'admin/rfqs'
   | 'admin/import-csv'
@@ -28,6 +29,8 @@ export type RouteSlug =
   | 'dashboard/sent'
   | 'dashboard/leads'
   | 'dashboard/profile'
+  | 'claim'
+  | 'claim-profile'
   | 'whatsapp-flow'
   | 'flow-builder'
   | 'rfp'
@@ -57,6 +60,10 @@ export const getSlugFromPath = (): RouteSlug => {
     return 'partner';
   }
 
+  if (path === 'claim' || path === 'claim-profile' || path.startsWith('claim/')) {
+    return 'claim';
+  }
+
   const validSlugs: RouteSlug[] = [
     'owners',
     'vendors',
@@ -68,10 +75,13 @@ export const getSlugFromPath = (): RouteSlug => {
     'about',
     'pamphlet',
     'compare',
+    'claim',
+    'claim-profile',
     'admin',
     'admin/users',
     'admin/directory',
     'admin/listings',
+    'admin/claims',
     'admin/requirements',
     'admin/rfqs',
     'admin/import-csv',
@@ -107,6 +117,22 @@ export const getSlugFromPath = (): RouteSlug => {
     return 'dashboard';
   }
 
+  return '';
+};
+
+/**
+ * Extracts claim target ID from URL query string (?id=... or ?profileId=...) or path
+ */
+export const getClaimIdFromUrl = (): string => {
+  if (typeof window === 'undefined') return '';
+  const searchParams = new URLSearchParams(window.location.search);
+  const idFromQuery = searchParams.get('id') || searchParams.get('profileId') || searchParams.get('claimId');
+  if (idFromQuery) return idFromQuery;
+  
+  const path = window.location.pathname.replace(/^\/+|\/+$/g, '');
+  if (path.toLowerCase().startsWith('claim/')) {
+    return decodeURIComponent(path.slice('claim/'.length));
+  }
   return '';
 };
 

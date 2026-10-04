@@ -80,9 +80,9 @@ const STAGE_CATEGORIES: Record<string, string[]> = {
   'IT, HIS & Softwares': ['Digital Healthcare & IT Systems', 'Hospital Information System (HIS)', 'Cloud PACS & DICOM Imaging'],
   'Equipment Procurement': ['Diagnostic Imaging (MRI, CT, X-Ray)', 'Operating Theatre & Surgical Consoles', 'Critical Care & ICU Life Support', 'Biomedical Engineering & Turnkey'],
   'Recruitment & Staffing': ['Clinical & Administrative Talent', 'Healthcare HR & Doctor Credentialing'],
-  'Commissioning & Pre-op': ['Testing, Commissioning & Dry Runs', 'NABH Quality Accreditation Support'],
+  'Commissioning & Pre-op': ['Testing, Commissioning & Dry Runs', 'NABH Quality Standards & Templates Support'],
   'Branding & Marketing': ['Marketing, Outreach & Community Connect', 'Hospital Branding & Digital PR'],
-  'Operational Expansion': ['Operations, Clinical Audits & NABH Journey', 'Hospital Management Consulting'],
+  'Operational Expansion': ['Operations, Clinical Audits & NABH Standards', 'Hospital Management Consulting'],
   'Maintenance & AMC': ['Facility Management & Equipment AMC', 'Biomedical Equipment Calibration']
 };
 

@@ -5,10 +5,10 @@ export const ACCREDITATION_STORAGE_KEY = 'nova_accreditation_programmes';
 export const DEFAULT_ACCREDITATION_PROGRAMMES: AccreditationProgramme[] = [
   {
     id: 'prog-nabh-entry',
-    name: 'NABH Entry-Level Accreditation (SHCO & HCO)',
+    name: 'NABH Entry-Level Standards (SHCO & HCO)',
     code: 'nabh-entry',
     authority: 'Quality Council of India (QCI) / NABH',
-    category: 'Hospital Accreditation',
+    category: 'Hospital Execution Templates',
     description: 'Essential quality benchmark for new or expanding healthcare facilities. Qualifies the hospital for insurance empanelment (ROHINI/GIPSA) and focuses on fundamental patient safety and statutory clearances.',
     targetBedCapacity: 'Up to 50 beds (SHCO) & 50–100 beds (HCO)',
     estimatedDuration: '6–9 Months',
@@ -17,7 +17,7 @@ export const DEFAULT_ACCREDITATION_PROGRAMMES: AccreditationProgramme[] = [
       3: 'Fire NOC, AERB radiation clearance, pollution control board consent, and clinical establishment registration are strict prerequisites.',
       5: 'Cleanroom AHU, HEPA filtration (ISO Class 7/8), and antibacterial OT surfaces required.',
       12: 'Biomedical waste management authorization and hospital-acquired infection control committee protocols.',
-      14: 'Mandatory 30-day mock audit and incident reporting dry runs before NABH assessor team visit.'
+      14: 'Mandatory 30-day mock audit and incident reporting dry runs before quality assessor visit.'
     },
     active: true,
     createdAt: '2026-01-15T00:00:00.000Z',
@@ -28,7 +28,7 @@ export const DEFAULT_ACCREDITATION_PROGRAMMES: AccreditationProgramme[] = [
     name: 'Full NABH Hospital Standards (5th Edition)',
     code: 'nabh-full',
     authority: 'Quality Council of India (QCI) / NABH',
-    category: 'Hospital Accreditation',
+    category: 'Hospital Execution Templates',
     description: 'The pinnacle Indian hospital quality mark across 10 chapters and 651 objective elements. Covers comprehensive clinical governance, pharmacy medication safety, patient rights, and facility management.',
     targetBedCapacity: '100+ Bed Tertiary & Multispecialty Hospitals',
     estimatedDuration: '12–18 Months',
@@ -45,10 +45,10 @@ export const DEFAULT_ACCREDITATION_PROGRAMMES: AccreditationProgramme[] = [
   },
   {
     id: 'prog-jci',
-    name: 'JCI (Joint Commission International)',
+    name: 'JCI International Hospital Standards',
     code: 'jci',
     authority: 'Joint Commission International (USA)',
-    category: 'Hospital Accreditation',
+    category: 'Hospital Execution Templates',
     description: 'The premier international healthcare credential for medical value travel, academic medical centers, and super-specialty hospitals adhering to global patient safety goals (IPSG) and NFPA fire standards.',
     targetBedCapacity: 'Super-Specialty & International Referral Hospitals (150+ Beds)',
     estimatedDuration: '18–24 Months',
@@ -65,11 +65,11 @@ export const DEFAULT_ACCREDITATION_PROGRAMMES: AccreditationProgramme[] = [
   },
   {
     id: 'prog-nabl',
-    name: 'NABL Diagnostic Laboratory Accreditation (ISO 15189)',
+    name: 'NABL Diagnostic Laboratory Standards (ISO 15189)',
     code: 'nabl',
     authority: 'NABL (Quality Council of India)',
-    category: 'Laboratory Accreditation',
-    description: 'Accreditation for in-house hospital pathology, biochemistry, microbiology, and molecular diagnostic laboratories guaranteeing calibrated test precision and clinical reliability.',
+    category: 'Laboratory Standards',
+    description: 'Quality benchmark for in-house hospital pathology, biochemistry, microbiology, and molecular diagnostic laboratories guaranteeing calibrated test precision and clinical reliability.',
     targetBedCapacity: 'Hospital Pathology & Core Diagnostic Labs',
     estimatedDuration: '4–6 Months',
     applicableStageNumbers: [1, 2, 3, 6, 7, 8, 12, 14],
@@ -77,6 +77,8 @@ export const DEFAULT_ACCREDITATION_PROGRAMMES: AccreditationProgramme[] = [
       2: 'Air conditioning, vibration-isolated benching, and biosafety cabinet (BSL-2/3) exhaust design.',
       6: 'LIS (Laboratory Information System) with bidirectional analyzer interfacing and barcoded tube routing.',
       7: 'Calibrated diagnostic analyzers with traceability certificates and valid CMC service agreements.',
+      8: 'Qualified medical laboratory technicians, pathologists, and biohazard spill response protocols.',
+      12: 'Laboratory waste segregation and hazardous reagent disposal certification.',
       14: 'Internal Quality Control (IQC) daily runs and External Quality Assessment Scheme (EQAS) participation.'
     },
     active: true,

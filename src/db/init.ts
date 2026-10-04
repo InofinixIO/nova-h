@@ -146,8 +146,13 @@ export async function initializeDatabase(): Promise<boolean> {
     try {
       await sqlClient`ALTER TABLE coupons ADD COLUMN IF NOT EXISTS max_total_uses INTEGER;`;
       await sqlClient`ALTER TABLE coupons ADD COLUMN IF NOT EXISTS max_uses_per_user INTEGER DEFAULT 1;`;
+      await sqlClient`ALTER TABLE users ADD COLUMN IF NOT EXISTS email_verified BOOLEAN DEFAULT false;`;
+      await sqlClient`ALTER TABLE users ADD COLUMN IF NOT EXISTS claimed_directory_id TEXT;`;
+      await sqlClient`ALTER TABLE directory_items ADD COLUMN IF NOT EXISTS is_claimed BOOLEAN DEFAULT false;`;
+      await sqlClient`ALTER TABLE directory_items ADD COLUMN IF NOT EXISTS claimed_by_user_id TEXT;`;
+      await sqlClient`ALTER TABLE directory_items ADD COLUMN IF NOT EXISTS claim_status VARCHAR(32) DEFAULT 'unclaimed';`;
     } catch (migErr) {
-      console.warn('[Neon PostgreSQL] Coupon column verification notice:', migErr);
+      console.warn('[Neon PostgreSQL] Column verification notice:', migErr);
     }
 
     await sqlClient`
@@ -172,7 +177,52 @@ export async function initializeDatabase(): Promise<boolean> {
       );
     `;
 
-    console.log('[Neon PostgreSQL] Schema tables checked and created.');
+    await sqlClient`
+      CREATE TABLE IF NOT EXISTS profile_claims (
+        id VARCHAR(128) PRIMARY KEY,
+        directory_id TEXT NOT NULL,
+        directory_name TEXT NOT NULL,
+        directory_role VARCHAR(32) NOT NULL DEFAULT 'vendor',
+        claimant_user_id TEXT NOT NULL,
+        claimant_name TEXT NOT NULL,
+        claimant_email TEXT NOT NULL,
+        claimant_phone TEXT NOT NULL,
+        claimant_company TEXT,
+        designation TEXT,
+        proof_notes TEXT NOT NULL,
+        status VARCHAR(32) NOT NULL DEFAULT 'pending',
+        created_at TEXT NOT NULL,
+        reviewed_at TEXT,
+        reviewer_notes TEXT
+      );
+    `;
+
+    await sqlClient`
+      CREATE TABLE IF NOT EXISTS verification_otps (
+        id VARCHAR(128) PRIMARY KEY,
+        email TEXT NOT NULL,
+        otp VARCHAR(16) NOT NULL,
+        expires_at TEXT NOT NULL,
+        verified BOOLEAN DEFAULT false,
+        created_at TEXT NOT NULL
+      );
+    `;
+
+    await sqlClient`
+      CREATE TABLE IF NOT EXISTS email_logs (
+        id VARCHAR(128) PRIMARY KEY,
+        to_email TEXT NOT NULL,
+        recipient_name TEXT,
+        subject TEXT NOT NULL,
+        type VARCHAR(64) NOT NULL,
+        body_html TEXT NOT NULL,
+        body_text TEXT,
+        otp_code VARCHAR(16),
+        sent_at TEXT NOT NULL
+      );
+    `;
+
+    console.log('[Neon PostgreSQL] Schema tables checked and created (including profile_claims, verification_otps, email_logs).');
 
     // 2. Automated Seed: Accreditation Programmes
     const countAccreditation = await sqlClient`SELECT COUNT(*) as count FROM accreditation_programmes;`;

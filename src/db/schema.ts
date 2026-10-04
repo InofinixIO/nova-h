@@ -14,6 +14,8 @@ export const usersTable = pgTable('users', {
   status: varchar('status', { length: 32 }).$type<'active' | 'disabled' | 'pending'>().default('active'),
   enrolledAccreditationId: text('enrolled_accreditation_id'),
   enrolledAccreditationDate: timestamp('enrolled_accreditation_date', { withTimezone: true }),
+  emailVerified: boolean('email_verified').default(false),
+  claimedDirectoryId: text('claimed_directory_id'),
   createdAt: timestamp('created_at', { withTimezone: true }).defaultNow(),
   lastLoginAt: timestamp('last_login_at', { withTimezone: true })
 });
@@ -43,6 +45,9 @@ export const directoryItemsTable = pgTable('directory_items', {
   certifications: jsonb('certifications').$type<string[]>().default([]),
   headquartersAddress: text('headquarters_address'),
   complianceBadges: jsonb('compliance_badges').$type<string[]>().default([]),
+  isClaimed: boolean('is_claimed').default(false),
+  claimedByUserId: text('claimed_by_user_id'),
+  claimStatus: varchar('claim_status', { length: 32 }).default('unclaimed'),
   createdAt: timestamp('created_at', { withTimezone: true }).defaultNow()
 });
 
@@ -133,3 +138,43 @@ export const couponRedemptionsTable = pgTable('coupon_redemptions', {
   redeemedAt: timestamp('redeemed_at', { withTimezone: true }).defaultNow(),
   transactionId: text('transaction_id').notNull()
 });
+
+export const profileClaimsTable = pgTable('profile_claims', {
+  id: varchar('id', { length: 128 }).primaryKey(),
+  directoryId: text('directory_id').notNull(),
+  directoryName: text('directory_name').notNull(),
+  directoryRole: varchar('directory_role', { length: 32 }).notNull().default('vendor'),
+  claimantUserId: text('claimant_user_id').notNull(),
+  claimantName: text('claimant_name').notNull(),
+  claimantEmail: text('claimant_email').notNull(),
+  claimantPhone: text('claimant_phone').notNull(),
+  claimantCompany: text('claimant_company'),
+  designation: text('designation'),
+  proofNotes: text('proof_notes').notNull(),
+  status: varchar('status', { length: 32 }).notNull().default('pending'),
+  createdAt: text('created_at').notNull(),
+  reviewedAt: text('reviewed_at'),
+  reviewerNotes: text('reviewer_notes')
+});
+
+export const verificationOtpsTable = pgTable('verification_otps', {
+  id: varchar('id', { length: 128 }).primaryKey(),
+  email: text('email').notNull(),
+  otp: varchar('otp', { length: 16 }).notNull(),
+  expiresAt: text('expires_at').notNull(),
+  verified: boolean('verified').default(false),
+  createdAt: text('created_at').notNull()
+});
+
+export const emailLogsTable = pgTable('email_logs', {
+  id: varchar('id', { length: 128 }).primaryKey(),
+  toEmail: text('to_email').notNull(),
+  recipientName: text('recipient_name'),
+  subject: text('subject').notNull(),
+  type: varchar('type', { length: 64 }).notNull(),
+  bodyHtml: text('body_html').notNull(),
+  bodyText: text('body_text'),
+  otpCode: varchar('otp_code', { length: 16 }),
+  sentAt: text('sent_at').notNull()
+});
+

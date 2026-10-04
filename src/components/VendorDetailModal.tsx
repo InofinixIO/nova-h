@@ -40,6 +40,7 @@ interface VendorDetailModalProps {
   onToggleCompare?: (id: string) => void;
   onOpenCompare?: () => void;
   onViewFullPage?: (id: string) => void;
+  onClaimProfile?: (item: DirectoryItem) => void;
 }
 
 export const VendorDetailModal: React.FC<VendorDetailModalProps> = ({
@@ -51,7 +52,8 @@ export const VendorDetailModal: React.FC<VendorDetailModalProps> = ({
   isCompared = false,
   onToggleCompare,
   onOpenCompare,
-  onViewFullPage
+  onViewFullPage,
+  onClaimProfile
 }) => {
   const [messageSent, setMessageSent] = useState(false);
   const [messageText, setMessageText] = useState('');
@@ -169,6 +171,46 @@ export const VendorDetailModal: React.FC<VendorDetailModalProps> = ({
         {/* Scrollable Modal Content */}
         <div className="p-6 sm:p-8 overflow-y-auto space-y-6">
           
+          {/* Unclaimed Profile Notice & Claim Affordance */}
+          {!vendor.isClaimed && !vendor.claimedByUserId && (
+            vendor.claimStatus === 'pending' ? (
+              <div className="p-4 rounded-xl bg-amber-50 dark:bg-amber-950/50 border border-amber-200 dark:border-amber-800 flex items-start gap-3 animate-fadeIn">
+                <Clock className="w-5 h-5 text-amber-600 shrink-0 mt-0.5" />
+                <div className="text-xs text-amber-900 dark:text-amber-200">
+                  <div className="font-bold">Ownership Claim Under Review</div>
+                  <p className="mt-0.5 text-amber-800/90 dark:text-amber-300/90 leading-relaxed">
+                    An ownership claim has been submitted for this profile and is pending administrator audit. Once verified, official business tools will be activated.
+                  </p>
+                </div>
+              </div>
+            ) : (
+              <div className="p-4 rounded-xl bg-purple-50 dark:bg-purple-950/50 border border-purple-200 dark:border-purple-800 flex flex-col sm:flex-row sm:items-center justify-between gap-3 animate-fadeIn">
+                <div className="flex items-start gap-3">
+                  <ShieldCheck className="w-5 h-5 text-purple-600 shrink-0 mt-0.5" />
+                  <div className="text-xs text-purple-950 dark:text-purple-200">
+                    <div className="font-bold">Are you the business owner of {vendor.name}?</div>
+                    <p className="mt-0.5 text-purple-800 dark:text-purple-300 leading-relaxed">
+                      This external profile is currently unassigned. Submit an ownership claim to manage inquiries, update verified offerings, and unlock partner tools.
+                    </p>
+                  </div>
+                </div>
+                {onClaimProfile && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      onClose();
+                      onClaimProfile(vendor);
+                    }}
+                    className="px-4 py-2 rounded-xl bg-purple-600 hover:bg-purple-700 text-white font-bold text-xs shrink-0 flex items-center justify-center gap-1.5 cursor-pointer shadow-xs transition-colors"
+                  >
+                    <ShieldCheck className="w-4 h-4" />
+                    <span>Claim on Verification Portal</span>
+                  </button>
+                )}
+              </div>
+            )
+          )}
+
           {/* Header Identity Box */}
           <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-4">
             <div>

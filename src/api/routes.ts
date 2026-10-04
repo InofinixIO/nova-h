@@ -1,4 +1,5 @@
 import { Router, Request, Response } from 'express';
+import nodemailer from 'nodemailer';
 import { sqlClient, isDatabaseConfigured } from '../db/index';
 import { DIRECTORY_DATA } from '../data/mockData';
 import { DEFAULT_ACCREDITATION_PROGRAMMES } from '../utils/accreditationStorage';
@@ -7,15 +8,47 @@ import { INITIAL_ENQUIRIES } from '../utils/enquiriesStorage';
 import { PRESET_COUPONS } from '../utils/couponService';
 import { getSampleLogins } from '../utils/sampleLogins';
 import { DEFAULT_USERS } from '../utils/userManagement';
-import { DirectoryItem, AccreditationProgramme, ProjectRequirement, EnquiryItem, AuthUser } from '../types';
+import { DirectoryItem, AccreditationProgramme, ProjectRequirement, EnquiryItem, AuthUser, ProfileClaim, EmailLog, VerificationOtp } from '../types';
 
 export const apiRouter = Router();
+
+// Helper for SMTP email transport
+async function sendSmtpEmail(to: string, subject: string, html: string, text?: string): Promise<boolean> {
+  const host = process.env.SMTP_HOST;
+  if (!host) return false;
+  try {
+    const transporter = nodemailer.createTransport({
+      host,
+      port: Number(process.env.SMTP_PORT || 587),
+      secure: process.env.SMTP_SECURE === 'true' || Number(process.env.SMTP_PORT) === 465,
+      auth: process.env.SMTP_USER ? {
+        user: process.env.SMTP_USER,
+        pass: process.env.SMTP_PASS || ''
+      } : undefined
+    });
+    await transporter.sendMail({
+      from: process.env.SMTP_FROM || '"NOVA Healthcare Platform" <no-reply@nova-h.in>',
+      to,
+      subject,
+      text: text || '',
+      html
+    });
+    console.log(`[SMTP] Successfully dispatched email to ${to}: "${subject}"`);
+    return true;
+  } catch (smtpErr) {
+    console.warn(`[SMTP] Failed to send email via SMTP to ${to}:`, smtpErr);
+    return false;
+  }
+}
 
 // In-memory fallback stores when DATABASE_URL is not set
 let memoryDirectory: DirectoryItem[] = [...DIRECTORY_DATA];
 let memoryAccreditations: AccreditationProgramme[] = [...DEFAULT_ACCREDITATION_PROGRAMMES];
 let memoryRequirements: ProjectRequirement[] = [...INITIAL_PROJECT_REQUIREMENTS];
 let memoryEnquiries: EnquiryItem[] = [...INITIAL_ENQUIRIES];
+let memoryClaims: ProfileClaim[] = [];
+let memoryOtps: VerificationOtp[] = [];
+let memoryEmailLogs: EmailLog[] = [];
 let memoryUsers: AuthUser[] = getSampleLogins().length > 0 
   ? getSampleLogins().map(s => ({
       id: `user-${s.role}-mem`,
@@ -1059,5 +1092,502 @@ apiRouter.get('/coupons/redemptions', async (_req: Request, res: Response) => {
   } catch (err) {
     console.error('[API] Error fetching coupon redemptions:', err);
     return res.json(memoryRedemptions);
+  }
+});
+
+// ==========================================
+// 8. AUTHENTICATION & EMAIL OTP VERIFICATION
+// ==========================================
+
+apiRouter.post('/auth/register-request', async (req: Request, res: Response) => {
+  try {
+    const { name, email, role = 'owner', phone, company, enrolledAccreditationId } = req.body;
+    if (!email || !email.trim()) {
+      return res.status(400).json({ error: 'Valid email address is required.' });
+    }
+
+    const cleanEmail = email.trim().toLowerCase();
+    const cleanName = (name || '').trim() || (role === 'owner' ? 'Hospital Promoter' : 'Healthcare Partner');
+
+    // Generate 6-digit cryptographic-style numeric OTP
+    const otp = Math.floor(100000 + Math.random() * 900000).toString();
+    const expiresAt = new Date(Date.now() + 10 * 60 * 1000).toISOString(); // 10 minutes expiry
+    const otpId = `OTP_${Date.now()}_${Math.random().toString(36).substring(2, 6).toUpperCase()}`;
+
+    // 1. Store in database or memory
+    if (isDatabaseConfigured() && sqlClient) {
+      await sqlClient`
+        INSERT INTO verification_otps (id, email, otp, expires_at, verified, created_at)
+        VALUES (${otpId}, ${cleanEmail}, ${otp}, ${expiresAt}, false, ${new Date().toISOString()});
+      `;
+    }
+    memoryOtps = [
+      { id: otpId, email: cleanEmail, otp, expiresAt, verified: false, createdAt: new Date().toISOString() },
+      ...memoryOtps.filter(o => o.email !== cleanEmail)
+    ];
+
+    // 2. Build email template
+    const subject = `[NOVA] ${otp} is your verification code`;
+    const bodyText = `Hello ${cleanName},\n\nYour 6-digit verification code is: ${otp}\n\nThis code will expire in 10 minutes. Enter it to activate your NOVA healthcare account.`;
+    const bodyHtml = `
+      <div style="font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;max-width:540px;margin:0 auto;background:#fff;border-radius:16px;border:1px solid #e2e8f0;overflow:hidden;">
+        <div style="background:#0f172a;padding:24px 32px;text-align:left;">
+          <h1 style="color:#fff;font-size:20px;font-weight:800;margin:0;">NOVA Healthcare Platform</h1>
+          <p style="color:#94a3b8;font-size:12px;margin:4px 0 0 0;">Network for Owners, Vendors & Advisors</p>
+        </div>
+        <div style="padding:32px;">
+          <h2 style="font-size:16px;font-weight:700;color:#0f172a;margin-top:0;">Verify your email address</h2>
+          <p style="font-size:13px;line-height:1.6;color:#475569;">Welcome to NOVA, <strong>${cleanName}</strong>. Please enter the 6-digit verification code below to confirm your email and access your workspace.</p>
+          <div style="text-align:center;background:#f1f5f9;border:1px dashed #cbd5e1;border-radius:12px;padding:20px;margin:24px 0;">
+            <div style="font-size:11px;font-weight:700;color:#64748b;text-transform:uppercase;letter-spacing:0.08em;margin-bottom:8px;">6-Digit Verification Code</div>
+            <div style="font-family:monospace;font-size:32px;font-weight:800;letter-spacing:0.25em;color:#2563eb;">${otp}</div>
+          </div>
+          <p style="font-size:12px;color:#64748b;">This security code expires in 10 minutes. If you did not request this, please disregard.</p>
+        </div>
+        <div style="padding:16px 32px;background:#f8fafc;border-top:1px solid #e2e8f0;font-size:11px;color:#94a3b8;text-align:center;">
+          NOVA Healthcare Infrastructure Network · Mumbai · Bangalore · New Delhi
+        </div>
+      </div>
+    `.trim();
+
+    // 3. Store email log
+    const emailLogId = `EML_${Date.now()}_${Math.random().toString(36).substring(2, 6).toUpperCase()}`;
+    const newEmailLog: EmailLog = {
+      id: emailLogId,
+      toEmail: cleanEmail,
+      recipientName: cleanName,
+      subject,
+      type: 'verification_otp',
+      bodyHtml,
+      bodyText,
+      otpCode: otp,
+      sentAt: new Date().toISOString()
+    };
+
+    if (isDatabaseConfigured() && sqlClient) {
+      try {
+        await sqlClient`
+          INSERT INTO email_logs (id, to_email, recipient_name, subject, type, body_html, body_text, otp_code, sent_at)
+          VALUES (${emailLogId}, ${cleanEmail}, ${cleanName}, ${subject}, 'verification_otp', ${bodyHtml}, ${bodyText}, ${otp}, ${newEmailLog.sentAt});
+        `;
+      } catch (logErr) {
+        console.warn('[API] Could not persist email log to database:', logErr);
+      }
+    }
+    memoryEmailLogs = [newEmailLog, ...memoryEmailLogs].slice(0, 50);
+
+    // 4. Send via SMTP if configured
+    sendSmtpEmail(cleanEmail, subject, bodyHtml, bodyText).catch(() => {});
+
+    console.log(`[AUTH] Generated 6-digit OTP for ${cleanEmail}: [${otp}]`);
+
+    return res.json({
+      success: true,
+      email: cleanEmail,
+      otp, // Provided for instant in-app test verification
+      expiresAt,
+      message: `A 6-digit verification code was sent to ${cleanEmail}.`
+    });
+  } catch (err: any) {
+    console.error('[API] Error generating registration OTP:', err);
+    return res.status(500).json({ error: err.message || 'Failed to dispatch verification code.' });
+  }
+});
+
+apiRouter.post('/auth/verify-otp', async (req: Request, res: Response) => {
+  try {
+    const { email, otp, name, role = 'owner', phone, company, enrolledAccreditationId } = req.body;
+    if (!email || !otp) {
+      return res.status(400).json({ error: 'Email and OTP code are required.' });
+    }
+
+    const cleanEmail = email.trim().toLowerCase();
+    const cleanOtp = otp.trim();
+
+    // Verify OTP against database or memory
+    let isValid = false;
+
+    if (isDatabaseConfigured() && sqlClient) {
+      const rows = await sqlClient`
+        SELECT id, expires_at as "expiresAt", verified
+        FROM verification_otps
+        WHERE LOWER(email) = ${cleanEmail} AND otp = ${cleanOtp}
+        ORDER BY created_at DESC
+        LIMIT 1;
+      `;
+      if (rows && rows.length > 0) {
+        const record = rows[0];
+        const isExpired = new Date(record.expiresAt).getTime() < Date.now();
+        if (!isExpired) {
+          isValid = true;
+          await sqlClient`UPDATE verification_otps SET verified = true WHERE id = ${record.id};`;
+        }
+      }
+    }
+
+    // Memory check fallback
+    if (!isValid) {
+      const memRecord = memoryOtps.find(o => o.email === cleanEmail && o.otp === cleanOtp);
+      if (memRecord) {
+        const isExpired = new Date(memRecord.expiresAt).getTime() < Date.now();
+        if (!isExpired) {
+          isValid = true;
+          memRecord.verified = true;
+        }
+      }
+    }
+
+    if (!isValid) {
+      return res.status(400).json({
+        success: false,
+        error: 'Invalid or expired verification code. Please check your inbox or click "Resend Code".'
+      });
+    }
+
+    // User is verified! Create or update user account
+    const cleanName = (name || '').trim() || (role === 'owner' ? 'Dr. Rajesh / Promoter' : 'Healthcare Partner');
+    const cleanCompany = (company || '').trim() || (role === 'owner' ? 'Multispecialty Hospital Project' : 'Apex Healthcare Solutions');
+    const cleanPhone = (phone || '').trim() || '+91 98765 43210';
+    const plan = role === 'admin' ? 'Administrator Master Access' : `${role.charAt(0).toUpperCase() + role.slice(1)} Starter Plan`;
+
+    const user: AuthUser = {
+      id: `user-${Date.now()}-${Math.random().toString(36).substring(2, 6)}`,
+      name: cleanName,
+      email: cleanEmail,
+      role,
+      company: cleanCompany,
+      phone: cleanPhone,
+      isSubscribed: true,
+      status: 'active',
+      plan,
+      enrolledAccreditationId: enrolledAccreditationId || undefined,
+      enrolledAccreditationDate: enrolledAccreditationId ? new Date().toISOString() : undefined,
+      createdAt: new Date().toISOString()
+    };
+
+    if (isDatabaseConfigured() && sqlClient) {
+      try {
+        await sqlClient`
+          INSERT INTO users (
+            id, name, role, email, phone, company, is_subscribed, plan, status, email_verified,
+            enrolled_accreditation_id, enrolled_accreditation_date, created_at, last_login_at
+          ) VALUES (
+            ${user.id}, ${user.name}, ${user.role}, ${user.email}, ${user.phone}, ${user.company},
+            true, ${user.plan}, 'active', true,
+            ${user.enrolledAccreditationId || null}, ${user.enrolledAccreditationDate || null},
+            NOW(), NOW()
+          )
+          ON CONFLICT (email) DO UPDATE SET
+            name = EXCLUDED.name,
+            phone = COALESCE(EXCLUDED.phone, users.phone),
+            company = COALESCE(EXCLUDED.company, users.company),
+            email_verified = true,
+            status = 'active',
+            last_login_at = NOW();
+        `;
+      } catch (dbErr) {
+        console.warn('[API] Could not save verified user to database:', dbErr);
+      }
+    }
+
+    // Update memory
+    const existingIdx = memoryUsers.findIndex(u => u.email.toLowerCase() === cleanEmail);
+    if (existingIdx >= 0) {
+      memoryUsers[existingIdx] = { ...memoryUsers[existingIdx], ...user };
+    } else {
+      memoryUsers.push(user);
+    }
+
+    return res.json({
+      success: true,
+      user,
+      message: 'Email verified successfully! Workspace access granted.'
+    });
+  } catch (err: any) {
+    console.error('[API] Error in OTP verification:', err);
+    return res.status(500).json({ error: err.message || 'Verification failed.' });
+  }
+});
+
+// ==========================================
+// 9. PROFILE OWNERSHIP CLAIMS
+// ==========================================
+
+apiRouter.get('/claims', async (_req: Request, res: Response) => {
+  try {
+    if (isDatabaseConfigured() && sqlClient) {
+      const rows = await sqlClient`
+        SELECT 
+          id, directory_id as "directoryId", directory_name as "directoryName",
+          directory_role as "directoryRole", claimant_user_id as "claimantUserId",
+          claimant_name as "claimantName", claimant_email as "claimantEmail",
+          claimant_phone as "claimantPhone", claimant_company as "claimantCompany",
+          designation, proof_notes as "proofNotes", status,
+          created_at as "createdAt", reviewed_at as "reviewedAt",
+          reviewer_notes as "reviewerNotes"
+        FROM profile_claims
+        ORDER BY created_at DESC;
+      `;
+      return res.json(rows);
+    }
+    return res.json(memoryClaims);
+  } catch (err: any) {
+    console.error('[API] Error fetching claims:', err);
+    return res.json(memoryClaims);
+  }
+});
+
+apiRouter.post('/claims', async (req: Request, res: Response) => {
+  try {
+    const claim = req.body as ProfileClaim;
+    if (!claim.directoryId || !claim.claimantEmail || !claim.claimantName) {
+      return res.status(400).json({ error: 'Missing mandatory claim fields.' });
+    }
+
+    const cleanClaim: ProfileClaim = {
+      ...claim,
+      id: claim.id || `CLM_${Date.now()}_${Math.random().toString(36).substring(2, 6).toUpperCase()}`,
+      status: 'pending',
+      createdAt: claim.createdAt || new Date().toISOString()
+    };
+
+    if (isDatabaseConfigured() && sqlClient) {
+      await sqlClient`
+        INSERT INTO profile_claims (
+          id, directory_id, directory_name, directory_role, claimant_user_id,
+          claimant_name, claimant_email, claimant_phone, claimant_company,
+          designation, proof_notes, status, created_at
+        ) VALUES (
+          ${cleanClaim.id}, ${cleanClaim.directoryId}, ${cleanClaim.directoryName},
+          ${cleanClaim.directoryRole}, ${cleanClaim.claimantUserId}, ${cleanClaim.claimantName},
+          ${cleanClaim.claimantEmail}, ${cleanClaim.claimantPhone}, ${cleanClaim.claimantCompany || null},
+          ${cleanClaim.designation || null}, ${cleanClaim.proofNotes}, 'pending', ${cleanClaim.createdAt}
+        )
+        ON CONFLICT (id) DO UPDATE SET
+          proof_notes = EXCLUDED.proof_notes,
+          status = 'pending';
+      `;
+
+      // Update directory item claim status
+      await sqlClient`
+        UPDATE directory_items 
+        SET claim_status = 'pending' 
+        WHERE id = ${cleanClaim.directoryId};
+      `;
+    }
+
+    // Update memory
+    memoryClaims = [cleanClaim, ...memoryClaims.filter(c => c.id !== cleanClaim.id)];
+    const dirIdx = memoryDirectory.findIndex(d => d.id === cleanClaim.directoryId);
+    if (dirIdx >= 0) {
+      memoryDirectory[dirIdx].claimStatus = 'pending';
+    }
+
+    return res.json({ success: true, claim: cleanClaim });
+  } catch (err: any) {
+    console.error('[API] Error submitting profile claim:', err);
+    return res.status(500).json({ error: err.message });
+  }
+});
+
+apiRouter.post('/claims/:id/approve', async (req: Request, res: Response) => {
+  try {
+    const claimId = req.params.id;
+    const { reviewerNotes } = req.body;
+    const notes = reviewerNotes || 'Approved by administrator upon verification of business credentials.';
+    const reviewedAt = new Date().toISOString();
+
+    let targetClaim: ProfileClaim | undefined;
+
+    if (isDatabaseConfigured() && sqlClient) {
+      const rows = await sqlClient`
+        SELECT 
+          id, directory_id as "directoryId", directory_name as "directoryName",
+          directory_role as "directoryRole", claimant_user_id as "claimantUserId",
+          claimant_name as "claimantName", claimant_email as "claimantEmail",
+          claimant_phone as "claimantPhone"
+        FROM profile_claims
+        WHERE id = ${claimId};
+      `;
+      if (rows.length > 0) {
+        targetClaim = rows[0] as ProfileClaim;
+      }
+
+      await sqlClient`
+        UPDATE profile_claims
+        SET status = 'approved', reviewed_at = ${reviewedAt}, reviewer_notes = ${notes}
+        WHERE id = ${claimId};
+      `;
+
+      if (targetClaim) {
+        // Link directory item to claimant user
+        await sqlClient`
+          UPDATE directory_items
+          SET 
+            is_claimed = true,
+            claimed_by_user_id = ${targetClaim.claimantUserId},
+            claim_status = 'claimed',
+            contact_email = ${targetClaim.claimantEmail},
+            verified = true
+          WHERE id = ${targetClaim.directoryId};
+        `;
+
+        // Update user's claimed_directory_id
+        await sqlClient`
+          UPDATE users
+          SET claimed_directory_id = ${targetClaim.directoryId}
+          WHERE id = ${targetClaim.claimantUserId} OR LOWER(email) = ${targetClaim.claimantEmail.toLowerCase()};
+        `;
+      }
+    }
+
+    // Memory sync
+    const memIdx = memoryClaims.findIndex(c => c.id === claimId);
+    if (memIdx >= 0) {
+      memoryClaims[memIdx] = {
+        ...memoryClaims[memIdx],
+        status: 'approved',
+        reviewedAt,
+        reviewerNotes: notes
+      };
+      targetClaim = memoryClaims[memIdx];
+
+      const dirIdx = memoryDirectory.findIndex(d => d.id === targetClaim!.directoryId);
+      if (dirIdx >= 0) {
+        memoryDirectory[dirIdx].isClaimed = true;
+        memoryDirectory[dirIdx].claimedByUserId = targetClaim!.claimantUserId;
+        memoryDirectory[dirIdx].claimStatus = 'claimed';
+        memoryDirectory[dirIdx].contactEmail = targetClaim!.claimantEmail;
+        memoryDirectory[dirIdx].verified = true;
+      }
+    }
+
+    return res.json({ success: true, claimId, status: 'approved' });
+  } catch (err: any) {
+    console.error('[API] Error approving claim:', err);
+    return res.status(500).json({ error: err.message });
+  }
+});
+
+apiRouter.post('/claims/:id/reject', async (req: Request, res: Response) => {
+  try {
+    const claimId = req.params.id;
+    const { reviewerNotes } = req.body;
+    const notes = reviewerNotes || 'Unable to substantiate official authorization for this organization.';
+    const reviewedAt = new Date().toISOString();
+
+    let targetClaim: ProfileClaim | undefined;
+
+    if (isDatabaseConfigured() && sqlClient) {
+      const rows = await sqlClient`
+        SELECT directory_id as "directoryId" FROM profile_claims WHERE id = ${claimId};
+      `;
+      if (rows.length > 0) {
+        targetClaim = rows[0] as ProfileClaim;
+      }
+
+      await sqlClient`
+        UPDATE profile_claims
+        SET status = 'rejected', reviewed_at = ${reviewedAt}, reviewer_notes = ${notes}
+        WHERE id = ${claimId};
+      `;
+
+      if (targetClaim) {
+        // Release directory listing back to unclaimed
+        await sqlClient`
+          UPDATE directory_items
+          SET 
+            is_claimed = false,
+            claimed_by_user_id = null,
+            claim_status = 'unclaimed'
+          WHERE id = ${targetClaim.directoryId};
+        `;
+      }
+    }
+
+    // Memory sync
+    const memIdx = memoryClaims.findIndex(c => c.id === claimId);
+    if (memIdx >= 0) {
+      memoryClaims[memIdx] = {
+        ...memoryClaims[memIdx],
+        status: 'rejected',
+        reviewedAt,
+        reviewerNotes: notes
+      };
+      targetClaim = memoryClaims[memIdx];
+
+      const dirIdx = memoryDirectory.findIndex(d => d.id === targetClaim!.directoryId);
+      if (dirIdx >= 0) {
+        memoryDirectory[dirIdx].isClaimed = false;
+        memoryDirectory[dirIdx].claimedByUserId = undefined;
+        memoryDirectory[dirIdx].claimStatus = 'unclaimed';
+      }
+    }
+
+    return res.json({ success: true, claimId, status: 'rejected' });
+  } catch (err: any) {
+    console.error('[API] Error rejecting claim:', err);
+    return res.status(500).json({ error: err.message });
+  }
+});
+
+// ==========================================
+// 10. IN-APP MAILBOX & EMAIL LOGS
+// ==========================================
+
+apiRouter.get('/mail/inbox', async (_req: Request, res: Response) => {
+  try {
+    if (isDatabaseConfigured() && sqlClient) {
+      const rows = await sqlClient`
+        SELECT 
+          id, to_email as "toEmail", recipient_name as "recipientName",
+          subject, type, body_html as "bodyHtml", body_text as "bodyText",
+          otp_code as "otpCode", sent_at as "sentAt"
+        FROM email_logs
+        ORDER BY sent_at DESC
+        LIMIT 50;
+      `;
+      return res.json(rows);
+    }
+    return res.json(memoryEmailLogs);
+  } catch (err) {
+    console.error('[API] Error fetching mail inbox:', err);
+    return res.json(memoryEmailLogs);
+  }
+});
+
+apiRouter.post('/mail/send', async (req: Request, res: Response) => {
+  try {
+    const log = req.body as EmailLog;
+    if (!log.toEmail || !log.subject) {
+      return res.status(400).json({ error: 'toEmail and subject are required.' });
+    }
+
+    const cleanLog: EmailLog = {
+      ...log,
+      id: log.id || `EML_${Date.now()}_${Math.random().toString(36).substring(2, 6).toUpperCase()}`,
+      sentAt: log.sentAt || new Date().toISOString()
+    };
+
+    if (isDatabaseConfigured() && sqlClient) {
+      await sqlClient`
+        INSERT INTO email_logs (id, to_email, recipient_name, subject, type, body_html, body_text, otp_code, sent_at)
+        VALUES (
+          ${cleanLog.id}, ${cleanLog.toEmail.toLowerCase().trim()}, ${cleanLog.recipientName || null},
+          ${cleanLog.subject}, ${cleanLog.type}, ${cleanLog.bodyHtml}, ${cleanLog.bodyText || null},
+          ${cleanLog.otpCode || null}, ${cleanLog.sentAt}
+        );
+      `;
+    }
+
+    memoryEmailLogs = [cleanLog, ...memoryEmailLogs].slice(0, 50);
+
+    // If SMTP is configured, trigger real mail dispatch
+    sendSmtpEmail(cleanLog.toEmail, cleanLog.subject, cleanLog.bodyHtml, cleanLog.bodyText).catch(() => {});
+
+    return res.json({ success: true, log: cleanLog });
+  } catch (err: any) {
+    console.error('[API] Error dispatching mail:', err);
+    return res.status(500).json({ error: err.message });
   }
 });

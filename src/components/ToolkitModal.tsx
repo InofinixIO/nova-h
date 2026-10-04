@@ -129,7 +129,7 @@ export const ToolkitModal: React.FC<ToolkitModalProps> = ({
                 )}
               </div>
               <p className="text-xs text-slate-400">
-                15-stage masterguide from concept to commissioning &amp; quality accreditation
+                15-stage masterguide from concept to commissioning &amp; quality standards
               </p>
             </div>
           </div>

@@ -47,7 +47,7 @@ export const AdminAccreditationManager: React.FC<AdminAccreditationManagerProps>
   const [formName, setFormName] = useState('');
   const [formCode, setFormCode] = useState('');
   const [formAuthority, setFormAuthority] = useState('');
-  const [formCategory, setFormCategory] = useState<'Hospital Accreditation' | 'Laboratory Accreditation' | 'Safety Clearance'>('Hospital Accreditation');
+  const [formCategory, setFormCategory] = useState<'Hospital Execution Templates' | 'Hospital Accreditation' | 'Laboratory Standards' | 'Laboratory Accreditation' | 'Safety Clearance'>('Hospital Execution Templates');
   const [formDescription, setFormDescription] = useState('');
   const [formTargetBeds, setFormTargetBeds] = useState('');
   const [formDuration, setFormDuration] = useState('');
@@ -73,7 +73,7 @@ export const AdminAccreditationManager: React.FC<AdminAccreditationManagerProps>
     setFormName('');
     setFormCode('');
     setFormAuthority('Quality Council of India (QCI)');
-    setFormCategory('Hospital Accreditation');
+    setFormCategory('Hospital Execution Templates');
     setFormDescription('');
     setFormTargetBeds('30–100 Bed Facilities');
     setFormDuration('6–12 Months');
@@ -208,11 +208,11 @@ export const AdminAccreditationManager: React.FC<AdminAccreditationManagerProps>
               <Award className="w-5 h-5" />
             </span>
             <span className="text-[10px] font-black uppercase tracking-wider bg-blue-600 px-2 py-0.5 rounded text-white">
-              Institutional Frameworks
+              Institutional Templates
             </span>
           </div>
           <h2 className="text-xl sm:text-2xl font-black mt-2 tracking-tight">
-            Accreditation Programmes &amp; Stage Mapping
+            Toolkit Templates &amp; Stage Mapping
           </h2>
           <p className="text-xs sm:text-sm text-slate-300 mt-1 max-w-2xl leading-relaxed">
             Configure institutional quality standards (NABH, JCI, NABL) and define which of the 15 developmental stages apply. Enrolled hospital owners will automatically receive a customized, stage-filtered toolkit view.
@@ -224,7 +224,7 @@ export const AdminAccreditationManager: React.FC<AdminAccreditationManagerProps>
             type="button"
             onClick={handleResetDefaults}
             className="px-3.5 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white text-xs font-bold border border-slate-700 flex items-center gap-1.5 transition-colors cursor-pointer"
-            title="Reset to default NABH, JCI and NABL frameworks"
+            title="Reset to default NABH, JCI and NABL templates"
           >
             <RotateCcw className="w-3.5 h-3.5" />
             <span>Reset Defaults</span>
@@ -236,7 +236,7 @@ export const AdminAccreditationManager: React.FC<AdminAccreditationManagerProps>
             className="px-4 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-500 text-white text-xs font-bold shadow-md hover:shadow-lg transition-all flex items-center gap-1.5 cursor-pointer"
           >
             <Plus className="w-4 h-4" />
-            <span>+ Add Accreditation Programme</span>
+            <span>+ Add Toolkit Template</span>
           </button>
         </div>
       </div>
@@ -407,7 +407,7 @@ export const AdminAccreditationManager: React.FC<AdminAccreditationManagerProps>
                 </span>
                 <div>
                   <h3 className="text-lg font-black text-slate-900 dark:text-white">
-                    {isCreatingNew ? 'Create Accreditation Programme' : `Edit: ${editingProg?.name}`}
+                    {isCreatingNew ? 'Create Toolkit Template' : `Edit: ${editingProg?.name}`}
                   </h3>
                   <p className="text-xs text-slate-500 dark:text-slate-400">
                     Map applicable toolkit developmental stages and guidelines
@@ -430,14 +430,14 @@ export const AdminAccreditationManager: React.FC<AdminAccreditationManagerProps>
                 {/* Programme Name */}
                 <div className="sm:col-span-2">
                   <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider mb-1.5">
-                    Programme Title *
+                    Template Title *
                   </label>
                   <input
                     type="text"
                     required
                     value={formName}
                     onChange={(e) => setFormName(e.target.value)}
-                    placeholder="e.g. NABH Entry-Level Accreditation"
+                    placeholder="e.g. NABH Entry-Level Standards"
                     className="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white text-xs font-semibold focus:ring-2 focus:ring-blue-500"
                   />
                 </div>
@@ -459,7 +459,7 @@ export const AdminAccreditationManager: React.FC<AdminAccreditationManagerProps>
                 {/* Accrediting Authority */}
                 <div>
                   <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider mb-1.5">
-                    Accrediting Authority / Body
+                    Issuing Authority / Standard Body
                   </label>
                   <input
                     type="text"
@@ -473,16 +473,16 @@ export const AdminAccreditationManager: React.FC<AdminAccreditationManagerProps>
                 {/* Category */}
                 <div>
                   <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider mb-1.5">
-                    Framework Category
+                    Template Category
                   </label>
                   <select
                     value={formCategory}
                     onChange={(e) => setFormCategory(e.target.value as any)}
                     className="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white text-xs font-semibold focus:ring-2 focus:ring-blue-500"
                   >
-                    <option value="Hospital Accreditation">Hospital Accreditation</option>
-                    <option value="Laboratory Accreditation">Laboratory Accreditation</option>
-                    <option value="Safety Clearance">Safety Clearance</option>
+                    <option value="Hospital Execution Templates">Hospital Execution Templates</option>
+                    <option value="Laboratory Standards">Laboratory Standards</option>
+                    <option value="Safety Clearance">Safety &amp; Clearance Templates</option>
                   </select>
                 </div>
 

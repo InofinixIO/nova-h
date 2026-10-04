@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Menu, X, ShieldCheck, UserCheck, LogOut, Settings, LayoutDashboard, Mail, Server, ChevronDown } from 'lucide-react';
+import { Menu, X, ShieldCheck, UserCheck, LogOut, Settings, LayoutDashboard, Server, ChevronDown } from 'lucide-react';
 import { UserRole, AuthUser } from '../types';
 import { RouteSlug } from '../utils/routes';
 import { ThemeToggle } from './ThemeToggle';

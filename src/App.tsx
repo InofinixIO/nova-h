@@ -22,6 +22,7 @@ import { AiConsultantModal } from './components/AiConsultantModal';
 import { CicdModal } from './components/CicdModal';
 import { CheckoutModal } from './components/CheckoutModal';
 import { AdminDirectoryModal } from './components/AdminDirectoryModal';
+import { StandaloneClaimView } from './components/StandaloneClaimView';
 
 // Dedicated Admin Components
 import { AdminLoginForm } from './components/AdminLoginForm';
@@ -38,7 +39,7 @@ import { PartnerDetailView } from './components/PartnerDetailView';
 import { UserRole, DirectoryItem, ProjectRequirement, PaymentTransaction, AuthUser, StageItem } from './types';
 import { getStoredDirectory, saveStoredDirectory } from './utils/directoryStorage';
 import { getStoredToolkitStages, saveStoredToolkitStages } from './utils/toolkitStorage';
-import { RouteSlug, getSlugFromPath, navigateToSlug, getPartnerIdentifierFromUrl } from './utils/routes';
+import { RouteSlug, getSlugFromPath, navigateToSlug, getPartnerIdentifierFromUrl, getClaimIdFromUrl } from './utils/routes';
 import { isFeatureEnabled } from './utils/featureFlags';
 import { 
   CheckCircle2, 
@@ -153,6 +154,9 @@ export default function App() {
   const [userDashboardTab, setUserDashboardTab] = useState<'received_enquiries' | 'sent_enquiries' | 'project_leads' | 'profile'>('received_enquiries');
   const [adminConsoleTab, setAdminConsoleTab] = useState<AdminTabType>('users');
 
+  // Role filter for For Advisors directory view (owners and vendors)
+  const [advisorRoleFilter, setAdvisorRoleFilter] = useState<'all' | 'owner' | 'vendor'>('all');
+
   // Synchronize active tabs with nested URL slug (deep-linking and browser navigation)
   useEffect(() => {
     if (currentSlug.startsWith('admin')) {
@@ -160,6 +164,8 @@ export default function App() {
         setAdminConsoleTab('users');
       } else if (currentSlug === 'admin/directory' || currentSlug === 'admin/listings') {
         setAdminConsoleTab('manage');
+      } else if (currentSlug === 'admin/claims') {
+        setAdminConsoleTab('claims');
       } else if (currentSlug === 'admin/requirements' || currentSlug === 'admin/rfqs') {
         setAdminConsoleTab('requirements');
       } else if (currentSlug === 'admin/import-csv') {
@@ -388,6 +394,7 @@ export default function App() {
       case 'admin/users':
       case 'admin/directory':
       case 'admin/listings':
+      case 'admin/claims':
       case 'admin/requirements':
       case 'admin/rfqs':
       case 'admin/import-csv':
@@ -402,11 +409,12 @@ export default function App() {
           const adminNavItems: DashboardNavItem[] = [
             { id: 'users', slug: 'admin/users', label: 'Users & Subscriptions', icon: Users },
             { id: 'manage', slug: 'admin/directory', label: 'Partner Directory', icon: Building2 },
+            { id: 'claims', slug: 'admin/claims', label: 'Ownership Claims', icon: ShieldCheck },
             { id: 'requirements', slug: 'admin/requirements', label: 'Hospital RFQs & Leads', icon: FileText },
             { id: 'import_csv', slug: 'admin/import-csv', label: 'Bulk CSV Importer', icon: UploadCloud },
             { id: 'add_vendor', slug: 'admin/add-partner', label: 'Add Single Partner', icon: Plus },
             { id: 'toolkit_stages', slug: 'admin/toolkit', label: '15-Stage Toolkit', icon: BookOpen },
-            { id: 'accreditation_programmes', slug: 'admin/accreditation', label: 'Accreditation Frameworks', icon: Award },
+            { id: 'accreditation_programmes', slug: 'admin/accreditation', label: 'Toolkit Templates', icon: Award },
             { id: 'coupons', slug: 'admin/coupons', label: 'Coupons & Waivers', icon: Gift },
             { id: 'pamphlet', slug: 'admin/pamphlet', label: 'Marketing Pamphlet & QR', icon: QrCode },
             ...(isFeatureEnabled('mjml_studio') ? [
@@ -762,19 +770,36 @@ export default function App() {
           </div>
         );
 
+      case 'claim':
+      case 'claim-profile':
+        return (
+          <StandaloneClaimView
+            directoryItems={directoryItems}
+            currentUser={currentUser}
+            initialTargetId={getClaimIdFromUrl()}
+            onBackToDirectory={() => handleNavigate('directory')}
+            onNotify={showToast}
+            onOpenAuth={(mode) => handleOpenAuth(mode)}
+            onUpdateDirectoryItem={(updated) => {
+              setDirectoryItems(prev => prev.map(d => d.id === updated.id ? updated : d));
+            }}
+          />
+        );
+
       case 'vendors':
+        const ownerDirectoryItems = directoryItems.filter(i => i.role === 'owner');
         return (
           <div className="space-y-12 py-8 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div className="bg-gradient-to-r from-slate-900 to-indigo-950 text-white p-8 sm:p-12 rounded-3xl shadow-xl">
               <div className="max-w-3xl">
                 <span className="px-3 py-1 rounded-full text-xs font-extrabold uppercase tracking-wider bg-indigo-500/30 text-indigo-200 border border-indigo-400/30">
-                  Medical Devices, MEP, Furniture &amp; IT
+                  Hospital Promoters &amp; Trust Founders Directory
                 </span>
                 <h1 className="text-3xl sm:text-4xl font-black mt-4 mb-3 tracking-tight">
-                  Healthcare Vendor &amp; Supplier Network
+                  Hospital Owners &amp; Infrastructure Projects
                 </h1>
                 <p className="text-slate-300 text-sm sm:text-base leading-relaxed mb-6">
-                  Showcase biomedical equipment, modular OT systems, and hospital infrastructure directly to active promoters, medical directors, and healthcare procurement teams.
+                  Direct visibility into active hospital promoters, founders, and healthcare trusts procuring medical devices, turnkey OT equipment, MEP infrastructure, and hospital engineering.
                 </p>
                 <div className="flex flex-wrap gap-3">
                   <button
@@ -793,7 +818,7 @@ export default function App() {
               </div>
             </div>
             <DirectorySearch
-              directoryItems={directoryItems.filter(i => i.role === 'vendor')}
+              directoryItems={ownerDirectoryItems}
               onSelectVendor={(v) => setSelectedVendor(v)}
               onPostRequirement={handleOpenRequirementModal}
               autoDetectTrigger={autoDetectTrigger}
@@ -806,23 +831,34 @@ export default function App() {
               onToggleCompare={handleToggleCompare}
               onClearCompare={handleClearCompare}
               onOpenCompare={handleOpenCompare}
+              onClaimProfile={(item) => handleNavigate(`claim?id=${item.id}`)}
             />
           </div>
         );
 
       case 'advisors':
+        const advisorCombinedItems = directoryItems.filter(i => i.role === 'owner' || i.role === 'vendor');
+        const advisorOwnersCount = advisorCombinedItems.filter(i => i.role === 'owner').length;
+        const advisorVendorsCount = advisorCombinedItems.filter(i => i.role === 'vendor').length;
+
+        const advisorFilteredItems = advisorCombinedItems.filter(i => {
+          if (advisorRoleFilter === 'owner') return i.role === 'owner';
+          if (advisorRoleFilter === 'vendor') return i.role === 'vendor';
+          return true;
+        });
+
         return (
-          <div className="space-y-12 py-8 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="space-y-8 py-8 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div className="bg-gradient-to-r from-sky-950 to-slate-900 text-white p-8 sm:p-12 rounded-3xl shadow-xl">
               <div className="max-w-3xl">
                 <span className="px-3 py-1 rounded-full text-xs font-extrabold uppercase tracking-wider bg-sky-500/30 text-sky-200 border border-sky-400/30">
-                  Clinical Planners, NABH Consultants &amp; Architects
+                  Hospital Promoters &amp; Healthcare Vendors
                 </span>
                 <h1 className="text-3xl sm:text-4xl font-black mt-4 mb-3 tracking-tight">
-                  Hospital Advisors &amp; Specialist Directory
+                  Hospital Owners &amp; Healthcare Vendors Directory
                 </h1>
                 <p className="text-slate-300 text-sm sm:text-base leading-relaxed mb-6">
-                  Join Macula Healthcare's execution partner pool. Advise hospital trustees on DPR formulation, AERB radiological layouts, NABH accreditations, and commissioning milestones.
+                  Advisory intelligence hub: Connect directly with active hospital owners commissioning 50 to 500-bed facilities, and collaborate with verified biomedical equipment vendors to execute turnkey projects.
                 </p>
                 <div className="flex flex-wrap gap-3">
                   <button
@@ -834,8 +870,57 @@ export default function App() {
                 </div>
               </div>
             </div>
+
+            {/* Role Filter Pills for Advisors */}
+            <div className="bg-white dark:bg-slate-900 p-3 sm:p-4 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-2xs flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+              <div className="flex items-center gap-2 flex-wrap">
+                <span className="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">
+                  Directory View:
+                </span>
+                <div className="inline-flex rounded-xl p-1 bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-xs">
+                  <button
+                    type="button"
+                    onClick={() => setAdvisorRoleFilter('all')}
+                    className={`px-3 py-1.5 rounded-lg font-bold transition-all cursor-pointer ${
+                      advisorRoleFilter === 'all'
+                        ? 'bg-white dark:bg-slate-700 text-slate-900 dark:text-white shadow-2xs'
+                        : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
+                    }`}
+                  >
+                    All Partners ({advisorCombinedItems.length})
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setAdvisorRoleFilter('owner')}
+                    className={`px-3 py-1.5 rounded-lg font-bold transition-all cursor-pointer ${
+                      advisorRoleFilter === 'owner'
+                        ? 'bg-blue-600 text-white shadow-2xs'
+                        : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
+                    }`}
+                  >
+                    🏥 Hospital Owners ({advisorOwnersCount})
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setAdvisorRoleFilter('vendor')}
+                    className={`px-3 py-1.5 rounded-lg font-bold transition-all cursor-pointer ${
+                      advisorRoleFilter === 'vendor'
+                        ? 'bg-indigo-600 text-white shadow-2xs'
+                        : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
+                    }`}
+                  >
+                    🏗️ Healthcare Vendors ({advisorVendorsCount})
+                  </button>
+                </div>
+              </div>
+
+              <div className="text-xs text-slate-500 dark:text-slate-400 font-medium">
+                Showing {advisorFilteredItems.length} verified healthcare stakeholders
+              </div>
+            </div>
+
             <DirectorySearch
-              directoryItems={directoryItems.filter(i => i.role === 'advisor')}
+              directoryItems={advisorFilteredItems}
               onSelectVendor={(v) => setSelectedVendor(v)}
               onPostRequirement={handleOpenRequirementModal}
               autoDetectTrigger={autoDetectTrigger}
@@ -844,9 +929,9 @@ export default function App() {
               onOpenAdminDirectory={() => handleNavigate('admin')}
               isStandalonePage={true}
               comparedIds={comparedProfileIds}
-              onToggleCompare={handleToggleCompare}
               onClearCompare={handleClearCompare}
               onOpenCompare={handleOpenCompare}
+              onClaimProfile={(item) => handleNavigate(`claim?id=${item.id}`)}
             />
           </div>
         );
@@ -917,6 +1002,7 @@ export default function App() {
               onToggleCompare={handleToggleCompare}
               onClearCompare={handleClearCompare}
               onOpenCompare={handleOpenCompare}
+              onClaimProfile={(item) => handleNavigate(`claim?id=${item.id}`)}
             />
           </div>
         );
@@ -1057,6 +1143,7 @@ export default function App() {
               onToggleCompare={handleToggleCompare}
               onClearCompare={handleClearCompare}
               onOpenCompare={handleOpenCompare}
+              onClaimProfile={(item) => handleNavigate(`claim?id=${item.id}`)}
             />
 
             {/* 6.7 NOVA-H MEMBERSHIP & PRICING MODEL WITH RAZORPAY & 100% COUPONS */}
@@ -1166,6 +1253,7 @@ export default function App() {
           setSelectedVendor(null);
           handleNavigate(`partner/${encodeURIComponent(id)}`);
         }}
+        onClaimProfile={(item) => handleNavigate(`claim?id=${item.id}`)}
       />
 
       <AuthModal

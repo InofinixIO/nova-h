@@ -1,5 +1,5 @@
 import React from 'react';
-import { Linkedin, Twitter, Youtube, ExternalLink, GitBranch, QrCode } from 'lucide-react';
+import { Linkedin, Twitter, Youtube, ExternalLink, GitBranch, QrCode, ShieldCheck } from 'lucide-react';
 import { isFeatureEnabled } from '../utils/featureFlags';
 
 interface FooterProps {
@@ -118,6 +118,12 @@ export const Footer: React.FC<FooterProps> = ({ onOpenAuth, onOpenToolkit, onOpe
                   About NOVA
                 </button>
               </li>
+              <li>
+                <button onClick={() => handleNav('claim', 'nova-footer')} className="text-slate-300 hover:text-white transition-colors cursor-pointer flex items-center gap-1.5 font-medium">
+                  <ShieldCheck className="w-3.5 h-3.5 text-blue-400" />
+                  <span>Claim Profile</span>
+                </button>
+              </li>
               {isFeatureEnabled('architecture') && (
                 <li>
                   <button onClick={() => handleNav('architecture', 'nova-footer')} className="hover:text-blue-400 text-blue-400 font-medium transition-colors cursor-pointer flex items-center gap-1">
@@ -138,6 +144,11 @@ export const Footer: React.FC<FooterProps> = ({ onOpenAuth, onOpenToolkit, onOpe
                 <a href="mailto:support@nova-h.in" className="hover:text-white transition-colors">
                   Contact: support@nova-h.in
                 </a>
+              </li>
+              <li>
+                <button onClick={() => handleNav('claim', 'nova-footer')} className="hover:text-white transition-colors cursor-pointer text-left flex items-center gap-1.5">
+                  <span>Claim Profile &amp; Verification</span>
+                </button>
               </li>
               <li>
                 <a href="#disclaimer" onClick={(e) => { e.preventDefault(); scrollTo('disclaimer-box'); }} className="hover:text-white transition-colors">

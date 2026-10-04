@@ -95,7 +95,7 @@ export interface AccreditationProgramme {
   name: string;
   code: string; // e.g., 'nabh-entry', 'nabh-full', 'jci', 'nabl'
   authority: string; // e.g., 'Quality Council of India (QCI)', 'JCI (USA)'
-  category: 'Hospital Accreditation' | 'Laboratory Accreditation' | 'Safety Clearance';
+  category: 'Hospital Execution Templates' | 'Hospital Accreditation' | 'Laboratory Standards' | 'Laboratory Accreditation' | 'Safety Clearance' | string;
   description: string;
   targetBedCapacity: string; // e.g. 'Up to 50 beds (SHCO)', '100+ beds', 'All hospital sizes'
   estimatedDuration: string; // e.g. '6–9 months', '12–18 months'
@@ -119,6 +119,8 @@ export interface AuthUser {
   status?: 'active' | 'disabled' | 'pending';
   enrolledAccreditationId?: string;
   enrolledAccreditationDate?: string;
+  emailVerified?: boolean;
+  claimedDirectoryId?: string;
   createdAt?: string;
   lastLoginAt?: string;
 }
@@ -148,6 +150,48 @@ export interface DirectoryItem {
   certifications?: string[];
   headquartersAddress?: string;
   complianceBadges?: string[];
+  isClaimed?: boolean;
+  claimedByUserId?: string;
+  claimStatus?: 'unclaimed' | 'pending' | 'claimed';
+}
+
+export interface ProfileClaim {
+  id: string;
+  directoryId: string;
+  directoryName: string;
+  directoryRole: 'vendor' | 'advisor';
+  claimantUserId: string;
+  claimantName: string;
+  claimantEmail: string;
+  claimantPhone: string;
+  claimantCompany?: string;
+  designation?: string;
+  proofNotes: string;
+  status: 'pending' | 'approved' | 'rejected';
+  createdAt: string;
+  reviewedAt?: string;
+  reviewerNotes?: string;
+}
+
+export interface EmailLog {
+  id: string;
+  toEmail: string;
+  recipientName?: string;
+  subject: string;
+  type: 'verification_otp' | 'claim_submitted' | 'claim_admin_alert' | 'claim_approved' | 'claim_rejected';
+  bodyHtml: string;
+  bodyText?: string;
+  otpCode?: string;
+  sentAt: string;
+}
+
+export interface VerificationOtp {
+  id: string;
+  email: string;
+  otp: string;
+  expiresAt: string;
+  verified: boolean;
+  createdAt: string;
 }
 
 export interface HowItWorksStep {

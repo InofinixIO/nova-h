@@ -22,7 +22,8 @@ import {
   Copy,
   Printer,
   Check,
-  Share2
+  Share2,
+  ShieldCheck
 } from 'lucide-react';
 import { SectionHeading } from './SectionHeading';
 import { DirectoryItem, AuthUser, UserRole } from '../types';
@@ -49,6 +50,7 @@ interface DirectorySearchProps {
   onToggleCompare?: (id: string) => void;
   onClearCompare?: () => void;
   onOpenCompare?: () => void;
+  onClaimProfile?: (item: DirectoryItem) => void;
 }
 
 // Stage to categories mapping: Stages have different categories
@@ -143,7 +145,8 @@ export const DirectorySearch: React.FC<DirectorySearchProps> = ({
   comparedIds = [],
   onToggleCompare,
   onClearCompare,
-  onOpenCompare
+  onOpenCompare,
+  onClaimProfile
 }) => {
   // Hydrate search criteria from URL query params
   const initialParams = useMemo(() => getDirectoryParamsFromUrl(), []);
@@ -857,14 +860,23 @@ export const DirectorySearch: React.FC<DirectorySearchProps> = ({
                     </div>
                   </div>
 
-                  {/* Company Name & Verification */}
+                  {/* Company Name, Verification & Claim Action */}
                   <div className="mb-2">
-                    <div className="flex items-center gap-1.5">
-                      <h4 className="font-bold text-base text-slate-900 dark:text-white group-hover:text-blue-700 dark:group-hover:text-blue-400 transition-colors line-clamp-1">
-                        {item.name}
-                      </h4>
-                      {item.verified && (
-                        <CheckCircle2 className="w-4 h-4 text-blue-600 dark:text-blue-400 shrink-0" title="Verified Partner by NOVA" />
+                    <div className="flex items-center justify-between gap-1.5 flex-wrap">
+                      <div className="flex items-center gap-1.5 min-w-0">
+                        <h4 className="font-bold text-base text-slate-900 dark:text-white group-hover:text-blue-700 dark:group-hover:text-blue-400 transition-colors line-clamp-1">
+                          {item.name}
+                        </h4>
+                        {item.verified && (
+                          <CheckCircle2 className="w-4 h-4 text-blue-600 dark:text-blue-400 shrink-0" title="Verified Partner by NOVA" />
+                        )}
+                      </div>
+
+                      {/* Unclaimed external profile status indicator */}
+                      {!item.isClaimed && !item.claimedByUserId && item.claimStatus === 'pending' && (
+                        <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-100 dark:bg-amber-950 text-amber-800 dark:text-amber-300 border border-amber-300 dark:border-amber-700" title="Ownership claim currently under review">
+                          Claim Pending
+                        </span>
                       )}
                     </div>
 

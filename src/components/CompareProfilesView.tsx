@@ -481,7 +481,7 @@ export const CompareProfilesView: React.FC<CompareProfilesViewProps> = ({
             {/* SECTION 4: CERTIFICATIONS & COMPLIANCE */}
             <tr className="bg-slate-100/60 dark:bg-slate-800/60 font-bold text-slate-800 dark:text-slate-200">
               <td colSpan={activeComparedItems.length + (activeComparedItems.length < 4 ? 2 : 1)} className="py-2.5 px-4 uppercase text-[11px] tracking-wider text-slate-700 dark:text-slate-300 bg-slate-100 dark:bg-slate-800">
-                4. Quality, Compliance &amp; Accreditations
+                4. Quality, Compliance &amp; Certifications
               </td>
             </tr>
 
