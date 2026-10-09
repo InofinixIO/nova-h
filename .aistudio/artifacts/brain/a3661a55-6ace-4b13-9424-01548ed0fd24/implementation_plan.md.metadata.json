@@ -1,6 +1,6 @@
 {
-  "summary":  "Revised implementation plan for bidirectional Directory search query parameters, an explicit search button, and synchronized QR code generation for filtered directory criteria.",
-  "updatedAt":  "2026-10-01T06:16:16.624292825Z",
+  "summary":  "Implementation plan to enhance the Directory Sample CSV and Parser with the missing attributes (Featured Project, Compliance Badges, and Verified status), while preserving automated system workflows for operational profile claiming fields. Includes updates to generateSampleDirectoryCSV, parseDirectoryCSV, and admin importer documentation.",
+  "updatedAt":  "2026-10-09T09:54:26.122338041Z",
   "requestFeedback":  true,
   "userFacing":  true
 }

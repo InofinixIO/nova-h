@@ -53,7 +53,8 @@ interface DashboardShellProps {
   currentUser: AuthUser;
   activeTab: string;
   onTabChange: (tabId: string) => void;
-  roleNavItems: DashboardNavItem[];
+  roleNavItems?: DashboardNavItem[];
+  roleNavSections?: DashboardNavSection[];
   breadcrumbs?: { label: string; onClick?: () => void }[];
   primaryAction?: {
     label: string;
@@ -74,7 +75,8 @@ export const DashboardShell: React.FC<DashboardShellProps> = ({
   currentUser,
   activeTab,
   onTabChange,
-  roleNavItems,
+  roleNavItems = [],
+  roleNavSections,
   breadcrumbs,
   primaryAction,
   secondaryAction,
@@ -344,62 +346,134 @@ export const DashboardShell: React.FC<DashboardShellProps> = ({
         </div>
 
         {/* Scrollable Navigation Body */}
-        <div className="flex-1 overflow-y-auto overflow-x-hidden p-2.5 space-y-6 scrollbar-thin">
-          {/* Section 1: Role Primary Workspace Views */}
-          <div>
-            {(!isCollapsed || isMobileOpen) && (
-              <div className="px-2.5 mb-2 text-[10px] font-black uppercase tracking-wider text-slate-400 dark:text-slate-500">
-                Workspace Views
-              </div>
-            )}
-            <nav className="space-y-1">
-              {roleNavItems.map((item) => {
-                const ItemIcon = item.icon;
-                const isActive = activeTab === item.id;
+        <div className="flex-1 overflow-y-auto overflow-x-hidden p-2.5 space-y-5 scrollbar-thin">
+          {/* Grouped Role Navigation Sections (if provided) */}
+          {roleNavSections && roleNavSections.length > 0 ? (
+            <div className="space-y-5">
+              {roleNavSections.map((section, sIdx) => (
+                <div key={section.title || `section-${sIdx}`}>
+                  {(!isCollapsed || isMobileOpen) && section.title && (
+                    <div className="px-2.5 mb-2 text-[10px] font-black uppercase tracking-wider text-slate-400 dark:text-slate-500">
+                      {section.title}
+                    </div>
+                  )}
+                  {isCollapsed && !isMobileOpen && sIdx > 0 && (
+                    <div className="my-2 border-t border-slate-200/60 dark:border-slate-800" />
+                  )}
+                  <nav className="space-y-1">
+                    {section.items.map((item) => {
+                      const ItemIcon = item.icon;
+                      const isActive = activeTab === item.id;
 
-                return (
-                  <div key={item.id} className="relative group">
-                    <button
-                      onClick={() => handleNavClick(item)}
-                      className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-xs transition-all cursor-pointer text-left ${
-                        isActive
-                          ? roleMeta.activeBg
-                          : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-800/60 font-medium'
-                      }`}
-                    >
-                      <ItemIcon className={`w-4 h-4 shrink-0 ${isActive ? roleMeta.accentColor : 'text-slate-400 dark:text-slate-500 group-hover:text-slate-700 dark:group-hover:text-slate-300'}`} />
-                      
-                      {(!isCollapsed || isMobileOpen) && (
-                        <span className="truncate flex-1">
-                          {item.label}
-                        </span>
-                      )}
+                      return (
+                        <div key={item.id} className="relative group">
+                          <button
+                            onClick={() => handleNavClick(item)}
+                            className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-xs transition-all cursor-pointer text-left ${
+                              isActive
+                                ? roleMeta.activeBg
+                                : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-800/60 font-medium'
+                            }`}
+                          >
+                            <ItemIcon className={`w-4 h-4 shrink-0 ${isActive ? roleMeta.accentColor : 'text-slate-400 dark:text-slate-500 group-hover:text-slate-700 dark:group-hover:text-slate-300'}`} />
+                            
+                            {(!isCollapsed || isMobileOpen) && (
+                              <span className="truncate flex-1">
+                                {item.label}
+                              </span>
+                            )}
 
-                      {(!isCollapsed || isMobileOpen) && item.badge !== undefined && (
-                        <span className={`px-1.5 py-0.5 rounded-full text-[10px] font-mono tabular-nums font-bold shrink-0 ${
-                          item.badgeColor || (isActive ? 'bg-blue-600 text-white' : 'bg-slate-200 dark:bg-slate-700 text-slate-700 dark:text-slate-300')
-                        }`}>
-                          {item.badge}
-                        </span>
-                      )}
-                    </button>
+                            {(!isCollapsed || isMobileOpen) && item.badge !== undefined && (
+                              <span className={`px-2 py-0.5 rounded-full text-[10px] font-mono tabular-nums font-bold shrink-0 ${
+                                item.badgeColor || (isActive ? 'bg-purple-600 text-white' : 'bg-slate-200 dark:bg-slate-700 text-slate-700 dark:text-slate-300')
+                              }`}>
+                                {item.badge}
+                              </span>
+                            )}
+                          </button>
 
-                    {/* Collapsed Desktop Tooltip */}
-                    {isCollapsed && !isMobileOpen && (
-                      <div className="absolute left-full top-1/2 -translate-y-1/2 ml-3.5 px-3 py-1.5 bg-slate-900 dark:bg-slate-800 text-white text-xs font-semibold rounded-lg shadow-xl border border-slate-700 z-50 whitespace-nowrap opacity-0 pointer-events-none group-hover:opacity-100 transition-opacity flex items-center gap-2">
-                        <span>{item.label}</span>
-                        {item.badge !== undefined && (
-                          <span className="px-1.5 py-0.2 bg-blue-500 text-white text-[10px] font-mono tabular-nums rounded">
+                          {/* Collapsed Desktop Tooltip */}
+                          {isCollapsed && !isMobileOpen && (
+                            <div className="absolute left-full top-1/2 -translate-y-1/2 ml-3.5 px-3 py-1.5 bg-slate-900 dark:bg-slate-800 text-white text-xs font-semibold rounded-lg shadow-xl border border-slate-700 z-50 whitespace-nowrap opacity-0 pointer-events-none group-hover:opacity-100 transition-opacity flex items-center gap-2">
+                              <div className="flex flex-col">
+                                {section.title && (
+                                  <span className="text-[9px] uppercase tracking-wider text-slate-400 font-bold">
+                                    {section.title}
+                                  </span>
+                                )}
+                                <span>{item.label}</span>
+                              </div>
+                              {item.badge !== undefined && (
+                                <span className={`px-1.5 py-0.5 text-[10px] font-mono tabular-nums font-bold rounded ${item.badgeColor || 'bg-purple-600 text-white'}`}>
+                                  {item.badge}
+                                </span>
+                              )}
+                            </div>
+                          )}
+                        </div>
+                      );
+                    })}
+                  </nav>
+                </div>
+              ))}
+            </div>
+          ) : (
+            /* Flat Role Primary Workspace Views (Fallback) */
+            <div>
+              {(!isCollapsed || isMobileOpen) && (
+                <div className="px-2.5 mb-2 text-[10px] font-black uppercase tracking-wider text-slate-400 dark:text-slate-500">
+                  Workspace Views
+                </div>
+              )}
+              <nav className="space-y-1">
+                {roleNavItems.map((item) => {
+                  const ItemIcon = item.icon;
+                  const isActive = activeTab === item.id;
+
+                  return (
+                    <div key={item.id} className="relative group">
+                      <button
+                        onClick={() => handleNavClick(item)}
+                        className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-xs transition-all cursor-pointer text-left ${
+                          isActive
+                            ? roleMeta.activeBg
+                            : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-800/60 font-medium'
+                        }`}
+                      >
+                        <ItemIcon className={`w-4 h-4 shrink-0 ${isActive ? roleMeta.accentColor : 'text-slate-400 dark:text-slate-500 group-hover:text-slate-700 dark:group-hover:text-slate-300'}`} />
+                        
+                        {(!isCollapsed || isMobileOpen) && (
+                          <span className="truncate flex-1">
+                            {item.label}
+                          </span>
+                        )}
+
+                        {(!isCollapsed || isMobileOpen) && item.badge !== undefined && (
+                          <span className={`px-1.5 py-0.5 rounded-full text-[10px] font-mono tabular-nums font-bold shrink-0 ${
+                            item.badgeColor || (isActive ? 'bg-blue-600 text-white' : 'bg-slate-200 dark:bg-slate-700 text-slate-700 dark:text-slate-300')
+                          }`}>
                             {item.badge}
                           </span>
                         )}
-                      </div>
-                    )}
-                  </div>
-                );
-              })}
-            </nav>
-          </div>
+                      </button>
+
+                      {/* Collapsed Desktop Tooltip */}
+                      {isCollapsed && !isMobileOpen && (
+                        <div className="absolute left-full top-1/2 -translate-y-1/2 ml-3.5 px-3 py-1.5 bg-slate-900 dark:bg-slate-800 text-white text-xs font-semibold rounded-lg shadow-xl border border-slate-700 z-50 whitespace-nowrap opacity-0 pointer-events-none group-hover:opacity-100 transition-opacity flex items-center gap-2">
+                          <span>{item.label}</span>
+                          {item.badge !== undefined && (
+                            <span className="px-1.5 py-0.2 bg-blue-500 text-white text-[10px] font-mono tabular-nums rounded">
+                              {item.badge}
+                            </span>
+                          )}
+                        </div>
+                      )}
+                    </div>
+                  );
+                })}
+              </nav>
+            </div>
+          )}
 
           {/* Section 2: Workspace Ecosystem Tools */}
           <div>

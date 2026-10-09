@@ -52,12 +52,47 @@ import {
   AlertCircle,
   Lock,
   MessageSquare,
-  UserCheck
+  UserCheck,
+  Database,
+  RefreshCw,
+  Wifi,
+  WifiOff,
+  Server,
+  Link as LinkIcon,
+  Copy,
+  Check,
+  ExternalLink
 } from 'lucide-react';
+import {
+  checkDatabaseHealth,
+  fetchRfpsApi,
+  createRfpApi,
+  transitionRfpStatusApi,
+  fetchQuotesApi,
+  submitQuoteApi,
+  updateQuoteStatusApi,
+  fetchClarificationsApi,
+  submitClarificationApi,
+  respondClarificationApi,
+  resolveClarificationApi,
+  fetchAuditsApi,
+  logAuditApi,
+  fetchObservationsApi,
+  submitObservationApi,
+  DatabaseStatus
+} from '../../api/procurementApi';
+import {
+  getRfpRouteParamsFromUrl,
+  navigateToRfp,
+  buildRfpPath,
+  navigateToSlug
+} from '../../utils/routes';
 
 interface ProcurementWorkspaceProps {
   currentUser?: AuthUser | null;
   onNavigateHome?: () => void;
+  isGuestPreview?: boolean;
+  onSignIn?: (role?: UserRole) => void;
 }
 
 const LIFECYCLE_STAGES: { key: RFPLifecycleStatus; label: string }[] = [
@@ -76,25 +111,34 @@ const LIFECYCLE_STAGES: { key: RFPLifecycleStatus; label: string }[] = [
 
 export const ProcurementWorkspace: React.FC<ProcurementWorkspaceProps> = ({
   currentUser,
-  onNavigateHome
+  onNavigateHome,
+  isGuestPreview = false,
+  onSignIn
 }) => {
   // Master State
-  const [rfps, setRfps] = useState<RFPItem[]>([]);
-  const [quotes, setQuotes] = useState<RFPQuote[]>([]);
-  const [clarifications, setClarifications] = useState<RFPClarification[]>([]);
-  const [audits, setAudits] = useState<RFPAuditEvent[]>([]);
-  const [observations, setObservations] = useState<AdvisorObservation[]>([]);
+  const [rfps, setRfps] = useState<RFPItem[]>(() => getStoredRFPs());
+  const [quotes, setQuotes] = useState<RFPQuote[]>(() => getStoredQuotes());
+  const [clarifications, setClarifications] = useState<RFPClarification[]>(() => getStoredClarifications());
+  const [audits, setAudits] = useState<RFPAuditEvent[]>(() => getStoredAuditEvents());
+  const [observations, setObservations] = useState<AdvisorObservation[]>(() => getStoredAdvisorObservations());
 
   // Role is strictly derived from authenticated logged-in user
   const effectiveRole: UserRole = currentUser?.role || 'owner';
 
-  // Navigation / Selection State
-  const [selectedRfpId, setSelectedRfpId] = useState<string | null>('rfp-ct-scan-blr-0042');
-  const [activeWorkspaceTab, setActiveWorkspaceTab] = useState<'my_bid' | 'comparison' | 'tco' | 'quotes' | 'clarifications' | 'specs' | 'advisor' | 'audit'>(
-    (currentUser?.role === 'vendor') ? 'my_bid' : 'comparison'
-  );
+  // Navigation / Selection State initialized from URL slug & query params
+  const initialUrlParams = getRfpRouteParamsFromUrl();
+  const [selectedRfpId, setSelectedRfpId] = useState<string | null>(initialUrlParams.rfpId || null);
+  const [activeWorkspaceTab, setActiveWorkspaceTab] = useState<'my_bid' | 'comparison' | 'tco' | 'quotes' | 'clarifications' | 'specs' | 'advisor' | 'audit'>(() => {
+    if (initialUrlParams.tab && ['my_bid', 'comparison', 'tco', 'quotes', 'clarifications', 'specs', 'advisor', 'audit'].includes(initialUrlParams.tab)) {
+      return initialUrlParams.tab as any;
+    }
+    if (currentUser?.role === 'vendor') return 'my_bid';
+    if (isGuestPreview) return 'specs';
+    return 'comparison';
+  });
   const [directoryFilterCategory, setDirectoryFilterCategory] = useState<string>('all');
   const [directorySearch, setDirectorySearch] = useState<string>('');
+  const [copiedLink, setCopiedLink] = useState(false);
 
   // Modals
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
@@ -110,25 +154,218 @@ export const ProcurementWorkspace: React.FC<ProcurementWorkspaceProps> = ({
   const [newObsText, setNewObsText] = useState('');
   const [newObsRec, setNewObsRec] = useState('');
 
-  // Load from storage on mount
+  // Database & Sync State
+  const [dbStatus, setDbStatus] = useState<DatabaseStatus>({ configured: false, provider: 'Checking...' });
+  const [isSyncing, setIsSyncing] = useState<boolean>(false);
+  const [syncNotice, setSyncNotice] = useState<string | null>(null);
+  const [strictModeBlocked, setStrictModeBlocked] = useState<boolean>(false);
+
+  // Load from storage & sync from PostgreSQL on mount
+  const refreshFromDatabase = async () => {
+    setIsSyncing(true);
+    setSyncNotice(null);
+    try {
+      const health = await checkDatabaseHealth();
+      setDbStatus(health);
+
+      if (!health.configured) {
+        setStrictModeBlocked(true);
+        setSyncNotice('Strict Mode Active: PostgreSQL database is offline. State mutations are restricted.');
+        setIsSyncing(false);
+        return;
+      }
+
+      setStrictModeBlocked(false);
+
+      // Fetch active RFPs from PostgreSQL
+      const remoteRfps = await fetchRfpsApi();
+      if (remoteRfps && remoteRfps.length > 0) {
+        setRfps(remoteRfps);
+        saveStoredRFPs(remoteRfps);
+        // Only select an RFP if URL specifically requested one
+        const currentUrlParams = getRfpRouteParamsFromUrl();
+        if (currentUrlParams.rfpId) {
+          const match = remoteRfps.find(r => 
+            r.id.toLowerCase() === currentUrlParams.rfpId?.toLowerCase() ||
+            r.rfpNumber.toLowerCase() === currentUrlParams.rfpId?.toLowerCase()
+          );
+          if (match) setSelectedRfpId(match.id);
+        }
+      } else {
+        // Tables are clean & empty (per initial configuration). Fallback to local memory/storage.
+        const local = getStoredRFPs();
+        if (local.length > 0) {
+          setRfps(local);
+          const currentUrlParams = getRfpRouteParamsFromUrl();
+          if (currentUrlParams.rfpId) {
+            const match = local.find(r => 
+              r.id.toLowerCase() === currentUrlParams.rfpId?.toLowerCase() ||
+              r.rfpNumber.toLowerCase() === currentUrlParams.rfpId?.toLowerCase()
+            );
+            if (match) setSelectedRfpId(match.id);
+          }
+        }
+      }
+
+      // Fetch quotes, clarifications, audits, observations for selected RFP
+      const currentUrl = getRfpRouteParamsFromUrl();
+      const targetId = currentUrl.rfpId || selectedRfpId;
+      if (targetId) {
+        try {
+          const remoteQuotes = await fetchQuotesApi(targetId);
+          if (remoteQuotes && remoteQuotes.length > 0) {
+            setQuotes(prev => {
+              const others = prev.filter(q => q.rfpId !== targetId);
+              const merged = [...others, ...remoteQuotes];
+              saveStoredQuotes(merged);
+              return merged;
+            });
+          }
+
+          const remoteClarifications = await fetchClarificationsApi(targetId);
+          if (remoteClarifications && remoteClarifications.length > 0) {
+            setClarifications(prev => {
+              const others = prev.filter(c => c.rfpId !== targetId);
+              const merged = [...others, ...remoteClarifications];
+              saveStoredClarifications(merged);
+              return merged;
+            });
+          }
+
+          const remoteAudits = await fetchAuditsApi(targetId);
+          if (remoteAudits && remoteAudits.length > 0) {
+            setAudits(prev => {
+              const others = prev.filter(a => a.rfpId !== targetId);
+              return [...others, ...remoteAudits];
+            });
+          }
+
+          const remoteObservations = await fetchObservationsApi(targetId);
+          if (remoteObservations && remoteObservations.length > 0) {
+            setObservations(prev => {
+              const others = prev.filter(o => o.rfpId !== targetId);
+              const merged = [...others, ...remoteObservations];
+              saveStoredAdvisorObservations(merged);
+              return merged;
+            });
+          }
+        } catch (innerErr) {
+          console.warn('[Sync] Sub-entity fetch notice:', innerErr);
+        }
+      }
+
+      setSyncNotice('PostgreSQL Database Connected & Synchronized');
+    } catch (err: any) {
+      console.warn('[Sync] PostgreSQL connection status check notice:', err);
+      setSyncNotice('Operating in local mode. Database sync deferred.');
+    } finally {
+      setIsSyncing(false);
+    }
+  };
+
   useEffect(() => {
+    // Initial mount: load cached local storage for fast render
     setRfps(getStoredRFPs());
     setQuotes(getStoredQuotes());
     setClarifications(getStoredClarifications());
     setAudits(getStoredAuditEvents());
     setObservations(getStoredAdvisorObservations());
+
+    // Asynchronously connect & sync with PostgreSQL
+    refreshFromDatabase();
   }, []);
 
-  // Synchronize active tab with logged-in user role
+  // Listen for browser back / forward navigation popstate events
   useEffect(() => {
-    if (currentUser?.role === 'vendor') {
-      setActiveWorkspaceTab('my_bid');
-    } else {
-      setActiveWorkspaceTab('comparison');
-    }
-  }, [currentUser?.role]);
+    const handleUrlPopState = () => {
+      const params = getRfpRouteParamsFromUrl();
+      setSelectedRfpId(params.rfpId || null);
+      if (params.tab && ['my_bid', 'comparison', 'tco', 'quotes', 'clarifications', 'specs', 'advisor', 'audit'].includes(params.tab)) {
+        setActiveWorkspaceTab(params.tab as any);
+      } else {
+        const defaultTab = currentUser?.role === 'vendor' ? 'my_bid' : (isGuestPreview ? 'specs' : 'comparison');
+        setActiveWorkspaceTab(defaultTab);
+      }
+    };
+    window.addEventListener('popstate', handleUrlPopState);
+    return () => window.removeEventListener('popstate', handleUrlPopState);
+  }, [currentUser?.role, isGuestPreview]);
 
-  const selectedRfp = rfps.find(r => r.id === selectedRfpId);
+  // Navigation handlers with URL synchronization
+  const handleSelectRfp = (rfpId: string | null) => {
+    setSelectedRfpId(rfpId);
+    if (rfpId) {
+      const defaultTab = currentUser?.role === 'vendor' ? 'my_bid' : (isGuestPreview ? 'specs' : 'comparison');
+      setActiveWorkspaceTab(defaultTab);
+      navigateToRfp(rfpId, defaultTab, false); // pushState to history
+    } else {
+      navigateToSlug('rfp', false);
+    }
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
+  const handleTabChange = (tab: typeof activeWorkspaceTab) => {
+    setActiveWorkspaceTab(tab);
+    if (selectedRfpId) {
+      navigateToRfp(selectedRfpId, tab, true); // replaceState so history isn't bloated
+    }
+  };
+
+  const handleCopyShareableLink = () => {
+    if (!selectedRfp) return;
+    const url = `${window.location.origin}/${buildRfpPath(selectedRfp.id, activeWorkspaceTab)}`;
+    navigator.clipboard.writeText(url).then(() => {
+      setCopiedLink(true);
+      setTimeout(() => setCopiedLink(false), 2500);
+    }).catch(() => {
+      setCopiedLink(true);
+      setTimeout(() => setCopiedLink(false), 2500);
+    });
+  };
+
+  // Helper to optionally push demo sample data to PostgreSQL if DB table is clean and empty
+  const handlePushSampleToDatabase = async () => {
+    if (strictModeBlocked || !dbStatus.configured) {
+      alert('Cannot sync to PostgreSQL: Database is currently disconnected (Strict Mode).');
+      return;
+    }
+    setIsSyncing(true);
+    try {
+      const localRfps = getStoredRFPs();
+      const localQuotes = getStoredQuotes();
+      for (const r of localRfps) {
+        await createRfpApi(r);
+      }
+      for (const q of localQuotes) {
+        await submitQuoteApi(q.rfpId, q);
+      }
+      await refreshFromDatabase();
+      alert('Sample hospital tenders and vendor bids persisted to PostgreSQL successfully!');
+    } catch (err: any) {
+      alert('Failed to push sample data: ' + err.message);
+    } finally {
+      setIsSyncing(false);
+    }
+  };
+
+  // Synchronize active tab with logged-in user role if no tab in URL
+  useEffect(() => {
+    const urlParams = getRfpRouteParamsFromUrl();
+    if (!urlParams.tab) {
+      if (currentUser?.role === 'vendor') {
+        setActiveWorkspaceTab('my_bid');
+      } else if (isGuestPreview) {
+        setActiveWorkspaceTab('specs');
+      } else {
+        setActiveWorkspaceTab('comparison');
+      }
+    }
+  }, [currentUser?.role, isGuestPreview]);
+
+  const selectedRfp = rfps.find(r => 
+    r.id.toLowerCase() === selectedRfpId?.toLowerCase() ||
+    r.rfpNumber.toLowerCase() === selectedRfpId?.toLowerCase()
+  );
   const rfpQuotes = quotes.filter(q => q.rfpId === selectedRfpId);
   const rfpClarifications = clarifications.filter(c => c.rfpId === selectedRfpId);
   const rfpAudits = audits.filter(a => a.rfpId === selectedRfpId);
@@ -139,12 +376,17 @@ export const ProcurementWorkspace: React.FC<ProcurementWorkspaceProps> = ({
     if (currentUser?.email && q.contactEmail?.toLowerCase() === currentUser.email.toLowerCase()) return true;
     if (currentUser?.company && q.vendorCompany?.toLowerCase().includes(currentUser.company.toLowerCase())) return true;
     if (currentUser?.id && q.vendorId === currentUser.id) return true;
-    // For general demonstration, match the first non-external formal quotation
     return !q.isExternal;
   }) || null : null;
 
-  // Handlers
-  const handleSaveNewRfp = (newRfp: RFPItem) => {
+  // Handlers with Optimistic Updates + Background REST Sync + Strict Mode Guard
+  const handleSaveNewRfp = async (newRfp: RFPItem) => {
+    if (strictModeBlocked || !dbStatus.configured) {
+      alert('Strict Mode Active: Cannot create RFP while PostgreSQL is disconnected.');
+      return;
+    }
+
+    // 1. Optimistic UI update
     const updated = [newRfp, ...rfps];
     setRfps(updated);
     saveStoredRFPs(updated);
@@ -159,10 +401,25 @@ export const ProcurementWorkspace: React.FC<ProcurementWorkspaceProps> = ({
       newRfp.status
     );
     setAudits(getStoredAuditEvents());
+
+    // 2. Background REST Sync to PostgreSQL
+    try {
+      await createRfpApi(newRfp);
+      setSyncNotice(`RFP ${newRfp.rfpNumber} persisted to PostgreSQL`);
+    } catch (err: any) {
+      console.error('[API] Background RFP creation failed:', err);
+      setSyncNotice(`Notice: RFP saved locally; DB sync error: ${err.message}`);
+    }
   };
 
-  const handleSaveQuote = (quote: RFPQuote) => {
-    const updated = [quote, ...quotes];
+  const handleSaveQuote = async (quote: RFPQuote) => {
+    if (strictModeBlocked || !dbStatus.configured) {
+      alert('Strict Mode Active: Cannot submit bid while PostgreSQL is disconnected.');
+      return;
+    }
+
+    // 1. Optimistic UI update
+    const updated = [quote, ...quotes.filter(q => q.id !== quote.id)];
     setQuotes(updated);
     saveStoredQuotes(updated);
 
@@ -177,10 +434,25 @@ export const ProcurementWorkspace: React.FC<ProcurementWorkspaceProps> = ({
         'technical_comparison'
       );
       setAudits(getStoredAuditEvents());
+
+      // 2. Background REST Sync to PostgreSQL
+      try {
+        await submitQuoteApi(selectedRfp.id, quote);
+        setSyncNotice(`Quotation for ${quote.vendorName} persisted to PostgreSQL`);
+      } catch (err: any) {
+        console.error('[API] Background quote submission failed:', err);
+        setSyncNotice(`Notice: Quote saved locally; DB sync error: ${err.message}`);
+      }
     }
   };
 
-  const handleAddClarification = (clr: RFPClarification) => {
+  const handleAddClarification = async (clr: RFPClarification) => {
+    if (strictModeBlocked || !dbStatus.configured) {
+      alert('Strict Mode Active: Cannot send clarification while PostgreSQL is disconnected.');
+      return;
+    }
+
+    // 1. Optimistic UI update
     const updated = [clr, ...clarifications];
     setClarifications(updated);
     saveStoredClarifications(updated);
@@ -196,10 +468,28 @@ export const ProcurementWorkspace: React.FC<ProcurementWorkspaceProps> = ({
         'clarification'
       );
       setAudits(getStoredAuditEvents());
+
+      // 2. Background REST Sync to PostgreSQL
+      try {
+        await submitClarificationApi(selectedRfp.id, {
+          quoteId: clr.quoteId,
+          vendorName: clr.vendorName,
+          lineItemId: clr.lineItemId,
+          parameterName: clr.parameterName,
+          category: clr.category,
+          question: clr.question,
+          askedBy: clr.askedBy,
+          isAiDrafted: clr.isAiDrafted
+        });
+        setSyncNotice(`Clarification query sent and persisted in PostgreSQL`);
+      } catch (err: any) {
+        console.error('[API] Background clarification submission failed:', err);
+      }
     }
   };
 
-  const handleUpdateClarification = (clr: RFPClarification) => {
+  const handleUpdateClarification = async (clr: RFPClarification) => {
+    // 1. Optimistic UI update
     const updated = clarifications.map(c => c.id === clr.id ? clr : c);
     setClarifications(updated);
     saveStoredClarifications(updated);
@@ -215,12 +505,65 @@ export const ProcurementWorkspace: React.FC<ProcurementWorkspaceProps> = ({
         'technical_comparison'
       );
       setAudits(getStoredAuditEvents());
+
+      // 2. Background REST Sync to PostgreSQL
+      try {
+        if (clr.response) {
+          await respondClarificationApi(selectedRfp.id, clr.id, clr.response, clr.revisionResulted);
+        }
+        if (clr.status === 'resolved') {
+          await resolveClarificationApi(selectedRfp.id, clr.id);
+        }
+      } catch (err: any) {
+        console.error('[API] Background clarification update failed:', err);
+      }
     }
   };
 
-  const handleAddAdvisorObservation = (e: React.FormEvent) => {
+  const handleAdvanceStage = async (targetStatus: RFPLifecycleStatus) => {
+    if (!selectedRfp) return;
+    if (strictModeBlocked || !dbStatus.configured) {
+      alert('Strict Mode Active: Cannot transition RFP status while PostgreSQL is disconnected.');
+      return;
+    }
+
+    const prevStatus = selectedRfp.status;
+    const updatedRfps = rfps.map(r => r.id === selectedRfp.id ? { ...r, status: targetStatus, updatedAt: new Date().toISOString() } : r);
+    setRfps(updatedRfps);
+    saveStoredRFPs(updatedRfps);
+
+    logAuditEvent(
+      selectedRfp.id,
+      currentUser?.name || 'Hospital Lead',
+      effectiveRole,
+      `Lifecycle Stage Transitioned to ${targetStatus}`,
+      `RFP moved from ${prevStatus} to ${targetStatus}`,
+      prevStatus,
+      targetStatus
+    );
+    setAudits(getStoredAuditEvents());
+
+    try {
+      await transitionRfpStatusApi(
+        selectedRfp.id,
+        targetStatus,
+        currentUser?.name || 'Hospital Procurement Lead',
+        effectiveRole,
+        `Stage transitioned to ${targetStatus}`
+      );
+      setSyncNotice(`Lifecycle advanced to ${targetStatus} in PostgreSQL`);
+    } catch (err: any) {
+      console.error('[API] Background status transition failed:', err);
+    }
+  };
+
+  const handleAddAdvisorObservation = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!newObsText.trim() || !selectedRfp) return;
+    if (strictModeBlocked || !dbStatus.configured) {
+      alert('Strict Mode Active: Cannot add observation while PostgreSQL is disconnected.');
+      return;
+    }
 
     const newObs: AdvisorObservation = {
       id: `obs-${Date.now()}`,
@@ -247,16 +590,34 @@ export const ProcurementWorkspace: React.FC<ProcurementWorkspaceProps> = ({
       `Macula Healthcare advisor noted: ${newObs.observation.slice(0, 70)}...`
     );
     setAudits(getStoredAuditEvents());
+
+    try {
+      await submitObservationApi(selectedRfp.id, newObs);
+    } catch (err: any) {
+      console.error('[API] Background observation sync failed:', err);
+    }
   };
 
-  const handleConfirmAward = () => {
+  const handleConfirmAward = async () => {
     if (!selectedRfp || !selectedWinningQuote) return;
+    if (strictModeBlocked || !dbStatus.configured) {
+      alert('Strict Mode Active: Cannot award contract while PostgreSQL is disconnected.');
+      return;
+    }
 
     const updatedRfps = rfps.map(r => {
       if (r.id === selectedRfp.id) {
         return {
           ...r,
           status: 'selected' as RFPLifecycleStatus,
+          awardDetails: {
+            awardedVendorId: selectedWinningQuote.vendorId,
+            vendorName: selectedWinningQuote.vendorName,
+            poReference: `PO-NOVA-${new Date().getFullYear()}-${Math.floor(1000 + Math.random() * 9000)}`,
+            awardedAmount: selectedWinningQuote.commercials.netLandedCost || 0,
+            decisionRationale: awardNotes || 'Highest combined technical compliance and warranty value.',
+            awardedDate: new Date().toISOString().split('T')[0]
+          },
           updatedAt: new Date().toISOString()
         };
       }
@@ -266,6 +627,7 @@ export const ProcurementWorkspace: React.FC<ProcurementWorkspaceProps> = ({
     setRfps(updatedRfps);
     saveStoredRFPs(updatedRfps);
 
+    const poRef = `PO-NOVA-${new Date().getFullYear()}-${Math.floor(1000 + Math.random() * 9000)}`;
     logAuditEvent(
       selectedRfp.id,
       currentUser?.name || 'Hospital Managing Director',
@@ -277,6 +639,26 @@ export const ProcurementWorkspace: React.FC<ProcurementWorkspaceProps> = ({
     );
     setAudits(getStoredAuditEvents());
     setIsAwardModalOpen(false);
+
+    try {
+      await updateQuoteStatusApi(
+        selectedRfp.id,
+        selectedWinningQuote.id,
+        'awarded',
+        awardNotes || 'Awarded contract',
+        poRef
+      );
+      await transitionRfpStatusApi(
+        selectedRfp.id,
+        'selected',
+        currentUser?.name || 'Hospital Managing Director',
+        'owner',
+        `Awarded contract to ${selectedWinningQuote.vendorName}`
+      );
+      setSyncNotice(`Procurement contract awarded and saved to PostgreSQL`);
+    } catch (err: any) {
+      console.error('[API] Background award persistence failed:', err);
+    }
   };
 
   // Filtered RFPs for directory
@@ -300,7 +682,7 @@ export const ProcurementWorkspace: React.FC<ProcurementWorkspaceProps> = ({
             <div className="flex items-center gap-3">
               {selectedRfpId ? (
                 <button
-                  onClick={() => setSelectedRfpId(null)}
+                  onClick={() => handleSelectRfp(null)}
                   className="flex items-center gap-1.5 text-xs font-bold text-slate-300 hover:text-white bg-slate-800 hover:bg-slate-700 px-3 py-1.5 rounded-xl transition-colors cursor-pointer"
                 >
                   <ChevronLeft className="w-4 h-4" />
@@ -326,6 +708,44 @@ export const ProcurementWorkspace: React.FC<ProcurementWorkspaceProps> = ({
 
             {/* User Session & Role Indicator & Global Actions */}
             <div className="flex flex-wrap items-center gap-2.5">
+              {/* Database Connection Status & Sync Controls */}
+              <div className="flex items-center gap-2 bg-slate-800/90 border border-slate-700 px-3 py-1.5 rounded-xl text-xs">
+                {dbStatus.configured ? (
+                  <span className="flex items-center gap-1.5 text-emerald-400 font-bold text-[11px]">
+                    <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
+                    <Database className="w-3.5 h-3.5" />
+                    <span>Neon DB Live</span>
+                  </span>
+                ) : (
+                  <span className="flex items-center gap-1.5 text-rose-400 font-bold text-[11px]">
+                    <WifiOff className="w-3.5 h-3.5" />
+                    <span>Strict Mode: DB Offline</span>
+                  </span>
+                )}
+
+                <button
+                  onClick={refreshFromDatabase}
+                  disabled={isSyncing}
+                  title="Refresh and synchronize with PostgreSQL"
+                  className="p-1 text-slate-400 hover:text-white transition-colors cursor-pointer rounded disabled:opacity-50"
+                >
+                  <RefreshCw className={`w-3.5 h-3.5 ${isSyncing ? 'animate-spin text-blue-400' : ''}`} />
+                </button>
+              </div>
+
+              {/* Push local seed tenders button if DB is clean & empty */}
+              {dbStatus.configured && (effectiveRole === 'owner' || effectiveRole === 'admin') && (
+                <button
+                  onClick={handlePushSampleToDatabase}
+                  disabled={isSyncing}
+                  title="Initialize demo hospital tenders & quotations into PostgreSQL"
+                  className="px-2.5 py-1.5 bg-slate-800 hover:bg-slate-700 border border-slate-700 text-slate-300 hover:text-white text-[11px] font-bold rounded-xl transition-colors cursor-pointer flex items-center gap-1"
+                >
+                  <Server className="w-3.5 h-3.5 text-blue-400" />
+                  <span>Sync Demo Tenders to DB</span>
+                </button>
+              )}
+
               {currentUser && (
                 <div className="flex items-center gap-2 bg-slate-800/90 border border-slate-700 px-3 py-1.5 rounded-xl text-xs">
                   <span className="w-2 h-2 rounded-full bg-emerald-400"></span>
@@ -347,7 +767,12 @@ export const ProcurementWorkspace: React.FC<ProcurementWorkspaceProps> = ({
               {(effectiveRole === 'owner' || effectiveRole === 'admin') && (
                 <button
                   onClick={() => setIsCreateModalOpen(true)}
-                  className="px-4 py-2 bg-blue-600 hover:bg-blue-500 text-white text-xs font-bold rounded-xl cursor-pointer shadow-xs transition-colors flex items-center gap-1.5"
+                  disabled={strictModeBlocked || !dbStatus.configured}
+                  className={`px-4 py-2 text-white text-xs font-bold rounded-xl cursor-pointer shadow-xs transition-colors flex items-center gap-1.5 ${
+                    strictModeBlocked || !dbStatus.configured 
+                      ? 'bg-slate-700 opacity-60 cursor-not-allowed' 
+                      : 'bg-blue-600 hover:bg-blue-500'
+                  }`}
                 >
                   <Plus className="w-4 h-4" />
                   <span>Create RFP (AI-Guided)</span>
@@ -359,10 +784,89 @@ export const ProcurementWorkspace: React.FC<ProcurementWorkspaceProps> = ({
         </div>
       </div>
 
+      {/* Strict Mode Disconnected Banner */}
+      {(!dbStatus.configured || strictModeBlocked) && (
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-4">
+          <div className="bg-rose-50 border border-rose-300 rounded-2xl p-4 flex items-start gap-3 shadow-xs">
+            <AlertCircle className="w-5 h-5 text-rose-600 shrink-0 mt-0.5" />
+            <div className="flex-1 text-xs">
+              <h3 className="font-bold text-rose-900 text-sm">Strict Database Enforcement Active</h3>
+              <p className="text-rose-700 mt-0.5">
+                PostgreSQL database connectivity is currently disconnected or offline. To guarantee audit compliance and eliminate uncommitted data risk, mutations (creating tenders, submitting bids, issuing clarifications, and contract awards) are locked in strict mode until the database connection is live.
+              </p>
+            </div>
+            <button
+              onClick={refreshFromDatabase}
+              className="px-3 py-1.5 bg-rose-600 hover:bg-rose-700 text-white font-bold text-xs rounded-xl cursor-pointer shrink-0 transition-colors"
+            >
+              Retry Connection
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* Sync Status Banner */}
+      {syncNotice && (
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-3">
+          <div className="bg-blue-50 border border-blue-200 text-blue-800 rounded-xl px-3.5 py-1.5 text-xs flex items-center justify-between">
+            <span className="flex items-center gap-2">
+              <span className="w-1.5 h-1.5 rounded-full bg-blue-500"></span>
+              <span>{syncNotice}</span>
+            </span>
+            <button 
+              onClick={() => setSyncNotice(null)} 
+              className="text-slate-400 hover:text-slate-600 font-bold ml-2 cursor-pointer"
+            >
+              ✕
+            </button>
+          </div>
+        </div>
+      )}
+
       {/* VIEW A: RFP DIRECTORY (When no single RFP is selected) */}
       {!selectedRfpId && (
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-8 space-y-8">
           
+          {/* Guest Directory Preview Banner */}
+          {isGuestPreview && (
+            <div className="bg-gradient-to-r from-slate-900 via-blue-950 to-indigo-950 text-white rounded-3xl p-6 sm:p-8 shadow-md border border-blue-900/50 flex flex-col md:flex-row md:items-center justify-between gap-6">
+              <div className="max-w-2xl">
+                <div className="flex items-center gap-2 mb-2">
+                  <span className="px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider bg-blue-500/20 text-blue-300 border border-blue-400/30">
+                    Public Tender Directory Preview
+                  </span>
+                  <span className="text-slate-400 text-xs">• Sealed-Bid Architecture</span>
+                </div>
+                <h2 className="text-xl sm:text-2xl font-black text-white tracking-tight">
+                  Hospital Equipment &amp; Infrastructure Tenders
+                </h2>
+                <p className="text-slate-300 text-xs sm:text-sm mt-1 leading-relaxed">
+                  Browse open clinical packages with masked client identities. Sign in to submit sealed quotations, initiate pre-bid clarifications, or unlock full normalized comparisons.
+                </p>
+              </div>
+              <div className="flex flex-wrap items-center gap-2.5 shrink-0">
+                <button
+                  onClick={() => onSignIn?.('owner')}
+                  className="px-4 py-2.5 bg-blue-600 hover:bg-blue-500 text-white font-bold text-xs rounded-xl shadow-xs transition-colors cursor-pointer flex items-center gap-2"
+                >
+                  <span>🏥 Sign In as Owner</span>
+                </button>
+                <button
+                  onClick={() => onSignIn?.('vendor')}
+                  className="px-4 py-2.5 bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-xs rounded-xl shadow-xs transition-colors cursor-pointer flex items-center gap-2"
+                >
+                  <span>🏗️ Sign In as Vendor</span>
+                </button>
+                <button
+                  onClick={() => onSignIn?.('advisor')}
+                  className="px-4 py-2.5 bg-purple-600 hover:bg-purple-500 text-white font-bold text-xs rounded-xl shadow-xs transition-colors cursor-pointer flex items-center gap-2"
+                >
+                  <span>📋 Biomedical Advisor</span>
+                </button>
+              </div>
+            </div>
+          )}
+
           {/* Role-Adaptive KPI Strip */}
           {effectiveRole === 'vendor' ? (
             <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
@@ -499,9 +1003,9 @@ export const ProcurementWorkspace: React.FC<ProcurementWorkspaceProps> = ({
                   key={rfp.id}
                   rfp={rfp}
                   quotesCount={qCount}
-                  onSelect={(r) => setSelectedRfpId(r.id)}
+                  onSelect={(r) => handleSelectRfp(r.id)}
                   onExportPdf={(r) => {
-                    setSelectedRfpId(r.id);
+                    handleSelectRfp(r.id);
                     setIsPrintModalOpen(true);
                   }}
                   userRole={effectiveRole}
@@ -516,6 +1020,35 @@ export const ProcurementWorkspace: React.FC<ProcurementWorkspaceProps> = ({
       {/* VIEW B: ACTIVE RFP WORKSPACE */}
       {selectedRfp && (
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-6 space-y-6">
+
+          {/* Guest Read-Only Preview Callout */}
+          {isGuestPreview && (
+            <div className="bg-gradient-to-r from-blue-900 to-indigo-950 text-white rounded-3xl p-6 shadow-md border border-blue-800 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+              <div>
+                <span className="px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider bg-blue-500/30 text-blue-200 border border-blue-400/30">
+                  Read-Only Public Tender Preview
+                </span>
+                <h3 className="text-base sm:text-lg font-bold text-white mt-1">Viewing Clinical Specifications as Guest</h3>
+                <p className="text-xs text-blue-200 mt-0.5 max-w-xl">
+                  Client hospital identity and competitor quotations are protected under sealed-bid protocol. Sign in as a <strong>Vendor</strong> to submit a private quotation, or as a <strong>Hospital Owner</strong> to compare line items.
+                </p>
+              </div>
+              <div className="flex flex-wrap items-center gap-2">
+                <button
+                  onClick={() => onSignIn?.('vendor')}
+                  className="px-4 py-2 bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-xs rounded-xl shadow-xs transition-colors cursor-pointer flex items-center gap-1.5"
+                >
+                  <span>🏗️ Sign in to Bid</span>
+                </button>
+                <button
+                  onClick={() => onSignIn?.('owner')}
+                  className="px-4 py-2 bg-white hover:bg-slate-100 text-slate-900 font-bold text-xs rounded-xl shadow-xs transition-colors cursor-pointer flex items-center gap-1.5"
+                >
+                  <span>🏥 Owner Sign In</span>
+                </button>
+              </div>
+            </div>
+          )}
           
           {/* RFP Stage Tracker & Header Card */}
           <div className="bg-white rounded-3xl border border-slate-200/90 shadow-2xs p-6 space-y-6">
@@ -559,7 +1092,7 @@ export const ProcurementWorkspace: React.FC<ProcurementWorkspaceProps> = ({
               {/* Top Quick Actions - Filtered by Role */}
               <div className="flex flex-wrap items-center gap-2">
                 {/* Upload External Quote only for Owner and Admin */}
-                {(effectiveRole === 'owner' || effectiveRole === 'admin') && (
+                {!isGuestPreview && (effectiveRole === 'owner' || effectiveRole === 'admin') && (
                   <button
                     onClick={() => setIsExternalQuoteModalOpen(true)}
                     className="px-3.5 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs cursor-pointer shadow-xs transition-colors flex items-center gap-1.5"
@@ -570,7 +1103,7 @@ export const ProcurementWorkspace: React.FC<ProcurementWorkspaceProps> = ({
                 )}
 
                 {/* Submit / Revise Bid */}
-                {effectiveRole !== 'advisor' && (
+                {!isGuestPreview && effectiveRole !== 'advisor' && (
                   <button
                     onClick={() => setIsVendorQuoteModalOpen(true)}
                     className={`px-3.5 py-2 rounded-xl text-white font-bold text-xs cursor-pointer shadow-xs transition-colors flex items-center gap-1.5 ${
@@ -583,6 +1116,31 @@ export const ProcurementWorkspace: React.FC<ProcurementWorkspaceProps> = ({
                     <span>{effectiveRole === 'vendor' && myVendorQuote ? 'Revise Submitted Bid' : 'Submit Vendor Bid'}</span>
                   </button>
                 )}
+
+                {/* Guest Quick CTA */}
+                {isGuestPreview && (
+                  <button
+                    onClick={() => onSignIn?.('vendor')}
+                    className="px-3.5 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs cursor-pointer shadow-xs transition-colors flex items-center gap-1.5"
+                  >
+                    <FileText className="w-4 h-4" />
+                    <span>Sign In to Bid</span>
+                  </button>
+                )}
+
+                {/* Copy Permanent Shareable Deep Link */}
+                <button
+                  onClick={handleCopyShareableLink}
+                  title="Copy permanent shareable deep link to this RFP and current tab"
+                  className={`p-2 rounded-xl border text-xs font-bold cursor-pointer flex items-center gap-1.5 transition-all ${
+                    copiedLink
+                      ? 'bg-emerald-50 border-emerald-300 text-emerald-700 shadow-2xs'
+                      : 'border-slate-200 bg-white hover:bg-slate-100 text-slate-700'
+                  }`}
+                >
+                  {copiedLink ? <Check className="w-4 h-4 text-emerald-600" /> : <Copy className="w-4 h-4" />}
+                  <span className="hidden sm:inline text-xs">{copiedLink ? 'Link Copied!' : 'Share / Copy Link'}</span>
+                </button>
 
                 <button
                   onClick={() => setIsPrintModalOpen(true)}
@@ -602,25 +1160,44 @@ export const ProcurementWorkspace: React.FC<ProcurementWorkspaceProps> = ({
                   const currentIdx = LIFECYCLE_STAGES.findIndex(s => s.key === selectedRfp.status);
                   const isPassed = idx <= currentIdx;
                   const isCurrent = idx === currentIdx;
+                  const canTransition = !isGuestPreview && (effectiveRole === 'owner' || effectiveRole === 'admin') && !strictModeBlocked && dbStatus.configured;
 
                   return (
                     <div key={st.key} className="flex items-center flex-1 last:flex-none">
-                      <div className="flex flex-col items-center">
+                      <button
+                        type="button"
+                        onClick={() => {
+                          if (canTransition && !isCurrent) {
+                            handleAdvanceStage(st.key);
+                          }
+                        }}
+                        disabled={!canTransition || isCurrent}
+                        title={
+                          isCurrent
+                            ? `Current Stage: ${st.label}`
+                            : canTransition
+                            ? `Advance RFP status to ${st.label} (Syncs to PostgreSQL)`
+                            : `Stage: ${st.label}`
+                        }
+                        className={`flex flex-col items-center group transition-all ${
+                          canTransition && !isCurrent ? 'cursor-pointer hover:scale-105' : 'cursor-default'
+                        }`}
+                      >
                         <div className={`w-6 h-6 rounded-full flex items-center justify-center text-[10px] font-black transition-all ${
                           isCurrent 
                             ? 'bg-blue-600 text-white ring-4 ring-blue-100 shadow-xs' 
                             : isPassed 
-                            ? 'bg-emerald-600 text-white' 
-                            : 'bg-slate-100 text-slate-400 border border-slate-200'
+                            ? 'bg-emerald-600 text-white group-hover:bg-emerald-500' 
+                            : 'bg-slate-100 text-slate-400 border border-slate-200 group-hover:bg-slate-200'
                         }`}>
                           {isPassed ? '✓' : idx + 1}
                         </div>
-                        <span className={`text-[10px] font-bold mt-1 whitespace-nowrap ${
-                          isCurrent ? 'text-blue-700' : isPassed ? 'text-slate-800' : 'text-slate-400'
+                        <span className={`text-[10px] font-bold mt-1 whitespace-nowrap transition-colors ${
+                          isCurrent ? 'text-blue-700' : isPassed ? 'text-slate-800' : 'text-slate-400 group-hover:text-slate-600'
                         }`}>
                           {st.label}
                         </span>
-                      </div>
+                      </button>
 
                       {idx < LIFECYCLE_STAGES.length - 1 && (
                         <div className={`h-0.5 flex-1 mx-1.5 ${isPassed ? 'bg-emerald-500' : 'bg-slate-200'}`} />
@@ -636,7 +1213,14 @@ export const ProcurementWorkspace: React.FC<ProcurementWorkspaceProps> = ({
           {/* Sub-Navigation Tabs - Dynamically Filtered by User Role */}
           <div className="flex rounded-2xl bg-white border border-slate-200 p-1.5 text-xs overflow-x-auto shadow-2xs">
             {(
-              effectiveRole === 'vendor'
+              isGuestPreview
+                ? [
+                    { key: 'specs', label: `Clinical Requirements (${selectedRfp.requirements.length})`, icon: Briefcase },
+                    { key: 'clarifications', label: `Pre-Bid Q&A & Addenda (${rfpClarifications.length})`, icon: Sparkles },
+                    { key: 'comparison', label: `Masked Comparison (${rfpQuotes.length})`, icon: Award },
+                    { key: 'tco', label: 'TCO Simulator', icon: TrendingUp }
+                  ]
+                : effectiveRole === 'vendor'
                 ? [
                     { key: 'my_bid', label: myVendorQuote ? `My Quotation & Status (v${myVendorQuote.version})` : 'Submit Bid Now', icon: FileText },
                     { key: 'specs', label: `Requirements & Scope (${selectedRfp.requirements.length})`, icon: Briefcase },
@@ -664,7 +1248,7 @@ export const ProcurementWorkspace: React.FC<ProcurementWorkspaceProps> = ({
               return (
                 <button
                   key={tab.key}
-                  onClick={() => setActiveWorkspaceTab(tab.key as any)}
+                  onClick={() => handleTabChange(tab.key as any)}
                   className={`px-4 py-2 rounded-xl font-bold transition-all cursor-pointer flex items-center gap-2 whitespace-nowrap ${
                     activeWorkspaceTab === tab.key
                       ? 'bg-blue-600 text-white shadow-xs'
@@ -702,6 +1286,8 @@ export const ProcurementWorkspace: React.FC<ProcurementWorkspaceProps> = ({
               onOpenClarification={(q) => {
                 setActiveWorkspaceTab('clarifications');
               }}
+              onAddClarification={handleAddClarification}
+              currentUser={currentUser}
               onSelectWinningQuote={(effectiveRole === 'owner' || effectiveRole === 'admin') ? (q) => {
                 setSelectedWinningQuote(q);
                 setIsAwardModalOpen(true);
@@ -1009,6 +1595,41 @@ export const ProcurementWorkspace: React.FC<ProcurementWorkspaceProps> = ({
             </div>
           )}
 
+        </div>
+      )}
+
+      {/* VIEW C: RFP NOT FOUND FALLBACK */}
+      {selectedRfpId && !selectedRfp && (
+        <div className="max-w-2xl mx-auto px-4 py-16 text-center">
+          <div className="w-16 h-16 bg-slate-100 text-slate-500 rounded-3xl flex items-center justify-center mx-auto mb-4 border border-slate-200 shadow-2xs">
+            <FileText className="w-8 h-8 text-slate-400" />
+          </div>
+          <span className="text-xs font-mono font-bold text-slate-600 bg-slate-100 border border-slate-200 px-3 py-1 rounded-lg">
+            {selectedRfpId}
+          </span>
+          <h2 className="text-2xl font-black text-slate-900 mt-3">
+            Tender Package Not Found
+          </h2>
+          <p className="text-sm text-slate-600 mt-2 max-w-md mx-auto leading-relaxed">
+            The RFP tender identifier in the URL was not found in active packages or may have been archived. You can browse all available hospital tenders in the procurement directory.
+          </p>
+          <div className="mt-6 flex flex-wrap items-center justify-center gap-3">
+            <button
+              onClick={() => handleSelectRfp(null)}
+              className="px-5 py-2.5 bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs rounded-xl shadow-xs transition-colors cursor-pointer flex items-center gap-2"
+            >
+              <ChevronLeft className="w-4 h-4" />
+              <span>Browse All Tender Packages</span>
+            </button>
+            {onNavigateHome && (
+              <button
+                onClick={onNavigateHome}
+                className="px-5 py-2.5 bg-white hover:bg-slate-100 text-slate-700 font-bold text-xs rounded-xl border border-slate-200 transition-colors cursor-pointer"
+              >
+                Return Home
+              </button>
+            )}
+          </div>
         </div>
       )}
 

@@ -1,0 +1,262 @@
+{
+  "schema_version": 1,
+  "diagram_type": "architecture",
+  "meta": {
+    "title": "NOVA Healthcare Platform - Runtime Architecture",
+    "subtitle": "Verified full-stack runtime topology: React 19 SPA, Express 4.21 server, Neon PostgreSQL, and 3P services",
+    "output": ".archify/architecture-runtime-20261005-101612/runtime-architecture.html",
+    "quality_profile": "showcase"
+  },
+  "components": [
+    {
+      "id": "users",
+      "type": "external",
+      "label": "Healthcare Users",
+      "sublabel": "Owners, Vendors, Advisors",
+      "tag": "Browser / Mobile",
+      "pos": [40, 230],
+      "size": [150, 66]
+    },
+    {
+      "id": "client_routing",
+      "type": "frontend",
+      "label": "Slug Router",
+      "sublabel": "src/utils/routes.ts",
+      "pos": [280, 80],
+      "size": [175, 66]
+    },
+    {
+      "id": "spa_client",
+      "type": "frontend",
+      "label": "React 19 SPA",
+      "sublabel": "Vite 6 Client Bundle",
+      "pos": [280, 230],
+      "size": [175, 66]
+    },
+    {
+      "id": "client_storage",
+      "type": "frontend",
+      "label": "LocalStorage Cache",
+      "sublabel": "Offline & Claim State",
+      "pos": [280, 380],
+      "size": [175, 66]
+    },
+    {
+      "id": "vite_middleware",
+      "type": "backend",
+      "label": "Vite Middleware",
+      "sublabel": "Dev HMR & Static Serve",
+      "pos": [540, 80],
+      "size": [185, 66]
+    },
+    {
+      "id": "express_server",
+      "type": "backend",
+      "label": "Express Server",
+      "sublabel": "Node.js :3000 / server.ts",
+      "pos": [540, 230],
+      "size": [185, 66]
+    },
+    {
+      "id": "webhook_verifier",
+      "type": "security",
+      "label": "Webhook Verifier",
+      "sublabel": "Razorpay SHA-256 HMAC",
+      "pos": [540, 530],
+      "size": [185, 66]
+    },
+    {
+      "id": "gemini_api",
+      "type": "cloud",
+      "label": "Google Gemini API",
+      "sublabel": "Gemini 2.5 Flash SDK",
+      "pos": [810, 80],
+      "size": [175, 66]
+    },
+    {
+      "id": "api_router",
+      "type": "backend",
+      "label": "REST API Router",
+      "sublabel": "src/api/routes.ts",
+      "pos": [810, 230],
+      "size": [175, 66]
+    },
+    {
+      "id": "razorpay_gateway",
+      "type": "external",
+      "label": "Razorpay API",
+      "sublabel": "Orders & Webhooks",
+      "pos": [810, 380],
+      "size": [175, 66]
+    },
+    {
+      "id": "neon_db",
+      "type": "database",
+      "label": "Neon PostgreSQL",
+      "sublabel": "Serverless DB / Drizzle",
+      "pos": [1080, 80],
+      "size": [175, 66]
+    },
+    {
+      "id": "memory_fallback",
+      "type": "database",
+      "label": "Memory Fallback",
+      "sublabel": "In-Memory State Store",
+      "pos": [1080, 230],
+      "size": [175, 66]
+    },
+    {
+      "id": "smtp_dispatcher",
+      "type": "external",
+      "label": "SMTP Dispatcher",
+      "sublabel": "Nodemailer Transport",
+      "pos": [1080, 380],
+      "size": [175, 66]
+    }
+  ],
+  "boundaries": [
+    {
+      "kind": "region",
+      "label": "Client Browser Runtime (Vite SPA)",
+      "wraps": ["client_routing", "spa_client", "client_storage"]
+    },
+    {
+      "kind": "region",
+      "label": "Full-Stack Host Engine (Node.js Express)",
+      "wraps": ["vite_middleware", "express_server", "webhook_verifier"]
+    },
+    {
+      "kind": "region",
+      "label": "Backend Routing & Integration Tier",
+      "wraps": ["gemini_api", "api_router", "razorpay_gateway"]
+    },
+    {
+      "kind": "security-group",
+      "label": "Persistence & Notification Tier",
+      "wraps": ["neon_db", "memory_fallback", "smtp_dispatcher"]
+    }
+  ],
+  "connections": [
+    {
+      "id": "users-to-client",
+      "from": "users",
+      "to": "spa_client",
+      "label": "User Interaction",
+      "variant": "emphasis"
+    },
+    {
+      "id": "client-to-router",
+      "from": "spa_client",
+      "to": "client_routing",
+      "label": "syncs slug route"
+    },
+    {
+      "id": "client-to-storage",
+      "from": "spa_client",
+      "to": "client_storage",
+      "label": "persists drafts"
+    },
+    {
+      "id": "client-to-express",
+      "from": "spa_client",
+      "to": "express_server",
+      "label": "HTTP / API fetch",
+      "variant": "emphasis"
+    },
+    {
+      "id": "express-to-vite",
+      "from": "express_server",
+      "to": "vite_middleware",
+      "label": "mounts middleware"
+    },
+    {
+      "id": "express-to-api",
+      "from": "express_server",
+      "to": "api_router",
+      "label": "mounts /api router",
+      "variant": "emphasis"
+    },
+    {
+      "id": "express-to-gemini",
+      "from": "express_server",
+      "to": "gemini_api",
+      "label": "generates AI flows"
+    },
+    {
+      "id": "express-to-razorpay",
+      "from": "express_server",
+      "to": "razorpay_gateway",
+      "label": "creates order"
+    },
+    {
+      "id": "razorpay-to-verifier",
+      "from": "razorpay_gateway",
+      "to": "webhook_verifier",
+      "label": "POST webhook event",
+      "variant": "security"
+    },
+    {
+      "id": "verifier-to-express",
+      "from": "webhook_verifier",
+      "to": "express_server",
+      "label": "verified event",
+      "variant": "security"
+    },
+    {
+      "id": "api-to-neon",
+      "from": "api_router",
+      "to": "neon_db",
+      "label": "SQL query (Neon)"
+    },
+    {
+      "id": "api-to-memory",
+      "from": "api_router",
+      "to": "memory_fallback",
+      "label": "fallback store"
+    },
+    {
+      "id": "api-to-smtp",
+      "from": "api_router",
+      "to": "smtp_dispatcher",
+      "label": "dispatches email"
+    }
+  ],
+  "cards": [
+    {
+      "dot": "cyan",
+      "title": "Client Tier",
+      "items": [
+        "React 19 Single Page App running on Vite 6",
+        "Client-side slug routing with browser history and deep-linking sync",
+        "LocalStorage cache for session tokens, claim submissions, and enquiry drafts"
+      ]
+    },
+    {
+      "dot": "emerald",
+      "title": "Full-Stack Server & Routing",
+      "items": [
+        "Node.js Express 4.21 server listening on port 3000",
+        "Vite dev middleware in development; static dist serving in production",
+        "Modular REST router mounting domain endpoints at /api",
+        "SHA-256 HMAC signature verification for Razorpay payment webhook events"
+      ]
+    },
+    {
+      "dot": "amber",
+      "title": "Persistence Tier",
+      "items": [
+        "Neon Serverless PostgreSQL connection pool via Drizzle ORM when DATABASE_URL is set",
+        "Resilient in-memory fallback stores for zero-downtime operation without external database"
+      ]
+    },
+    {
+      "dot": "violet",
+      "title": "External Service Integrations",
+      "items": [
+        "Google GenAI SDK (Gemini 2.5 Flash) for conversational WhatsApp healthcare flow synthesis",
+        "Razorpay Payments API for checkout order generation",
+        "Nodemailer SMTP transport for verification OTPs and claim receipts"
+      ]
+    }
+  ]
+}

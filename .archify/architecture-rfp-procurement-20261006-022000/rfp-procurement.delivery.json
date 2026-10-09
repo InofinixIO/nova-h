@@ -1,0 +1,17 @@
+{
+  "schemaVersion": 1,
+  "receiptId": "a377d04a-bb61-4db1-a7fe-6acbb91a4479",
+  "status": "current",
+  "command": "deliver",
+  "type": "architecture",
+  "input": "/app/applet/.archify/architecture-rfp-procurement-20261006-022000/candidate.json",
+  "output": "/app/applet/.archify/architecture-rfp-procurement-20261006-022000/rfp-procurement.html",
+  "specification": {
+    "sha256": "5b30ac554c7c437cc520771e27ff999847e14be5fe288f401ca3d0a370a103a3",
+    "bytes": 8855
+  },
+  "artifact": {
+    "sha256": "21ec170c7309bbb6d6eb87a99308a46ebb7fb795487098128a20b628a2cc4407",
+    "bytes": 785803
+  }
+}

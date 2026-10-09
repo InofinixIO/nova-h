@@ -28,7 +28,7 @@ import { StandaloneClaimView } from './components/StandaloneClaimView';
 import { AdminLoginForm } from './components/AdminLoginForm';
 import { AdminConsoleView, AdminTabType } from './components/AdminConsoleView';
 import { UserDashboard } from './components/UserDashboard';
-import { DashboardShell, DashboardNavItem } from './components/dashboard/DashboardShell';
+import { DashboardShell, DashboardNavItem, DashboardNavSection } from './components/dashboard/DashboardShell';
 import { WhatsAppFlowBuilder } from './components/whatsapp/WhatsAppFlowBuilder';
 import { ProcurementWorkspace } from './components/procurement/ProcurementWorkspace';
 import { CompareProfilesView } from './components/CompareProfilesView';
@@ -39,6 +39,10 @@ import { PartnerDetailView } from './components/PartnerDetailView';
 import { UserRole, DirectoryItem, ProjectRequirement, PaymentTransaction, AuthUser, StageItem } from './types';
 import { getStoredDirectory, saveStoredDirectory } from './utils/directoryStorage';
 import { getStoredToolkitStages, saveStoredToolkitStages } from './utils/toolkitStorage';
+import { getStoredClaims } from './utils/claimsService';
+import { getStoredRequirements } from './utils/requirementsStorage';
+import { getStoredEnquiries } from './utils/enquiriesStorage';
+import { getAllUsers } from './utils/userManagement';
 import { RouteSlug, getSlugFromPath, navigateToSlug, getPartnerIdentifierFromUrl, getClaimIdFromUrl } from './utils/routes';
 import { isFeatureEnabled } from './utils/featureFlags';
 import { 
@@ -153,6 +157,71 @@ export default function App() {
   // Active tab states for persistent sidebar in dashboard and admin console
   const [userDashboardTab, setUserDashboardTab] = useState<'received_enquiries' | 'sent_enquiries' | 'project_leads' | 'profile'>('received_enquiries');
   const [adminConsoleTab, setAdminConsoleTab] = useState<AdminTabType>('users');
+
+  // Dynamic badge metrics for Admin Console sidebar
+  const [pendingClaimsCount, setPendingClaimsCount] = useState<number>(() => {
+    try {
+      return getStoredClaims().filter(c => c.status === 'pending').length;
+    } catch {
+      return 0;
+    }
+  });
+  const [unreadLeadsCount, setUnreadLeadsCount] = useState<number>(() => {
+    try {
+      const reqs = getStoredRequirements().filter(r => r.status === 'pending_review').length;
+      const enqs = getStoredEnquiries().filter(e => e.status === 'new').length;
+      return reqs + enqs;
+    } catch {
+      return 0;
+    }
+  });
+  const [activeUsersCount, setActiveUsersCount] = useState<number>(() => {
+    try {
+      return getAllUsers().filter(u => u.status === 'active').length;
+    } catch {
+      return 0;
+    }
+  });
+
+  useEffect(() => {
+    const handleClaimsUpdate = () => {
+      try {
+        setPendingClaimsCount(getStoredClaims().filter(c => c.status === 'pending').length);
+      } catch {}
+    };
+    const handleReqsUpdate = () => {
+      try {
+        const reqs = getStoredRequirements().filter(r => r.status === 'pending_review').length;
+        const enqs = getStoredEnquiries().filter(e => e.status === 'new').length;
+        setUnreadLeadsCount(reqs + enqs);
+      } catch {}
+    };
+    const handleUsersUpdate = () => {
+      try {
+        setActiveUsersCount(getAllUsers().filter(u => u.status === 'active').length);
+      } catch {}
+    };
+
+    window.addEventListener('nova_claims_updated', handleClaimsUpdate);
+    window.addEventListener('nova_requirements_updated', handleReqsUpdate);
+    window.addEventListener('nova_enquiries_updated', handleReqsUpdate);
+    window.addEventListener('nova_users_updated', handleUsersUpdate);
+    
+    const handleWindowFocus = () => {
+      handleClaimsUpdate();
+      handleReqsUpdate();
+      handleUsersUpdate();
+    };
+    window.addEventListener('focus', handleWindowFocus);
+
+    return () => {
+      window.removeEventListener('nova_claims_updated', handleClaimsUpdate);
+      window.removeEventListener('nova_requirements_updated', handleReqsUpdate);
+      window.removeEventListener('nova_enquiries_updated', handleReqsUpdate);
+      window.removeEventListener('nova_users_updated', handleUsersUpdate);
+      window.removeEventListener('focus', handleWindowFocus);
+    };
+  }, []);
 
   // Role filter for For Advisors directory view (owners and vendors)
   const [advisorRoleFilter, setAdvisorRoleFilter] = useState<'all' | 'owner' | 'vendor'>('all');
@@ -389,6 +458,23 @@ export default function App() {
       }
     }
 
+    // RFP & Procurement Workspace Routing (/rfp, /rfp/:id, /rfp/:id/:tab, /procurement, /procurement/:id)
+    if (
+      currentSlug === 'rfp' || 
+      currentSlug.startsWith('rfp/') || 
+      currentSlug === 'procurement' || 
+      currentSlug.startsWith('procurement/')
+    ) {
+      return (
+        <ProcurementWorkspace
+          currentUser={currentUser}
+          isGuestPreview={!currentUser}
+          onNavigateHome={() => handleNavigate('')}
+          onSignIn={(role) => handleOpenAuth('signin', role || 'owner')}
+        />
+      );
+    }
+
     switch (currentSlug) {
       case 'admin':
       case 'admin/users':
@@ -406,28 +492,109 @@ export default function App() {
       case 'admin/mjml':
         // DEDICATED ADMIN CONSOLE ROUTE (/admin)
         if (currentUser && currentUser.role === 'admin') {
-          const adminNavItems: DashboardNavItem[] = [
-            { id: 'users', slug: 'admin/users', label: 'Users & Subscriptions', icon: Users },
-            { id: 'manage', slug: 'admin/directory', label: 'Partner Directory', icon: Building2 },
-            { id: 'claims', slug: 'admin/claims', label: 'Ownership Claims', icon: ShieldCheck },
-            { id: 'requirements', slug: 'admin/requirements', label: 'Hospital RFQs & Leads', icon: FileText },
-            { id: 'import_csv', slug: 'admin/import-csv', label: 'Bulk CSV Importer', icon: UploadCloud },
-            { id: 'add_vendor', slug: 'admin/add-partner', label: 'Add Single Partner', icon: Plus },
-            { id: 'toolkit_stages', slug: 'admin/toolkit', label: '15-Stage Toolkit', icon: BookOpen },
-            { id: 'accreditation_programmes', slug: 'admin/accreditation', label: 'Toolkit Templates', icon: Award },
-            { id: 'coupons', slug: 'admin/coupons', label: 'Coupons & Waivers', icon: Gift },
-            { id: 'pamphlet', slug: 'admin/pamphlet', label: 'Marketing Pamphlet & QR', icon: QrCode },
-            ...(isFeatureEnabled('mjml_studio') ? [
-              { id: 'mjml_builder', slug: 'admin/mjml', label: 'MJML Email Studio', icon: Mail }
-            ] : [])
+          const adminNavSections: DashboardNavSection[] = [
+            {
+              title: 'Platform',
+              items: [
+                { 
+                  id: 'users', 
+                  slug: 'admin/users', 
+                  label: 'Users & Subscriptions', 
+                  icon: Users,
+                  badge: `${activeUsersCount} active`,
+                  badgeColor: 'bg-purple-100 text-purple-700 dark:bg-purple-950/80 dark:text-purple-300'
+                },
+                { 
+                  id: 'claims', 
+                  slug: 'admin/claims', 
+                  label: 'Ownership Claims', 
+                  icon: ShieldCheck,
+                  badge: pendingClaimsCount > 0 ? `${pendingClaimsCount} pending` : undefined,
+                  badgeColor: 'bg-amber-100 text-amber-800 dark:bg-amber-950/80 dark:text-amber-300'
+                },
+                { 
+                  id: 'requirements', 
+                  slug: 'admin/requirements', 
+                  label: 'Hospital RFQs & Leads', 
+                  icon: FileText,
+                  badge: unreadLeadsCount > 0 ? `${unreadLeadsCount} new` : undefined,
+                  badgeColor: 'bg-blue-100 text-blue-800 dark:bg-blue-950/80 dark:text-blue-300'
+                },
+                { 
+                  id: 'coupons', 
+                  slug: 'admin/coupons', 
+                  label: 'Coupons & Waivers', 
+                  icon: Gift 
+                }
+              ]
+            },
+            {
+              title: 'Directory',
+              items: [
+                { 
+                  id: 'manage', 
+                  slug: 'admin/directory', 
+                  label: 'Partner Directory', 
+                  icon: Building2,
+                  badge: `${directoryItems.length}`,
+                  badgeColor: 'bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-300'
+                },
+                { 
+                  id: 'add_vendor', 
+                  slug: 'admin/add-partner', 
+                  label: 'Add Single Partner', 
+                  icon: Plus 
+                },
+                { 
+                  id: 'import_csv', 
+                  slug: 'admin/import-csv', 
+                  label: 'Bulk CSV Importer', 
+                  icon: UploadCloud,
+                  badge: 'DB Sync',
+                  badgeColor: 'emerald'
+                }
+              ]
+            },
+            {
+              title: 'Toolkit',
+              items: [
+                { 
+                  id: 'toolkit_stages', 
+                  slug: 'admin/toolkit', 
+                  label: '15-Stage Toolkit', 
+                  icon: BookOpen 
+                },
+                { 
+                  id: 'accreditation_programmes', 
+                  slug: 'admin/accreditation', 
+                  label: 'Toolkit Templates', 
+                  icon: Award 
+                },
+                { 
+                  id: 'pamphlet', 
+                  slug: 'admin/pamphlet', 
+                  label: 'Marketing Pamphlet & QR', 
+                  icon: QrCode 
+                },
+                ...(isFeatureEnabled('mjml_studio') ? [
+                  { 
+                    id: 'mjml_builder', 
+                    slug: 'admin/mjml', 
+                    label: 'MJML Email Studio', 
+                    icon: Mail 
+                  }
+                ] : [])
+              ]
+            }
           ];
 
-          const activeCrumb = adminNavItems.find(i => i.id === adminConsoleTab)?.label || 'Console';
+          const allAdminNavItems = adminNavSections.flatMap(section => section.items);
+          const activeCrumb = allAdminNavItems.find(i => i.id === adminConsoleTab)?.label || 'Console';
 
           const handleAdminTabChange = (tabId: string) => {
             const tab = tabId as AdminTabType;
             setAdminConsoleTab(tab);
-            const targetSlug = adminNavItems.find(i => i.id === tab)?.slug;
+            const targetSlug = allAdminNavItems.find(i => i.id === tab)?.slug;
             if (targetSlug) {
               handleNavigate(targetSlug as RouteSlug);
             }
@@ -438,7 +605,8 @@ export default function App() {
               currentUser={currentUser}
               activeTab={adminConsoleTab}
               onTabChange={handleAdminTabChange}
-              roleNavItems={adminNavItems}
+              roleNavSections={adminNavSections}
+              roleNavItems={allAdminNavItems}
               breadcrumbs={[{ label: activeCrumb }]}
               primaryAction={{
                 label: '+ Add Partner',
@@ -525,73 +693,6 @@ export default function App() {
           <BackendArchitectureView
             onBack={() => handleNavigate('')}
             onNotify={(msg) => showToast(msg)}
-          />
-        );
-
-      case 'rfp':
-      case 'procurement':
-        if (!currentUser) {
-          return (
-            <div className="py-16 px-4 max-w-7xl mx-auto flex flex-col items-center justify-center min-h-[70vh]">
-              <div className="mb-6 text-center max-w-lg">
-                <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-black uppercase tracking-wider bg-blue-100 text-blue-800 border border-blue-200 mb-3">
-                  <FileText className="w-3.5 h-3.5 text-blue-600" />
-                  Procurement &amp; RFP Management Hub
-                </span>
-                <h2 className="text-3xl font-black text-slate-900 tracking-tight">
-                  Sign In to Access RFP Hub
-                </h2>
-                <p className="text-slate-600 text-sm mt-2 leading-relaxed">
-                  The RFP Hub view and capabilities are strictly configured based on your verified login. Sign in as a <strong>Hospital Owner</strong>, <strong>Vendor Partner</strong>, or <strong>Biomedical Advisor</strong> to access your tailored procurement workspace.
-                </p>
-              </div>
-
-              <div className="flex flex-wrap items-center justify-center gap-3 mb-6">
-                <button
-                  onClick={() => {
-                    setAuthRole('owner');
-                    setAuthMode('signin');
-                    setAuthModalOpen(true);
-                  }}
-                  className="px-5 py-3 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs shadow-md cursor-pointer transition-all flex items-center gap-2"
-                >
-                  <span>🏥 Sign In as Hospital Owner</span>
-                </button>
-                <button
-                  onClick={() => {
-                    setAuthRole('vendor');
-                    setAuthMode('signin');
-                    setAuthModalOpen(true);
-                  }}
-                  className="px-5 py-3 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs shadow-md cursor-pointer transition-all flex items-center gap-2"
-                >
-                  <span>🏗️ Sign In as Vendor Partner</span>
-                </button>
-                <button
-                  onClick={() => {
-                    setAuthRole('advisor');
-                    setAuthMode('signin');
-                    setAuthModalOpen(true);
-                  }}
-                  className="px-5 py-3 rounded-xl bg-purple-600 hover:bg-purple-700 text-white font-bold text-xs shadow-md cursor-pointer transition-all flex items-center gap-2"
-                >
-                  <span>📋 Sign In as Biomedical Advisor</span>
-                </button>
-              </div>
-
-              <button
-                onClick={() => handleNavigate('')}
-                className="text-xs font-bold text-slate-500 hover:text-slate-800 underline cursor-pointer"
-              >
-                Return to Home
-              </button>
-            </div>
-          );
-        }
-        return (
-          <ProcurementWorkspace
-            currentUser={currentUser}
-            onNavigateHome={() => handleNavigate('')}
           />
         );
 

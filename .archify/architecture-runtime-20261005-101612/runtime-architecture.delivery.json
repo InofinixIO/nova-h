@@ -1,0 +1,17 @@
+{
+  "schemaVersion": 1,
+  "receiptId": "c002fb41-2ef9-443b-ab00-2c046eead66f",
+  "status": "current",
+  "command": "deliver",
+  "type": "architecture",
+  "input": "/app/applet/.archify/architecture-runtime-20261005-101612/candidate.json",
+  "output": "/app/applet/.archify/architecture-runtime-20261005-101612/runtime-architecture.html",
+  "specification": {
+    "sha256": "2ae3f598660041bd36c21037c70dc74d706ce0bf99676c6e8381168d0ef072c2",
+    "bytes": 6923
+  },
+  "artifact": {
+    "sha256": "60dd1f68308fe23ea7ca053a6dda7a9e2cb8c18d8cdc577525a830955fc4c246",
+    "bytes": 777482
+  }
+}

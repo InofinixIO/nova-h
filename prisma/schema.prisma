@@ -1,0 +1,322 @@
+// ============================================================================
+// NOVA-H RFP & Quote Management - Prisma Schema Specification
+// Aligned with NOVA-H BRS v1.0 & PostgreSQL (Neon Serverless / Cloud SQL)
+// ============================================================================
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+// ============================================================================
+// ENUMS
+// ============================================================================
+
+enum Role {
+  owner
+  vendor
+  advisor
+  admin
+}
+
+enum RfpStatus {
+  draft
+  internal_review
+  published
+  vendor_questions
+  submissions_open
+  submissions_closed
+  clarification
+  technical_comparison
+  commercial_comparison
+  shortlisted
+  negotiation
+  selected
+  po_issued
+  closed
+  cancelled
+  on_hold
+}
+
+enum IdentityDisclosure {
+  immediate
+  on_approval
+  nda_required
+  on_shortlist
+  never
+}
+
+enum QuoteStatus {
+  submitted
+  under_clarification
+  verified
+  shortlisted
+  rejected
+  awarded
+}
+
+enum ComplianceStatus {
+  compliant
+  deviation
+  excluded
+  partial
+}
+
+enum ExternalChannel {
+  whatsapp
+  email
+  hard_copy
+  other
+}
+
+// ============================================================================
+// CORE DATA MODELS
+// ============================================================================
+
+model User {
+  id                 String              @id @default(uuid())
+  email              String              @unique
+  role               Role
+  name               String?
+  company            String?
+  phone              String?
+  subscribed         Boolean             @default(false)
+  quotations         Quotation[]
+  createdRfps        RFP[]               @relation("RfpOwner")
+  advisorRfps        RFP[]               @relation("RfpAdvisor")
+  advisorReviews     AdvisorObservation[]
+  disclosureRequests DisclosureRequest[]
+  auditEvents        AuditEvent[]
+  createdAt          DateTime            @default(now())
+  updatedAt          DateTime            @updatedAt
+
+  @@index([role])
+  @@index([email])
+}
+
+model ProjectRequirement {
+  id               String   @id @default(uuid())
+  hospitalName     String
+  location         String
+  requirementsText String   @db.Text
+  status           String   @default("open")
+  rfps             RFP[]
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+
+  @@index([status])
+}
+
+model RFP {
+  id                     String              @id @default(uuid())
+  rfpNumber              String              @unique
+  projectId              String
+  project                ProjectRequirement  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  title                  String
+  category               String
+  maskedHospitalTitle    String?
+  isIdentityMasked       Boolean             @default(true)
+  identityDisclosure     IdentityDisclosure  @default(on_approval)
+  locationCity           String
+  locationState          String?
+  bedCapacity            String?
+  summary                String              @db.Text
+  estimatedBudgetRange   String?
+  currency               String              @default("INR")
+  status                 RfpStatus           @default(published)
+  publishingModes        String[]            @default(["selected_invite", "marketplace"])
+  deadline               DateTime
+  questionDeadline       DateTime?
+  quoteClosingDate       DateTime
+  revisedClosingDate     DateTime?
+  expectedDecisionDate   DateTime?
+  targetInstallationDate DateTime?
+  vendorAccessList       String[]            @default([])
+  createdById            String?
+  createdBy              User?               @relation("RfpOwner", fields: [createdById], references: [id])
+  assignedAdvisorId      String?
+  assignedAdvisor        User?               @relation("RfpAdvisor", fields: [assignedAdvisorId], references: [id])
+  requirements           RFPRequirementItem[]
+  attachments            RFPAttachment[]
+  quotations             Quotation[]
+  clarifications         Clarification[]
+  disclosureRequests     DisclosureRequest[]
+  advisorObservations    AdvisorObservation[]
+  auditEvents            AuditEvent[]
+  awardDetails           Json?               // { awardedVendorId, vendorName, poReference, amount, decisionRationale, awardedAt }
+  createdAt              DateTime            @default(now())
+  updatedAt              DateTime            @updatedAt
+
+  @@index([status])
+  @@index([deadline])
+  @@index([projectId])
+  @@index([createdById])
+}
+
+model RFPRequirementItem {
+  id                    String   @id @default(uuid())
+  rfpId                 String
+  rfp                   RFP      @relation(fields: [rfpId], references: [id], onDelete: Cascade)
+  category              String
+  parameter             String
+  hospitalSpecification String   @db.Text
+  isMandatory           Boolean  @default(true)
+  unit                  String?
+  acceptableDeviation   String?
+  createdAt             DateTime @default(now())
+
+  @@index([rfpId])
+}
+
+model RFPAttachment {
+  id         String   @id @default(uuid())
+  rfpId      String
+  rfp        RFP      @relation(fields: [rfpId], references: [id], onDelete: Cascade)
+  name       String
+  type       String
+  size       String
+  category   String   // 'boq' | 'drawing' | 'scope_doc' | 'terms'
+  url        String?
+  uploadedAt DateTime @default(now())
+
+  @@index([rfpId])
+}
+
+model Quotation {
+  id                       String               @id @default(uuid())
+  rfpId                    String
+  rfp                      RFP                  @relation(fields: [rfpId], references: [id], onDelete: Cascade)
+  vendorId                 String
+  vendor                   User                 @relation(fields: [vendorId], references: [id], onDelete: Cascade)
+  amount                   Float
+  basePrice                Float
+  gstRatePercent           Float                @default(12)
+  gstAmount                Float                @default(0)
+  freightAmount            Float                @default(0)
+  installationAmount       Float                @default(0)
+  sitePrepAmount           Float                @default(0)
+  accessoriesAmount        Float                @default(0)
+  netLandedCost            Float
+  paymentTerms             String               @db.Text
+  deliveryWeeks            Int                  @default(6)
+  warrantyYears            Int                  @default(2)
+  amcAnnualPercent         Float?
+  amcAnnualAmount          Float?
+  cmcAnnualPercent         Float?
+  cmcAnnualAmount          Float?
+  highValueSparesEstAnnual Float?
+  consumablesCostPerTest   Float?
+  trainingIncluded         Boolean              @default(true)
+  uptimeCommitmentPercent  Float?               @default(98)
+  documentUrl              String?
+  officialDocumentName     String?
+  isExternal               Boolean              @default(false)
+  externalSource           ExternalChannel?
+  humanVerified            Boolean              @default(true)
+  aiExtractionData         Json?                // { confidenceScore, verifiedBy, verifiedAt, missingFields, discrepancies }
+  version                  Int                  @default(1)
+  status                   QuoteStatus          @default(submitted)
+  technicalSpecs           QuoteTechnicalSpec[]
+  clarifications           Clarification[]
+  createdAt                DateTime             @default(now())
+  updatedAt                DateTime             @updatedAt
+
+  @@index([rfpId])
+  @@index([vendorId])
+  @@index([status])
+}
+
+model QuoteTechnicalSpec {
+  id             String           @id @default(uuid())
+  quoteId        String
+  quote          Quotation        @relation(fields: [quoteId], references: [id], onDelete: Cascade)
+  reqId          String
+  parameter      String
+  offeredValue   String           @db.Text
+  compliance     ComplianceStatus @default(compliant)
+  notes          String?          @db.Text
+  sourceDocPage  String?
+  createdAt      DateTime         @default(now())
+
+  @@index([quoteId])
+  @@index([reqId])
+}
+
+model DisclosureRequest {
+  id          String   @id @default(uuid())
+  rfpId       String
+  rfp         RFP      @relation(fields: [rfpId], references: [id], onDelete: Cascade)
+  vendorId    String
+  vendor      User     @relation(fields: [vendorId], references: [id], onDelete: Cascade)
+  requestedAt DateTime @default(now())
+  status      String   @default("pending") // 'pending' | 'approved' | 'rejected'
+  decidedAt   DateTime?
+
+  @@unique([rfpId, vendorId])
+  @@index([rfpId])
+}
+
+model Clarification {
+  id               String     @id @default(uuid())
+  rfpId            String
+  rfp              RFP        @relation(fields: [rfpId], references: [id], onDelete: Cascade)
+  quoteId          String?
+  quote            Quotation? @relation(fields: [quoteId], references: [id], onDelete: SetNull)
+  lineItemId       String?    // Specific RFPRequirementItem identifier
+  parameterName    String?    // Human-readable parameter (e.g. "Dual-Head Injector")
+  category         String     // 'warranty' | 'commercial' | 'technical' | 'delivery' | 'compliance'
+  question         String     @db.Text
+  response         String?    @db.Text
+  askedBy          String
+  status           String     @default("open") // 'open' | 'answered' | 'resolved'
+  isAiDrafted      Boolean    @default(false)
+  revisionResulted Boolean    @default(false)
+  whatsappStatus   String     @default("queued") // 'queued' | 'sent' | 'delivered' | 'failed'
+  emailStatus      String     @default("queued") // 'queued' | 'sent' | 'delivered' | 'failed'
+  notificationId   String?
+  createdAt        DateTime   @default(now())
+  respondedAt      DateTime?
+
+  @@index([rfpId])
+  @@index([quoteId])
+  @@index([lineItemId])
+}
+
+model AdvisorObservation {
+  id                String   @id @default(uuid())
+  rfpId             String
+  rfp               RFP      @relation(fields: [rfpId], references: [id], onDelete: Cascade)
+  advisorId         String
+  advisor           User     @relation(fields: [advisorId], references: [id], onDelete: Cascade)
+  category          String   // 'technical' | 'commercial_risk' | 'leverage_suggestion'
+  observation       String   @db.Text
+  recommendation    String   @db.Text
+  conflictDisclosed Boolean  @default(true)
+  conflictNotes     String?  @db.Text
+  createdAt         DateTime @default(now())
+
+  @@index([rfpId])
+  @@index([advisorId])
+}
+
+model AuditEvent {
+  id          String   @id @default(uuid())
+  rfpId       String
+  rfp         RFP      @relation(fields: [rfpId], references: [id], onDelete: Cascade)
+  actorId     String?
+  actor       User?    @relation(fields: [actorId], references: [id], onDelete: SetNull)
+  actorName   String
+  actorRole   Role
+  action      String
+  description String   @db.Text
+  priorState  String?
+  newState    String?
+  createdAt   DateTime @default(now())
+
+  @@index([rfpId])
+  @@index([createdAt])
+}

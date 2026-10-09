@@ -40,7 +40,7 @@ interface BackendArchitectureViewProps {
   onNotify: (msg: string) => void;
 }
 
-type TabType = 'architecture' | 'plan_document' | 'cost_calculator' | 'dev_timeline' | 'data_flow' | 'security';
+type TabType = 'architecture' | 'plan_document' | 'cost_calculator' | 'dev_timeline' | 'data_flow' | 'security' | 'archify_runtime';
 
 export const BackendArchitectureView: React.FC<BackendArchitectureViewProps> = ({
   onBack,
@@ -328,6 +328,21 @@ export const BackendArchitectureView: React.FC<BackendArchitectureViewProps> = (
         >
           <ShieldCheck className="w-3.5 h-3.5" />
           <span>Security &amp; Healthcare Compliance</span>
+        </button>
+
+        <button
+          onClick={() => setActiveTab('archify_runtime')}
+          className={`px-3.5 py-1.5 rounded-xl text-xs font-bold flex items-center gap-2 transition-all cursor-pointer whitespace-nowrap ${
+            activeTab === 'archify_runtime'
+              ? 'bg-blue-600 text-white shadow-xs'
+              : 'text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800'
+          }`}
+        >
+          <Layers className="w-3.5 h-3.5 text-blue-400" />
+          <span>Archify Runtime Diagram</span>
+          <span className="text-[9px] font-mono px-1.5 py-0.2 rounded bg-blue-500/20 text-blue-300 font-bold border border-blue-500/30">
+            Blueprint Verified
+          </span>
         </button>
       </div>
 
@@ -999,6 +1014,108 @@ export const BackendArchitectureView: React.FC<BackendArchitectureViewProps> = (
                     <CheckCircle2 className="w-3.5 h-3.5" />
                     <span>Complete transparency for multi-crore medical equipment tenders</span>
                   </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Archify Runtime Diagram Tab Content */}
+        {activeTab === 'archify_runtime' && (
+          <div className="space-y-6 animate-in fade-in duration-200">
+            {/* Header Card */}
+            <div className="bg-white dark:bg-slate-900 rounded-2xl p-6 border border-slate-200 dark:border-slate-800 shadow-sm flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
+              <div>
+                <div className="flex items-center gap-2 mb-1">
+                  <span className="px-2 py-0.5 rounded text-[10px] font-mono font-bold bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-300 border border-blue-200 dark:border-blue-800">
+                    Archify v3.0.1
+                  </span>
+                  <span className="text-slate-400 text-xs">·</span>
+                  <span className="text-xs font-semibold text-emerald-600 dark:text-emerald-400 flex items-center gap-1">
+                    <CheckCircle2 className="w-3.5 h-3.5" />
+                    Verified from Repository Code
+                  </span>
+                </div>
+                <h2 className="text-xl font-bold text-slate-900 dark:text-white">
+                  Hospital Procurement &amp; RFP Runtime Architecture
+                </h2>
+                <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
+                  Generated using Archify CLI with Blueprint styling. Only includes verified components from the codebase without hypothetical inferences.
+                </p>
+              </div>
+
+              <div className="flex items-center gap-2">
+                <a
+                  href="/archify-procurement-runtime.html"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-xs font-bold flex items-center gap-1.5 transition-colors shadow-xs"
+                >
+                  <ExternalLink className="w-3.5 h-3.5" />
+                  <span>Open Standalone HTML</span>
+                </a>
+              </div>
+            </div>
+
+            {/* Embedded Interactive Viewer */}
+            <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 overflow-hidden shadow-sm">
+              <div className="p-3 bg-slate-50 dark:bg-slate-800/60 border-b border-slate-200 dark:border-slate-800 flex items-center justify-between text-xs text-slate-600 dark:text-slate-400 font-mono">
+                <span className="flex items-center gap-2">
+                  <span className="w-2.5 h-2.5 rounded-full bg-emerald-500 inline-block animate-pulse"></span>
+                  Interactive Blueprint Canvas (Pan, Zoom &amp; Explore Nodes)
+                </span>
+                <span>Preset: Blueprint · Quality: Showcase</span>
+              </div>
+              <iframe
+                src="/archify-procurement-runtime.html"
+                title="Archify Procurement Architecture Diagram"
+                className="w-full h-[650px] border-0"
+              />
+            </div>
+
+            {/* Verification & Evidence Matrix */}
+            <div className="bg-white dark:bg-slate-900 rounded-2xl p-6 border border-slate-200 dark:border-slate-800 shadow-sm">
+              <h3 className="text-sm font-bold text-slate-900 dark:text-white mb-3">
+                Verified Repository Components Grounding Summary
+              </h3>
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-xs">
+                <div className="p-4 bg-slate-50 dark:bg-slate-800/40 rounded-xl border border-slate-200 dark:border-slate-700 space-y-1.5">
+                  <p className="font-bold text-slate-800 dark:text-slate-200">Presentation Layer</p>
+                  <p className="text-slate-500 font-mono text-[11px]">src/components/procurement/*</p>
+                  <ul className="text-slate-600 dark:text-slate-300 list-disc list-inside space-y-0.5 text-[11px]">
+                    <li>ProcurementWorkspace.tsx</li>
+                    <li>RfpCreateModal.tsx</li>
+                    <li>VendorBidWorkspace.tsx</li>
+                    <li>ExternalQuoteUploadModal.tsx</li>
+                    <li>ComparisonMatrixView.tsx</li>
+                    <li>TcoCalculatorView.tsx</li>
+                    <li>ClarificationCycleView.tsx</li>
+                    <li>RfpDossierPrintModal.tsx</li>
+                  </ul>
+                </div>
+                <div className="p-4 bg-slate-50 dark:bg-slate-800/40 rounded-xl border border-slate-200 dark:border-slate-700 space-y-1.5">
+                  <p className="font-bold text-slate-800 dark:text-slate-200">Type Contracts &amp; State</p>
+                  <p className="text-slate-500 font-mono text-[11px]">src/types.ts</p>
+                  <ul className="text-slate-600 dark:text-slate-300 list-disc list-inside space-y-0.5 text-[11px]">
+                    <li>RFPLifecycleStatus (16 states)</li>
+                    <li>RFPItem &amp; RFPRequirementItem</li>
+                    <li>RFPQuote &amp; QuoteCommercials</li>
+                    <li>AIExtractionDetails</li>
+                    <li>RFPTCOCalculation</li>
+                    <li>UserRole (owner/vendor/advisor)</li>
+                  </ul>
+                </div>
+                <div className="p-4 bg-slate-50 dark:bg-slate-800/40 rounded-xl border border-slate-200 dark:border-slate-700 space-y-1.5">
+                  <p className="font-bold text-slate-800 dark:text-slate-200">Persistence Layer</p>
+                  <p className="text-slate-500 font-mono text-[11px]">prisma/schema.prisma</p>
+                  <ul className="text-slate-600 dark:text-slate-300 list-disc list-inside space-y-0.5 text-[11px]">
+                    <li>model User &amp; model Role</li>
+                    <li>model RFP &amp; model RfpStatus</li>
+                    <li>model Quotation &amp; Specs</li>
+                    <li>model ClarificationQuestion</li>
+                    <li>model TCOProjection</li>
+                    <li>model AuditEvent</li>
+                  </ul>
                 </div>
               </div>
             </div>

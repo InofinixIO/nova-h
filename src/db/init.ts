@@ -222,7 +222,118 @@ export async function initializeDatabase(): Promise<boolean> {
       );
     `;
 
-    console.log('[Neon PostgreSQL] Schema tables checked and created (including profile_claims, verification_otps, email_logs).');
+    await sqlClient`
+      CREATE TABLE IF NOT EXISTS rfps (
+        id VARCHAR(128) PRIMARY KEY,
+        rfp_number VARCHAR(64) UNIQUE NOT NULL,
+        title TEXT NOT NULL,
+        category TEXT NOT NULL,
+        hospital_name TEXT NOT NULL,
+        masked_hospital_title TEXT,
+        is_identity_masked BOOLEAN DEFAULT false,
+        location_city TEXT,
+        location_state TEXT,
+        bed_capacity TEXT,
+        summary TEXT,
+        scope_of_work JSONB DEFAULT '[]',
+        estimated_budget_range TEXT,
+        currency VARCHAR(16) DEFAULT 'INR',
+        status VARCHAR(64) NOT NULL DEFAULT 'draft',
+        publishing_modes JSONB DEFAULT '[]',
+        identity_disclosure VARCHAR(64) DEFAULT 'on_shortlist',
+        publication_date TEXT,
+        question_deadline TEXT,
+        quote_closing_date TEXT,
+        revised_closing_date TEXT,
+        expected_decision_date TEXT,
+        target_installation_date TEXT,
+        invited_vendor_ids JSONB DEFAULT '[]',
+        requirements JSONB DEFAULT '[]',
+        attachments JSONB DEFAULT '[]',
+        assigned_advisor JSONB,
+        created_by TEXT,
+        hospital_owner_email TEXT,
+        hospital_owner_phone TEXT,
+        award_details JSONB,
+        created_at TIMESTAMPTZ DEFAULT NOW(),
+        updated_at TIMESTAMPTZ DEFAULT NOW()
+      );
+    `;
+
+    await sqlClient`
+      CREATE TABLE IF NOT EXISTS quotations (
+        id VARCHAR(128) PRIMARY KEY,
+        rfp_id VARCHAR(128) NOT NULL REFERENCES rfps(id) ON DELETE CASCADE,
+        vendor_id TEXT NOT NULL,
+        vendor_name TEXT NOT NULL,
+        vendor_company TEXT,
+        contact_email TEXT,
+        contact_phone TEXT,
+        is_external BOOLEAN DEFAULT false,
+        external_source VARCHAR(32),
+        official_document_name TEXT,
+        submission_date TEXT NOT NULL,
+        quote_validity_date TEXT,
+        version INTEGER DEFAULT 1,
+        status VARCHAR(64) NOT NULL DEFAULT 'submitted',
+        commercials JSONB NOT NULL DEFAULT '{}',
+        technical_specs JSONB NOT NULL DEFAULT '[]',
+        deviations_and_exclusions JSONB DEFAULT '[]',
+        statutory_certifications JSONB DEFAULT '[]',
+        ai_extraction JSONB,
+        created_at TIMESTAMPTZ DEFAULT NOW(),
+        updated_at TIMESTAMPTZ DEFAULT NOW()
+      );
+    `;
+
+    await sqlClient`
+      CREATE TABLE IF NOT EXISTS rfp_clarifications (
+        id VARCHAR(128) PRIMARY KEY,
+        rfp_id VARCHAR(128) NOT NULL REFERENCES rfps(id) ON DELETE CASCADE,
+        quote_id VARCHAR(128),
+        vendor_name TEXT NOT NULL,
+        line_item_id TEXT,
+        parameter_name TEXT,
+        category VARCHAR(64) NOT NULL DEFAULT 'technical',
+        question TEXT NOT NULL,
+        is_ai_drafted BOOLEAN DEFAULT false,
+        asked_by TEXT NOT NULL,
+        asked_at TIMESTAMPTZ DEFAULT NOW(),
+        response TEXT,
+        responded_at TIMESTAMPTZ,
+        status VARCHAR(32) NOT NULL DEFAULT 'open',
+        revision_resulted BOOLEAN DEFAULT false,
+        whatsapp_status VARCHAR(32) DEFAULT 'sent',
+        email_status VARCHAR(32) DEFAULT 'sent'
+      );
+    `;
+
+    await sqlClient`
+      CREATE TABLE IF NOT EXISTS rfp_audit_events (
+        id VARCHAR(128) PRIMARY KEY,
+        rfp_id VARCHAR(128) NOT NULL,
+        action TEXT NOT NULL,
+        performed_by TEXT NOT NULL,
+        user_role VARCHAR(32) NOT NULL,
+        details JSONB DEFAULT '{}',
+        created_at TIMESTAMPTZ DEFAULT NOW()
+      );
+    `;
+
+    await sqlClient`
+      CREATE TABLE IF NOT EXISTS advisor_observations (
+        id VARCHAR(128) PRIMARY KEY,
+        rfp_id VARCHAR(128) NOT NULL,
+        advisor_name TEXT NOT NULL,
+        organization TEXT,
+        category TEXT NOT NULL,
+        observation TEXT NOT NULL,
+        recommendation TEXT,
+        created_at TIMESTAMPTZ DEFAULT NOW()
+      );
+    `;
+
+    console.log('[Neon PostgreSQL] Schema tables checked and created (including rfps, quotations, rfp_clarifications, rfp_audit_events, advisor_observations).');
 
     // 2. Automated Seed: Accreditation Programmes
     const countAccreditation = await sqlClient`SELECT COUNT(*) as count FROM accreditation_programmes;`;

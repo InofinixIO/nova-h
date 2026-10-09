@@ -1,0 +1,598 @@
+{
+  "schemaVersion": 1,
+  "ok": false,
+  "command": "finalize",
+  "status": "skipped",
+  "type": "architecture",
+  "quality": "showcase",
+  "startedAt": "2026-10-06T09:22:08.218Z",
+  "specification": {
+    "path": "/app/applet/.archify/architecture-rfp-procurement-20261006-022000/candidate.json",
+    "sha256": "5b30ac554c7c437cc520771e27ff999847e14be5fe288f401ca3d0a370a103a3",
+    "bytes": 8855
+  },
+  "artifact": {
+    "path": "/app/applet/.archify/architecture-rfp-procurement-20261006-022000/rfp-procurement.html",
+    "sha256": "21ec170c7309bbb6d6eb87a99308a46ebb7fb795487098128a20b628a2cc4407",
+    "bytes": 785803
+  },
+  "stages": {
+    "validate": {
+      "status": "pass",
+      "exitCode": 0,
+      "durationMs": null,
+      "execution": "embedded-in-deliver",
+      "command": [
+        "/usr/local/bin/node",
+        "/root/.agents/skills/archify/bin/archify.mjs",
+        "deliver",
+        "architecture",
+        "/app/applet/.archify/architecture-rfp-procurement-20261006-022000/candidate.json",
+        "/app/applet/.archify/architecture-rfp-procurement-20261006-022000/rfp-procurement.html",
+        "--quality",
+        "showcase",
+        "--json"
+      ],
+      "receipt": {
+        "schemaVersion": 1,
+        "ok": true,
+        "command": "validate",
+        "specification": {
+          "sha256": "5b30ac554c7c437cc520771e27ff999847e14be5fe288f401ca3d0a370a103a3",
+          "bytes": 8855
+        },
+        "validation": {
+          "checksPassed": 9,
+          "checkCount": 9,
+          "compositionProfile": "showcase",
+          "compositionStatus": "pass",
+          "errors": 0,
+          "warnings": 0
+        }
+      }
+    },
+    "deliver": {
+      "status": "pass",
+      "exitCode": 0,
+      "durationMs": 1014,
+      "command": [
+        "/usr/local/bin/node",
+        "/root/.agents/skills/archify/bin/archify.mjs",
+        "deliver",
+        "architecture",
+        "/app/applet/.archify/architecture-rfp-procurement-20261006-022000/candidate.json",
+        "/app/applet/.archify/architecture-rfp-procurement-20261006-022000/rfp-procurement.html",
+        "--quality",
+        "showcase",
+        "--json"
+      ],
+      "receipt": {
+        "schemaVersion": 1,
+        "receiptId": "a377d04a-bb61-4db1-a7fe-6acbb91a4479",
+        "ok": true,
+        "command": "deliver",
+        "type": "architecture",
+        "input": "/app/applet/.archify/architecture-rfp-procurement-20261006-022000/candidate.json",
+        "output": "/app/applet/.archify/architecture-rfp-procurement-20261006-022000/rfp-procurement.html",
+        "specification": {
+          "sha256": "5b30ac554c7c437cc520771e27ff999847e14be5fe288f401ca3d0a370a103a3",
+          "bytes": 8855
+        },
+        "artifact": {
+          "sha256": "21ec170c7309bbb6d6eb87a99308a46ebb7fb795487098128a20b628a2cc4407",
+          "bytes": 785803
+        },
+        "validation": {
+          "checksPassed": 9,
+          "checkCount": 9,
+          "compositionProfile": "showcase",
+          "compositionStatus": "pass",
+          "errors": 0,
+          "warnings": 0
+        },
+        "update": {
+          "status": "unavailable",
+          "installedVersion": null,
+          "availableVersion": null,
+          "releaseNotes": null,
+          "checkedAt": null,
+          "source": null,
+          "noticeRequired": false,
+          "noticeText": null,
+          "reason": "disabled"
+        }
+      }
+    },
+    "check": {
+      "status": "pass",
+      "exitCode": 0,
+      "durationMs": 327,
+      "command": [
+        "/usr/local/bin/node",
+        "/root/.agents/skills/archify/bin/archify.mjs",
+        "check",
+        "/app/applet/.archify/architecture-rfp-procurement-20261006-022000/rfp-procurement.html",
+        "--require-provenance"
+      ],
+      "receipt": {
+        "ok": true,
+        "file": "/app/applet/.archify/architecture-rfp-procurement-20261006-022000/rfp-procurement.html",
+        "artifact": {
+          "sha256": "21ec170c7309bbb6d6eb87a99308a46ebb7fb795487098128a20b628a2cc4407",
+          "bytes": 785803
+        },
+        "checks": [
+          {
+            "name": "single_svg",
+            "ok": true,
+            "details": [
+              "found 1 <svg> block(s)"
+            ]
+          },
+          {
+            "name": "finite_svg",
+            "ok": true,
+            "details": []
+          },
+          {
+            "name": "orthogonal_arrows",
+            "ok": true,
+            "details": []
+          },
+          {
+            "name": "label_route_clearance",
+            "ok": true,
+            "details": []
+          },
+          {
+            "name": "relationship_crossings",
+            "ok": true,
+            "details": []
+          },
+          {
+            "name": "relationship_corridors",
+            "ok": true,
+            "details": []
+          },
+          {
+            "name": "container_border_runs",
+            "ok": true,
+            "details": []
+          },
+          {
+            "name": "route_rhythm",
+            "ok": true,
+            "details": []
+          },
+          {
+            "name": "legend_clearance",
+            "ok": true,
+            "details": []
+          }
+        ],
+        "composition": {
+          "schemaVersion": 1,
+          "profile": "showcase",
+          "status": "pass",
+          "summary": {
+            "errors": 0,
+            "warnings": 0
+          },
+          "metrics": {
+            "properCrossings": 0,
+            "resolvedCrossovers": 8,
+            "ambiguousCorridors": 0,
+            "arrowheadCollisions": 0,
+            "containerBorderRuns": 0,
+            "labelRouteClearanceIssues": 0,
+            "labelCanvasOverflowIssues": 0,
+            "minLabelRouteClearance": 5.2,
+            "desktopReadabilityIssues": 0,
+            "viewportHeightIssues": 0,
+            "minProjectedNodeTextPx": 7.831578947368421,
+            "maxBends": 4,
+            "routesOverSuggestedBends": 4,
+            "maxStretch": 1.111,
+            "routesOverSuggestedStretch": 0,
+            "minSegmentPx": 21,
+            "minInteriorSegmentPx": 21,
+            "shortSegmentCount": 0,
+            "shortEndpointSegmentCount": 0,
+            "shortInteriorSegmentCount": 0,
+            "microSegmentCount": 0
+          },
+          "suggestedLimits": {
+            "bendsPerRelationship": 2,
+            "stretch": 1.35,
+            "segmentPx": 16,
+            "microSegmentPx": 8
+          },
+          "routeReview": {
+            "crossings": [
+              {
+                "left": {
+                  "id": "vendor-bid",
+                  "from": "vendor",
+                  "to": "vendor_bids",
+                  "label": "Explore &amp; Bid",
+                  "collectionIndex": 1,
+                  "artifactIndex": 2
+                },
+                "right": {
+                  "id": "owner-upload",
+                  "from": "owner",
+                  "to": "quote_upload",
+                  "label": "Upload External Quote",
+                  "collectionIndex": 2,
+                  "artifactIndex": 3
+                },
+                "point": [
+                  465,
+                  128
+                ]
+              },
+              {
+                "left": {
+                  "id": "owner-upload",
+                  "from": "owner",
+                  "to": "quote_upload",
+                  "label": "Upload External Quote",
+                  "collectionIndex": 2,
+                  "artifactIndex": 3
+                },
+                "right": {
+                  "id": "advisor-review",
+                  "from": "advisor",
+                  "to": "workspace",
+                  "label": "Expert Audit",
+                  "collectionIndex": 3,
+                  "artifactIndex": 4
+                },
+                "point": [
+                  663,
+                  128
+                ]
+              },
+              {
+                "left": {
+                  "id": "advisor-review",
+                  "from": "advisor",
+                  "to": "workspace",
+                  "label": "Expert Audit",
+                  "collectionIndex": 3,
+                  "artifactIndex": 4
+                },
+                "right": {
+                  "id": "upload-workspace",
+                  "from": "quote_upload",
+                  "to": "workspace",
+                  "label": "Extracted Quote",
+                  "collectionIndex": 6,
+                  "artifactIndex": 7
+                },
+                "point": [
+                  663,
+                  212
+                ],
+                "sharedNode": "workspace"
+              },
+              {
+                "left": {
+                  "id": "advisor-review",
+                  "from": "advisor",
+                  "to": "workspace",
+                  "label": "Expert Audit",
+                  "collectionIndex": 3,
+                  "artifactIndex": 4
+                },
+                "right": {
+                  "id": "workspace-dossier",
+                  "from": "workspace",
+                  "to": "dossier_print",
+                  "label": "Generate Dossier",
+                  "collectionIndex": 10,
+                  "artifactIndex": 11
+                },
+                "point": [
+                  663,
+                  317
+                ],
+                "sharedNode": "workspace"
+              },
+              {
+                "left": {
+                  "id": "publish-workspace",
+                  "from": "rfp_creator",
+                  "to": "workspace",
+                  "label": "Publish to Feed",
+                  "collectionIndex": 4,
+                  "artifactIndex": 5
+                },
+                "right": {
+                  "id": "workspace-matrix",
+                  "from": "workspace",
+                  "to": "matrix_view",
+                  "label": "Compare Quotes",
+                  "collectionIndex": 7,
+                  "artifactIndex": 8
+                },
+                "point": [
+                  336,
+                  342
+                ],
+                "sharedNode": "workspace"
+              },
+              {
+                "left": {
+                  "id": "bid-workspace",
+                  "from": "vendor_bids",
+                  "to": "workspace",
+                  "label": "Direct Quote",
+                  "collectionIndex": 5,
+                  "artifactIndex": 6
+                },
+                "right": {
+                  "id": "workspace-dossier",
+                  "from": "workspace",
+                  "to": "dossier_print",
+                  "label": "Generate Dossier",
+                  "collectionIndex": 10,
+                  "artifactIndex": 11
+                },
+                "point": [
+                  465,
+                  296
+                ],
+                "sharedNode": "workspace"
+              },
+              {
+                "left": {
+                  "id": "upload-workspace",
+                  "from": "quote_upload",
+                  "to": "workspace",
+                  "label": "Extracted Quote",
+                  "collectionIndex": 6,
+                  "artifactIndex": 7
+                },
+                "right": {
+                  "id": "workspace-dossier",
+                  "from": "workspace",
+                  "to": "dossier_print",
+                  "label": "Generate Dossier",
+                  "collectionIndex": 10,
+                  "artifactIndex": 11
+                },
+                "point": [
+                  635,
+                  317
+                ],
+                "sharedNode": "workspace"
+              },
+              {
+                "left": {
+                  "id": "workspace-lifecycle",
+                  "from": "workspace",
+                  "to": "rfp_lifecycle",
+                  "label": "Trigger State Event",
+                  "collectionIndex": 11,
+                  "artifactIndex": 12
+                },
+                "right": {
+                  "id": "matrix-entities",
+                  "from": "matrix_view",
+                  "to": "rfp_entities",
+                  "label": "Read Specs &amp; Costs",
+                  "collectionIndex": 12,
+                  "artifactIndex": 13
+                },
+                "point": [
+                  255,
+                  502
+                ]
+              }
+            ],
+            "detours": [
+              {
+                "relationship": {
+                  "id": "owner-upload",
+                  "from": "owner",
+                  "to": "quote_upload",
+                  "label": "Upload External Quote",
+                  "collectionIndex": 2,
+                  "artifactIndex": 3
+                },
+                "bends": 3,
+                "stretch": 1
+              },
+              {
+                "relationship": {
+                  "id": "workspace-dossier",
+                  "from": "workspace",
+                  "to": "dossier_print",
+                  "label": "Generate Dossier",
+                  "collectionIndex": 10,
+                  "artifactIndex": 11
+                },
+                "bends": 4,
+                "stretch": 1.097
+              },
+              {
+                "relationship": {
+                  "id": "matrix-entities",
+                  "from": "matrix_view",
+                  "to": "rfp_entities",
+                  "label": "Read Specs &amp; Costs",
+                  "collectionIndex": 12,
+                  "artifactIndex": 13
+                },
+                "bends": 4,
+                "stretch": 1
+              },
+              {
+                "relationship": {
+                  "id": "clarify-audit",
+                  "from": "clarification",
+                  "to": "prisma_audit",
+                  "label": "Append Audit Log",
+                  "collectionIndex": 15,
+                  "artifactIndex": 16
+                },
+                "bends": 3,
+                "stretch": 1.111
+              }
+            ]
+          },
+          "leadingSpace": {
+            "measured": true,
+            "emptyTopPx": 40,
+            "emptyTopRatio": 0.044,
+            "occupiedTop": 40,
+            "viewBoxTop": 0,
+            "canvasHeight": 902,
+            "typicalNodeHeight": 64,
+            "reviewSuggested": false
+          },
+          "desktopReadability": {
+            "budgetBasis": "legacy-930",
+            "readerContract": "declared-wide-v1",
+            "availableDiagramWidth": 930,
+            "actualBudgetPx": 930,
+            "limit": "legacy",
+            "requestedTargetPx": 7.5,
+            "requestedTargetMet": true,
+            "hardFloorPx": 6,
+            "hardFloorMet": true,
+            "minimumOwner": {
+              "kind": "edge",
+              "id": "owner-create",
+              "from": "owner",
+              "to": "rfp_creator"
+            },
+            "minimumSourceTextPx": 8,
+            "minimumProjectedTextPx": 7.831578947368421,
+            "semanticTextCount": 48
+          },
+          "issues": []
+        },
+        "provenance": "current",
+        "deliveryReceiptId": "a377d04a-bb61-4db1-a7fe-6acbb91a4479"
+      }
+    },
+    "browser-check": {
+      "status": "skipped",
+      "exitCode": 2,
+      "durationMs": 26,
+      "command": [
+        "/usr/local/bin/node",
+        "/root/.agents/skills/archify/bin/archify.mjs",
+        "browser-check",
+        "/app/applet/.archify/architecture-rfp-procurement-20261006-022000/rfp-procurement.html",
+        "--json",
+        "--require-provenance"
+      ],
+      "execution": "in-process",
+      "receipt": {
+        "schemaVersion": 1,
+        "ok": false,
+        "command": "browser-check",
+        "evidenceKind": "automated-browser",
+        "status": "skipped",
+        "visualReview": "not-requested",
+        "provenance": "current",
+        "deliveryReceiptId": "a377d04a-bb61-4db1-a7fe-6acbb91a4479",
+        "artifact": {
+          "path": "/app/applet/.archify/architecture-rfp-procurement-20261006-022000/rfp-procurement.html",
+          "sha256": "21ec170c7309bbb6d6eb87a99308a46ebb7fb795487098128a20b628a2cc4407",
+          "bytes": 785803
+        },
+        "state": {
+          "detail": "read",
+          "motion": "still"
+        },
+        "chrome": {
+          "status": "unavailable",
+          "executable": null
+        },
+        "diagnostics": [
+          {
+            "code": "viewer/chrome-unavailable",
+            "severity": "warning",
+            "message": "Chrome or Chromium is unavailable. Set ARCHIFY_CHROME to its executable path.",
+            "subject": {
+              "artifact": "/app/applet/.archify/architecture-rfp-procurement-20261006-022000/rfp-procurement.html"
+            },
+            "evidence": {
+              "executable": null
+            },
+            "supportedFixes": [
+              "set ARCHIFY_CHROME to a Chrome or Chromium executable and rerun browser-check"
+            ]
+          }
+        ],
+        "containment": {
+          "status": "skipped",
+          "policy": "fit-or-reader-declared-readable-vertical-scroll",
+          "viewports": []
+        },
+        "themeStates": {
+          "status": "skipped",
+          "viewports": []
+        },
+        "readability": {
+          "status": "skipped",
+          "minimumProjectedNodeTextPx": 6,
+          "viewports": []
+        },
+        "viewerChrome": {
+          "status": "skipped",
+          "viewports": []
+        },
+        "captures": {
+          "status": "not-requested",
+          "screenshots": [],
+          "contactSheet": null
+        },
+        "sidecars": {
+          "receipt": "rfp-procurement.browser-check.json",
+          "files": []
+        },
+        "error": "Chrome or Chromium is unavailable. Set ARCHIFY_CHROME to its executable path."
+      }
+    }
+  },
+  "diagnostics": [
+    {
+      "code": "viewer/chrome-unavailable",
+      "severity": "warning",
+      "message": "Chrome or Chromium is unavailable. Set ARCHIFY_CHROME to its executable path.",
+      "subject": {
+        "artifact": "/app/applet/.archify/architecture-rfp-procurement-20261006-022000/rfp-procurement.html"
+      },
+      "evidence": {
+        "executable": null
+      },
+      "supportedFixes": [
+        "set ARCHIFY_CHROME to a Chrome or Chromium executable and rerun browser-check"
+      ]
+    }
+  ],
+  "evidence": {
+    "receipt": "/app/applet/.archify/architecture-rfp-procurement-20261006-022000/rfp-procurement.finalize.json",
+    "summaryReceipt": "/app/applet/.archify/architecture-rfp-procurement-20261006-022000/rfp-procurement.finalize-summary.json",
+    "browserCheckReceipt": "/app/applet/.archify/architecture-rfp-procurement-20261006-022000/rfp-procurement.browser-check.json"
+  },
+  "visualReview": "not-requested",
+  "failedStage": "browser-check",
+  "finishedAt": "2026-10-06T09:22:09.751Z",
+  "durationMs": 1533,
+  "update": {
+    "status": "current",
+    "installedVersion": "3.0.1",
+    "availableVersion": "3.0.1",
+    "releaseNotes": null,
+    "checkedAt": "2026-10-06T09:22:08.394Z",
+    "source": "network",
+    "noticeRequired": false,
+    "noticeText": null
+  }
+}

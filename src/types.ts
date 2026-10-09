@@ -566,6 +566,8 @@ export interface RFPClarification {
   rfpId: string;
   quoteId: string;
   vendorName: string;
+  lineItemId?: string;
+  parameterName?: string;
   category: 'warranty' | 'commercial' | 'technical' | 'delivery' | 'compliance' | 'amc';
   question: string;
   isAiDrafted?: boolean;
@@ -575,6 +577,8 @@ export interface RFPClarification {
   respondedAt?: string;
   status: 'open' | 'answered' | 'resolved';
   revisionResulted?: boolean;
+  whatsappStatus?: 'queued' | 'sent' | 'delivered' | 'failed';
+  emailStatus?: 'queued' | 'sent' | 'delivered' | 'failed';
 }
 
 export interface RFPTCOCalculation {

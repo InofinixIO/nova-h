@@ -1,0 +1,63 @@
+{
+  "schemaVersion": 1,
+  "ok": false,
+  "command": "finalize",
+  "status": "skipped",
+  "type": "architecture",
+  "quality": "showcase",
+  "specification": {
+    "path": "/app/applet/.archify/architecture-runtime-20261005-101612/candidate.json",
+    "sha256": "2ae3f598660041bd36c21037c70dc74d706ce0bf99676c6e8381168d0ef072c2",
+    "bytes": 6923
+  },
+  "artifact": {
+    "path": "/app/applet/.archify/architecture-runtime-20261005-101612/runtime-architecture.html",
+    "sha256": "60dd1f68308fe23ea7ca053a6dda7a9e2cb8c18d8cdc577525a830955fc4c246",
+    "bytes": 777482
+  },
+  "gates": {
+    "validate": "pass",
+    "deliver": "pass",
+    "check": "pass",
+    "browser-check": "skipped"
+  },
+  "failedStage": "browser-check",
+  "diagnostics": [
+    {
+      "code": "viewer/chrome-unavailable",
+      "severity": "warning",
+      "message": "Chrome or Chromium is unavailable. Set ARCHIFY_CHROME to its executable path.",
+      "subject": {
+        "artifact": "/app/applet/.archify/architecture-runtime-20261005-101612/runtime-architecture.html"
+      },
+      "evidence": {
+        "executable": null
+      },
+      "supportedFixes": [
+        "set ARCHIFY_CHROME to a Chrome or Chromium executable and rerun browser-check"
+      ]
+    }
+  ],
+  "diagnosticSummary": {
+    "total": 1,
+    "shown": 1,
+    "truncated": false
+  },
+  "evidence": {
+    "receipt": "/app/applet/.archify/architecture-runtime-20261005-101612/runtime-architecture.finalize.json",
+    "summaryReceipt": "/app/applet/.archify/architecture-runtime-20261005-101612/runtime-architecture.finalize-summary.json",
+    "browserCheckReceipt": "/app/applet/.archify/architecture-runtime-20261005-101612/runtime-architecture.browser-check.json"
+  },
+  "update": {
+    "status": "current",
+    "installedVersion": "3.0.1",
+    "availableVersion": "3.0.1",
+    "releaseNotes": null,
+    "checkedAt": "2026-10-05T17:17:16.484Z",
+    "source": "cache",
+    "noticeRequired": false,
+    "noticeText": null
+  },
+  "visualReview": "not-requested",
+  "durationMs": 1242
+}

@@ -1,0 +1,332 @@
+{
+  "schema_version": 1,
+  "diagram_type": "architecture",
+  "meta": {
+    "title": "Hospital Procurement & RFP Runtime Architecture",
+    "subtitle": "NOVA-H Healthcare Procurement Workflow & Verified Codebase Models",
+    "output": ".archify/architecture-rfp-procurement-20261006-022000/rfp-procurement.html",
+    "visual_preset": "blueprint",
+    "quality_profile": "showcase"
+  },
+  "components": [
+    {
+      "id": "owner",
+      "type": "external",
+      "label": "Hospital Owner",
+      "sublabel": "Procurement Admin",
+      "tag": "Buyer Role",
+      "icon": "person",
+      "pos": [60, 40],
+      "size": [160, 64]
+    },
+    {
+      "id": "vendor",
+      "type": "external",
+      "label": "Medical Vendor",
+      "sublabel": "Device Supplier & Bidder",
+      "tag": "Seller Role",
+      "icon": "briefcase",
+      "pos": [380, 40],
+      "size": [170, 64]
+    },
+    {
+      "id": "advisor",
+      "type": "external",
+      "label": "Equipment Advisor",
+      "sublabel": "Biomedical Consultant",
+      "tag": "Reviewer Role",
+      "icon": "person",
+      "pos": [700, 40],
+      "size": [170, 64]
+    },
+    {
+      "id": "rfp_creator",
+      "type": "frontend",
+      "label": "RfpCreateModal",
+      "sublabel": "BoQ & Specs Wizard",
+      "tag": "RfpCreateModal.tsx",
+      "icon": "frontend",
+      "pos": [60, 180],
+      "size": [160, 64]
+    },
+    {
+      "id": "vendor_bids",
+      "type": "frontend",
+      "label": "VendorBidWorkspace",
+      "sublabel": "Vendor Bidding Portal",
+      "tag": "VendorBidWorkspace.tsx",
+      "icon": "frontend",
+      "pos": [380, 180],
+      "size": [170, 64]
+    },
+    {
+      "id": "quote_upload",
+      "type": "frontend",
+      "label": "ExternalQuoteUploadModal",
+      "sublabel": "Split-Screen OCR Ingest",
+      "tag": "ExternalQuoteUploadModal.tsx",
+      "icon": "frontend",
+      "pos": [700, 180],
+      "size": [180, 64]
+    },
+    {
+      "id": "workspace",
+      "type": "frontend",
+      "label": "ProcurementWorkspace",
+      "sublabel": "State Orchestrator & Tabs",
+      "tag": "ProcurementWorkspace.tsx",
+      "icon": "frontend",
+      "pos": [360, 320],
+      "size": [210, 72]
+    },
+    {
+      "id": "matrix_view",
+      "type": "frontend",
+      "label": "ComparisonMatrixView",
+      "sublabel": "Tech & Landed Cost Matrix",
+      "tag": "ComparisonMatrixView.tsx",
+      "icon": "frontend",
+      "pos": [60, 470],
+      "size": [170, 64]
+    },
+    {
+      "id": "tco_calc",
+      "type": "frontend",
+      "label": "TcoCalculatorView",
+      "sublabel": "5/10-Yr TCO Lifecycle",
+      "tag": "TcoCalculatorView.tsx",
+      "icon": "frontend",
+      "pos": [280, 470],
+      "size": [160, 64]
+    },
+    {
+      "id": "clarification",
+      "type": "frontend",
+      "label": "ClarificationCycleView",
+      "sublabel": "Q&A Clarification Cycles",
+      "tag": "ClarificationCycleView.tsx",
+      "icon": "frontend",
+      "pos": [490, 470],
+      "size": [170, 64]
+    },
+    {
+      "id": "dossier_print",
+      "type": "frontend",
+      "label": "RfpDossierPrintModal",
+      "sublabel": "Board Approval Dossier",
+      "tag": "RfpDossierPrintModal.tsx",
+      "icon": "frontend",
+      "pos": [710, 470],
+      "size": [170, 64]
+    },
+    {
+      "id": "rfp_lifecycle",
+      "type": "backend",
+      "label": "RFPLifecycleStatus",
+      "sublabel": "16-State Transition Engine",
+      "tag": "src/types.ts",
+      "icon": "backend",
+      "pos": [160, 610],
+      "size": [190, 64]
+    },
+    {
+      "id": "rfp_entities",
+      "type": "backend",
+      "label": "RFPItem & RFPQuote",
+      "sublabel": "Procurement Data Contracts",
+      "tag": "src/types.ts",
+      "icon": "backend",
+      "pos": [570, 610],
+      "size": [190, 64]
+    },
+    {
+      "id": "prisma_rfp",
+      "type": "database",
+      "label": "RFP & Quotation Models",
+      "sublabel": "Relational Tables",
+      "tag": "prisma/schema.prisma",
+      "icon": "database",
+      "pos": [160, 750],
+      "size": [190, 64]
+    },
+    {
+      "id": "prisma_audit",
+      "type": "database",
+      "label": "AuditEvent & Clarification",
+      "sublabel": "Immutable Logs & Q&A",
+      "tag": "prisma/schema.prisma",
+      "icon": "database",
+      "pos": [570, 750],
+      "size": [190, 64]
+    }
+  ],
+  "boundaries": [
+    {
+      "kind": "region",
+      "label": "Frontend Presentation Layer (src/components/procurement/)",
+      "wraps": [
+        "rfp_creator",
+        "vendor_bids",
+        "quote_upload",
+        "workspace",
+        "matrix_view",
+        "tco_calc",
+        "clarification",
+        "dossier_print"
+      ]
+    },
+    {
+      "kind": "region",
+      "label": "Runtime Contracts & Persistence Layer (TypeScript & Prisma PostgreSQL)",
+      "wraps": [
+        "rfp_lifecycle",
+        "rfp_entities",
+        "prisma_rfp",
+        "prisma_audit"
+      ]
+    }
+  ],
+  "connections": [
+    {
+      "id": "owner-create",
+      "from": "owner",
+      "to": "rfp_creator",
+      "label": "Specify RFP",
+      "variant": "emphasis"
+    },
+    {
+      "id": "vendor-bid",
+      "from": "vendor",
+      "to": "vendor_bids",
+      "label": "Explore & Bid",
+      "variant": "emphasis"
+    },
+    {
+      "id": "owner-upload",
+      "from": "owner",
+      "to": "quote_upload",
+      "label": "Upload External Quote",
+      "variant": "default"
+    },
+    {
+      "id": "advisor-review",
+      "from": "advisor",
+      "to": "workspace",
+      "label": "Expert Audit",
+      "variant": "default"
+    },
+    {
+      "id": "publish-workspace",
+      "from": "rfp_creator",
+      "to": "workspace",
+      "label": "Publish to Feed",
+      "variant": "default"
+    },
+    {
+      "id": "bid-workspace",
+      "from": "vendor_bids",
+      "to": "workspace",
+      "label": "Direct Quote",
+      "variant": "default"
+    },
+    {
+      "id": "upload-workspace",
+      "from": "quote_upload",
+      "to": "workspace",
+      "label": "Extracted Quote",
+      "variant": "default"
+    },
+    {
+      "id": "workspace-matrix",
+      "from": "workspace",
+      "to": "matrix_view",
+      "label": "Compare Quotes",
+      "variant": "default"
+    },
+    {
+      "id": "workspace-tco",
+      "from": "workspace",
+      "to": "tco_calc",
+      "label": "Evaluate 10-Yr TCO",
+      "variant": "default"
+    },
+    {
+      "id": "workspace-clarify",
+      "from": "workspace",
+      "to": "clarification",
+      "label": "Clarification Rounds",
+      "variant": "default"
+    },
+    {
+      "id": "workspace-dossier",
+      "from": "workspace",
+      "to": "dossier_print",
+      "label": "Generate Dossier",
+      "variant": "default"
+    },
+    {
+      "id": "workspace-lifecycle",
+      "from": "workspace",
+      "to": "rfp_lifecycle",
+      "label": "Trigger State Event",
+      "variant": "default"
+    },
+    {
+      "id": "matrix-entities",
+      "from": "matrix_view",
+      "to": "rfp_entities",
+      "label": "Read Specs & Costs",
+      "variant": "default"
+    },
+    {
+      "id": "lifecycle-prisma",
+      "from": "rfp_lifecycle",
+      "to": "prisma_rfp",
+      "label": "Persist Status",
+      "variant": "default"
+    },
+    {
+      "id": "entities-prisma",
+      "from": "rfp_entities",
+      "to": "prisma_rfp",
+      "label": "Store Line Items",
+      "variant": "default"
+    },
+    {
+      "id": "clarify-audit",
+      "from": "clarification",
+      "to": "prisma_audit",
+      "label": "Append Audit Log",
+      "variant": "default"
+    }
+  ],
+  "cards": [
+    {
+      "dot": "cyan",
+      "title": "Ingestion & Specification",
+      "items": [
+        "Hospital owners author structured BoQ line items, parameters, and identity disclosure policies via RfpCreateModal",
+        "External quotes received via WhatsApp/Email PDFs are digitized with side-by-side human validation in ExternalQuoteUploadModal",
+        "Registered vendors discover published hospital RFPs and submit structured commercial and technical bids via VendorBidWorkspace"
+      ]
+    },
+    {
+      "dot": "emerald",
+      "title": "Multi-Quote Evaluation & Due Diligence",
+      "items": [
+        "ComparisonMatrixView displays side-by-side compliance grids, deviation tracking, and net landed costs",
+        "ClarificationCycleView coordinates bidirectional buyer-vendor Q&A rounds with AI suggested drafts and version tracking",
+        "TcoCalculatorView computes 5- and 10-year Total Cost of Ownership factoring acquisition, post-warranty AMC/CMC, spares, and consumables"
+      ]
+    },
+    {
+      "dot": "slate",
+      "title": "Verified Codebase Grounding",
+      "items": [
+        "Presentation Layer: src/components/procurement/* (10 production components)",
+        "Type Contracts: src/types.ts (RFPLifecycleStatus, RFPItem, RFPQuote, QuoteCommercials)",
+        "Database Layer: prisma/schema.prisma (User, RFP, Quotation, ClarificationQuestion, AuditEvent)"
+      ]
+    }
+  ]
+}

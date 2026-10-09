@@ -8,7 +8,7 @@ import { INITIAL_ENQUIRIES } from '../utils/enquiriesStorage';
 import { PRESET_COUPONS } from '../utils/couponService';
 import { getSampleLogins } from '../utils/sampleLogins';
 import { DEFAULT_USERS } from '../utils/userManagement';
-import { DirectoryItem, AccreditationProgramme, ProjectRequirement, EnquiryItem, AuthUser, ProfileClaim, EmailLog, VerificationOtp } from '../types';
+import { DirectoryItem, AccreditationProgramme, ProjectRequirement, EnquiryItem, AuthUser, ProfileClaim, EmailLog, VerificationOtp, RFPItem, RFPQuote, RFPClarification, RFPAuditEvent, AdvisorObservation } from '../types';
 
 export const apiRouter = Router();
 
@@ -179,6 +179,157 @@ apiRouter.delete('/directory/:id', async (req: Request, res: Response) => {
     return res.json({ success: true, id });
   } catch (err: any) {
     console.error('[API] Error deleting directory item:', err);
+    return res.status(500).json({ error: err.message });
+  }
+});
+
+// Bulk Import & Ingestion Endpoint for CSV / Database Sync
+apiRouter.post('/directory/bulk', async (req: Request, res: Response) => {
+  try {
+    const { items, mode = 'append' } = req.body;
+    if (!Array.isArray(items) || items.length === 0) {
+      return res.status(400).json({ error: 'items array is required and must not be empty' });
+    }
+
+    const sanitizedItems: DirectoryItem[] = items.map((item, index) => {
+      const sanitizedId = item.id && item.id.trim() 
+        ? item.id.trim() 
+        : `partner-csv-${Date.now()}-${index}-${Math.random().toString(36).substring(2, 6)}`;
+      return {
+        id: sanitizedId,
+        name: item.name ? String(item.name).trim() : 'Unnamed Healthcare Partner',
+        role: (item.role === 'advisor' || item.role === 'hospital' ? item.role : 'vendor'),
+        category: item.category ? String(item.category).trim() : 'Hospital Infrastructure',
+        rating: Number(item.rating) || 4.8,
+        reviewsCount: Number(item.reviewsCount) || 1,
+        location: item.location ? String(item.location).trim() : 'Pan-India',
+        serviceLocations: Array.isArray(item.serviceLocations) ? item.serviceLocations : ['Pan-India'],
+        projectStages: Array.isArray(item.projectStages) ? item.projectStages : [1, 2, 3],
+        productsAndServices: Array.isArray(item.productsAndServices) ? item.productsAndServices : [],
+        description: item.description ? String(item.description).trim() : 'Healthcare partner verified via NOVA administrative import.',
+        verified: item.verified ?? true,
+        yearsOfExperience: Number(item.yearsOfExperience) || 5,
+        contactEmail: item.contactEmail ? String(item.contactEmail).trim() : 'contact@partner.in',
+        phone: item.phone ? String(item.phone).trim() : '+91 98765 43210',
+        website: item.website ? String(item.website).trim() : '',
+        featuredProject: item.featuredProject || null,
+        clientPortfolio: Array.isArray(item.clientPortfolio) ? item.clientPortfolio : [],
+        gstin: item.gstin || null,
+        priceRange: item.priceRange || null,
+        turnaroundTime: item.turnaroundTime || null,
+        certifications: Array.isArray(item.certifications) ? item.certifications : ['ISO 9001', 'AERB Compliant'],
+        headquartersAddress: item.headquartersAddress || null,
+        complianceBadges: Array.isArray(item.complianceBadges) ? item.complianceBadges : ['Verified Vendor']
+      };
+    });
+
+    const isDb = isDatabaseConfigured() && Boolean(sqlClient);
+
+    if (isDb && sqlClient) {
+      if (mode === 'replace') {
+        // Clear all existing directory listings for a fresh replace
+        await sqlClient`DELETE FROM directory_items;`;
+      }
+
+      for (const itm of sanitizedItems) {
+        await sqlClient`
+          INSERT INTO directory_items (
+            id, name, role, category, rating, reviews_count, location,
+            service_locations, project_stages, products_and_services,
+            description, verified, years_of_experience, contact_email,
+            phone, website, featured_project, client_portfolio, gstin,
+            price_range, turnaround_time, certifications, headquarters_address,
+            compliance_badges
+          ) VALUES (
+            ${itm.id}, ${itm.name}, ${itm.role}, ${itm.category},
+            ${itm.rating}, ${itm.reviewsCount}, ${itm.location},
+            ${JSON.stringify(itm.serviceLocations)},
+            ${JSON.stringify(itm.projectStages)},
+            ${JSON.stringify(itm.productsAndServices)},
+            ${itm.description}, ${itm.verified},
+            ${itm.yearsOfExperience}, ${itm.contactEmail},
+            ${itm.phone}, ${itm.website || ''},
+            ${itm.featuredProject || null},
+            ${JSON.stringify(itm.clientPortfolio)},
+            ${itm.gstin || null}, ${itm.priceRange || null},
+            ${itm.turnaroundTime || null},
+            ${JSON.stringify(itm.certifications)},
+            ${itm.headquartersAddress || null},
+            ${JSON.stringify(itm.complianceBadges)}
+          )
+          ON CONFLICT (id) DO UPDATE SET
+            name = EXCLUDED.name,
+            role = EXCLUDED.role,
+            category = EXCLUDED.category,
+            description = EXCLUDED.description,
+            phone = EXCLUDED.phone,
+            contact_email = EXCLUDED.contact_email,
+            products_and_services = EXCLUDED.products_and_services,
+            location = EXCLUDED.location,
+            featured_project = EXCLUDED.featured_project,
+            compliance_badges = EXCLUDED.compliance_badges,
+            verified = EXCLUDED.verified,
+            gstin = EXCLUDED.gstin,
+            price_range = EXCLUDED.price_range,
+            turnaround_time = EXCLUDED.turnaround_time,
+            certifications = EXCLUDED.certifications,
+            headquarters_address = EXCLUDED.headquarters_address;
+        `;
+      }
+    }
+
+    // Keep in-memory store coherent
+    if (mode === 'replace') {
+      memoryDirectory = [...sanitizedItems];
+    } else {
+      const existingIds = new Set(memoryDirectory.map(m => m.id));
+      const additions = sanitizedItems.filter(i => !existingIds.has(i.id));
+      const incomingMap = new Map(sanitizedItems.map(i => [i.id, i]));
+      const updatedExisting = memoryDirectory.map(m => incomingMap.get(m.id) || m);
+      memoryDirectory = [...additions, ...updatedExisting];
+    }
+
+    let totalCount = memoryDirectory.length;
+    if (isDb && sqlClient) {
+      const countRes = await sqlClient`SELECT COUNT(*) as count FROM directory_items;`;
+      totalCount = Number(countRes[0]?.count || sanitizedItems.length);
+    }
+
+    return res.json({
+      success: true,
+      mode,
+      importedCount: sanitizedItems.length,
+      totalCount,
+      database: isDb ? 'Neon Serverless PostgreSQL' : 'Local Fallback Storage',
+      timestamp: new Date().toISOString()
+    });
+  } catch (err: any) {
+    console.error('[API] Error during bulk directory import:', err);
+    return res.status(500).json({ error: err.message || 'Bulk import failed' });
+  }
+});
+
+// Database & Directory Sync Statistics Endpoint
+apiRouter.get('/directory/stats', async (_req: Request, res: Response) => {
+  try {
+    const configured = isDatabaseConfigured() && Boolean(sqlClient);
+    let totalCount = memoryDirectory.length;
+    if (configured && sqlClient) {
+      try {
+        const countRes = await sqlClient`SELECT COUNT(*) as count FROM directory_items;`;
+        totalCount = Number(countRes[0]?.count || 0);
+      } catch (countErr) {
+        console.warn('[API] Could not count directory_items table:', countErr);
+      }
+    }
+
+    return res.json({
+      totalCount,
+      databaseConfigured: configured,
+      databaseProvider: configured ? 'Neon Serverless PostgreSQL' : 'Local Fallback Storage',
+      lastSyncedAt: new Date().toISOString()
+    });
+  } catch (err: any) {
     return res.status(500).json({ error: err.message });
   }
 });
@@ -1588,6 +1739,799 @@ apiRouter.post('/mail/send', async (req: Request, res: Response) => {
     return res.json({ success: true, log: cleanLog });
   } catch (err: any) {
     console.error('[API] Error dispatching mail:', err);
+    return res.status(500).json({ error: err.message });
+  }
+});
+
+// ============================================================================
+// RFP, QUOTATIONS & CLARIFICATIONS POSTGRESQL REST CRUD API
+// ============================================================================
+
+function ensureDatabase(res: Response): boolean {
+  if (!isDatabaseConfigured() || !sqlClient) {
+    res.status(503).json({
+      error: 'PostgreSQL database is currently disconnected. Strict mode blocks unsaved modifications.',
+      code: 'DB_DISCONNECTED',
+      database: {
+        configured: false,
+        provider: 'Neon Serverless PostgreSQL'
+      }
+    });
+    return false;
+  }
+  return true;
+}
+
+function mapDbRowToRfp(row: any): RFPItem {
+  return {
+    id: row.id,
+    rfpNumber: row.rfp_number,
+    title: row.title,
+    category: row.category,
+    hospitalName: row.hospital_name,
+    maskedHospitalTitle: row.masked_hospital_title || `${row.bed_capacity || 'Hospital'} - ${row.location_city || 'India'}`,
+    isIdentityMasked: Boolean(row.is_identity_masked),
+    locationCity: row.location_city || '',
+    locationState: row.location_state || '',
+    bedCapacity: row.bed_capacity || '',
+    summary: row.summary || '',
+    scopeOfWork: Array.isArray(row.scope_of_work) ? row.scope_of_work : [],
+    estimatedBudgetRange: row.estimated_budget_range || '',
+    currency: row.currency || 'INR',
+    status: row.status,
+    publishingModes: Array.isArray(row.publishing_modes) ? row.publishing_modes : ['marketplace'],
+    identityDisclosure: row.identity_disclosure || 'on_shortlist',
+    publicationDate: row.publication_date || '',
+    questionDeadline: row.question_deadline || '',
+    quoteClosingDate: row.quote_closing_date || '',
+    revisedClosingDate: row.revised_closing_date,
+    expectedDecisionDate: row.expected_decision_date || '',
+    targetInstallationDate: row.target_installation_date || '',
+    invitedVendorIds: Array.isArray(row.invited_vendor_ids) ? row.invited_vendor_ids : [],
+    requirements: Array.isArray(row.requirements) ? row.requirements : [],
+    attachments: Array.isArray(row.attachments) ? row.attachments : [],
+    assignedAdvisor: row.assigned_advisor || undefined,
+    createdBy: row.created_by || 'Hospital Administrator',
+    hospitalOwnerEmail: row.hospital_owner_email || 'procurement@hospital.org',
+    hospitalOwnerPhone: row.hospital_owner_phone,
+    awardDetails: row.award_details || undefined,
+    createdAt: row.created_at ? new Date(row.created_at).toISOString() : new Date().toISOString(),
+    updatedAt: row.updated_at ? new Date(row.updated_at).toISOString() : new Date().toISOString()
+  };
+}
+
+function mapDbRowToQuote(row: any): RFPQuote {
+  return {
+    id: row.id,
+    rfpId: row.rfp_id,
+    vendorId: row.vendor_id,
+    vendorName: row.vendor_name,
+    vendorCompany: row.vendor_company || row.vendor_name,
+    contactEmail: row.contact_email || '',
+    contactPhone: row.contact_phone,
+    isExternal: Boolean(row.is_external),
+    externalSource: row.external_source,
+    officialDocumentName: row.official_document_name,
+    submissionDate: row.submission_date || '',
+    quoteValidityDate: row.quote_validity_date || '',
+    version: row.version || 1,
+    status: row.status || 'submitted',
+    commercials: row.commercials || {},
+    technicalSpecs: Array.isArray(row.technical_specs) ? row.technical_specs : [],
+    deviationsAndExclusions: Array.isArray(row.deviations_and_exclusions) ? row.deviations_and_exclusions : [],
+    statutoryCertifications: Array.isArray(row.statutory_certifications) ? row.statutory_certifications : [],
+    aiExtraction: row.ai_extraction || undefined
+  };
+}
+
+// ----------------------------------------------------------------------------
+// 1. RFP ENDPOINTS
+// ----------------------------------------------------------------------------
+
+// GET /api/rfps - List RFPs
+apiRouter.get('/rfps', async (req: Request, res: Response) => {
+  try {
+    if (!ensureDatabase(res)) return;
+
+    const { search, category, status } = req.query;
+
+    let query = sqlClient!`
+      SELECT * FROM rfps
+      ORDER BY created_at DESC;
+    `;
+
+    const rows = await query;
+    let items = (rows || []).map(mapDbRowToRfp);
+
+    if (category && category !== 'all') {
+      items = items.filter(r => r.category.toLowerCase() === String(category).toLowerCase());
+    }
+    if (status && status !== 'all') {
+      items = items.filter(r => r.status === String(status));
+    }
+    if (search) {
+      const q = String(search).toLowerCase();
+      items = items.filter(r => 
+        r.title.toLowerCase().includes(q) ||
+        r.rfpNumber.toLowerCase().includes(q) ||
+        r.hospitalName.toLowerCase().includes(q)
+      );
+    }
+
+    return res.json({
+      success: true,
+      data: items,
+      count: items.length
+    });
+  } catch (err: any) {
+    console.error('[API] Error fetching RFPs:', err);
+    return res.status(500).json({ error: err.message || 'Failed to query RFPs' });
+  }
+});
+
+// GET /api/rfps/:id - Get single RFP
+apiRouter.get('/rfps/:id', async (req: Request, res: Response) => {
+  try {
+    if (!ensureDatabase(res)) return;
+    const { id } = req.params;
+
+    const rows = await sqlClient!`
+      SELECT * FROM rfps WHERE id = ${id} LIMIT 1;
+    `;
+
+    if (!rows || rows.length === 0) {
+      return res.status(404).json({ error: `RFP with id ${id} not found.` });
+    }
+
+    return res.json({
+      success: true,
+      data: mapDbRowToRfp(rows[0])
+    });
+  } catch (err: any) {
+    console.error('[API] Error retrieving RFP:', err);
+    return res.status(500).json({ error: err.message });
+  }
+});
+
+// POST /api/rfps - Create new RFP
+apiRouter.post('/rfps', async (req: Request, res: Response) => {
+  try {
+    if (!ensureDatabase(res)) return;
+    const rfp = req.body as RFPItem;
+
+    if (!rfp.title || !rfp.category || !rfp.hospitalName) {
+      return res.status(400).json({ error: 'Title, category, and hospitalName are required.' });
+    }
+
+    const id = rfp.id || `rfp-${Date.now().toString(36)}-${Math.random().toString(36).substring(2, 6)}`;
+    const rfpNumber = rfp.rfpNumber || `NOVA-RFP-${new Date().getFullYear()}-${Math.floor(1000 + Math.random() * 9000)}`;
+    const nowIso = new Date().toISOString();
+
+    await sqlClient!`
+      INSERT INTO rfps (
+        id, rfp_number, title, category, hospital_name, masked_hospital_title,
+        is_identity_masked, location_city, location_state, bed_capacity, summary,
+        scope_of_work, estimated_budget_range, currency, status, publishing_modes,
+        identity_disclosure, publication_date, question_deadline, quote_closing_date,
+        revised_closing_date, expected_decision_date, target_installation_date,
+        invited_vendor_ids, requirements, attachments, assigned_advisor, created_by,
+        hospital_owner_email, hospital_owner_phone, award_details, created_at, updated_at
+      ) VALUES (
+        ${id}, ${rfpNumber}, ${rfp.title}, ${rfp.category}, ${rfp.hospitalName},
+        ${rfp.maskedHospitalTitle || null}, ${rfp.isIdentityMasked ?? false},
+        ${rfp.locationCity || ''}, ${rfp.locationState || ''}, ${rfp.bedCapacity || ''},
+        ${rfp.summary || ''}, ${JSON.stringify(rfp.scopeOfWork || [])},
+        ${rfp.estimatedBudgetRange || ''}, ${rfp.currency || 'INR'},
+        ${rfp.status || 'draft'}, ${JSON.stringify(rfp.publishingModes || ['marketplace'])},
+        ${rfp.identityDisclosure || 'on_shortlist'}, ${rfp.publicationDate || nowIso},
+        ${rfp.questionDeadline || ''}, ${rfp.quoteClosingDate || ''},
+        ${rfp.revisedClosingDate || null}, ${rfp.expectedDecisionDate || ''},
+        ${rfp.targetInstallationDate || ''}, ${JSON.stringify(rfp.invitedVendorIds || [])},
+        ${JSON.stringify(rfp.requirements || [])}, ${JSON.stringify(rfp.attachments || [])},
+        ${rfp.assignedAdvisor ? JSON.stringify(rfp.assignedAdvisor) : null},
+        ${rfp.createdBy || 'Hospital Administrator'}, ${rfp.hospitalOwnerEmail || 'procurement@hospital.org'},
+        ${rfp.hospitalOwnerPhone || null}, ${rfp.awardDetails ? JSON.stringify(rfp.awardDetails) : null},
+        ${nowIso}, ${nowIso}
+      );
+    `;
+
+    // Log initial audit event
+    const auditId = `audit-${Date.now()}-${Math.random().toString(36).substring(2, 6)}`;
+    await sqlClient!`
+      INSERT INTO rfp_audit_events (id, rfp_id, action, performed_by, user_role, details, created_at)
+      VALUES (
+        ${auditId}, ${id}, 'RFP Created & Initialized',
+        ${rfp.createdBy || 'Hospital Owner'}, 'owner',
+        ${JSON.stringify({ rfpNumber, title: rfp.title, status: rfp.status || 'draft' })},
+        ${nowIso}
+      );
+    `;
+
+    const savedRows = await sqlClient!`SELECT * FROM rfps WHERE id = ${id} LIMIT 1;`;
+    return res.status(201).json({
+      success: true,
+      data: mapDbRowToRfp(savedRows[0]),
+      message: 'RFP successfully registered in PostgreSQL database.'
+    });
+  } catch (err: any) {
+    console.error('[API] Error creating RFP:', err);
+    return res.status(500).json({ error: err.message || 'Failed to create RFP in database' });
+  }
+});
+
+// PUT /api/rfps/:id - Update full RFP
+apiRouter.put('/rfps/:id', async (req: Request, res: Response) => {
+  try {
+    if (!ensureDatabase(res)) return;
+    const { id } = req.params;
+    const rfp = req.body as Partial<RFPItem>;
+    const nowIso = new Date().toISOString();
+
+    await sqlClient!`
+      UPDATE rfps SET
+        title = COALESCE(${rfp.title || null}, title),
+        category = COALESCE(${rfp.category || null}, category),
+        hospital_name = COALESCE(${rfp.hospitalName || null}, hospital_name),
+        masked_hospital_title = COALESCE(${rfp.maskedHospitalTitle || null}, masked_hospital_title),
+        is_identity_masked = COALESCE(${rfp.isIdentityMasked !== undefined ? rfp.isIdentityMasked : null}, is_identity_masked),
+        location_city = COALESCE(${rfp.locationCity || null}, location_city),
+        location_state = COALESCE(${rfp.locationState || null}, location_state),
+        bed_capacity = COALESCE(${rfp.bedCapacity || null}, bed_capacity),
+        summary = COALESCE(${rfp.summary || null}, summary),
+        scope_of_work = COALESCE(${rfp.scopeOfWork ? JSON.stringify(rfp.scopeOfWork) : null}, scope_of_work),
+        estimated_budget_range = COALESCE(${rfp.estimatedBudgetRange || null}, estimated_budget_range),
+        currency = COALESCE(${rfp.currency || null}, currency),
+        status = COALESCE(${rfp.status || null}, status),
+        publishing_modes = COALESCE(${rfp.publishingModes ? JSON.stringify(rfp.publishingModes) : null}, publishing_modes),
+        identity_disclosure = COALESCE(${rfp.identityDisclosure || null}, identity_disclosure),
+        question_deadline = COALESCE(${rfp.questionDeadline || null}, question_deadline),
+        quote_closing_date = COALESCE(${rfp.quoteClosingDate || null}, quote_closing_date),
+        revised_closing_date = COALESCE(${rfp.revisedClosingDate || null}, revised_closing_date),
+        expected_decision_date = COALESCE(${rfp.expectedDecisionDate || null}, expected_decision_date),
+        target_installation_date = COALESCE(${rfp.targetInstallationDate || null}, target_installation_date),
+        invited_vendor_ids = COALESCE(${rfp.invitedVendorIds ? JSON.stringify(rfp.invitedVendorIds) : null}, invited_vendor_ids),
+        requirements = COALESCE(${rfp.requirements ? JSON.stringify(rfp.requirements) : null}, requirements),
+        attachments = COALESCE(${rfp.attachments ? JSON.stringify(rfp.attachments) : null}, attachments),
+        assigned_advisor = COALESCE(${rfp.assignedAdvisor ? JSON.stringify(rfp.assignedAdvisor) : null}, assigned_advisor),
+        award_details = COALESCE(${rfp.awardDetails ? JSON.stringify(rfp.awardDetails) : null}, award_details),
+        updated_at = ${nowIso}
+      WHERE id = ${id};
+    `;
+
+    const savedRows = await sqlClient!`SELECT * FROM rfps WHERE id = ${id} LIMIT 1;`;
+    if (!savedRows || savedRows.length === 0) {
+      return res.status(404).json({ error: `RFP ${id} not found` });
+    }
+
+    return res.json({
+      success: true,
+      data: mapDbRowToRfp(savedRows[0]),
+      message: 'RFP specifications updated successfully.'
+    });
+  } catch (err: any) {
+    console.error('[API] Error updating RFP:', err);
+    return res.status(500).json({ error: err.message });
+  }
+});
+
+// PATCH /api/rfps/:id/status - Lifecycle Stage Transition
+apiRouter.patch('/rfps/:id/status', async (req: Request, res: Response) => {
+  try {
+    if (!ensureDatabase(res)) return;
+    const { id } = req.params;
+    const { status, performedBy = 'Hospital Procurement Team', userRole = 'owner', notes } = req.body;
+
+    if (!status) {
+      return res.status(400).json({ error: 'Target status is required' });
+    }
+
+    const nowIso = new Date().toISOString();
+
+    await sqlClient!`
+      UPDATE rfps SET
+        status = ${status},
+        updated_at = ${nowIso}
+      WHERE id = ${id};
+    `;
+
+    // Log lifecycle audit event
+    const auditId = `audit-${Date.now()}-${Math.random().toString(36).substring(2, 6)}`;
+    await sqlClient!`
+      INSERT INTO rfp_audit_events (id, rfp_id, action, performed_by, user_role, details, created_at)
+      VALUES (
+        ${auditId}, ${id}, ${`Transitioned status to ${status}`},
+        ${performedBy}, ${userRole},
+        ${JSON.stringify({ newStatus: status, notes: notes || `RFP lifecycle advanced to ${status}` })},
+        ${nowIso}
+      );
+    `;
+
+    const savedRows = await sqlClient!`SELECT * FROM rfps WHERE id = ${id} LIMIT 1;`;
+    if (!savedRows || savedRows.length === 0) {
+      return res.status(404).json({ error: `RFP ${id} not found` });
+    }
+
+    return res.json({
+      success: true,
+      data: mapDbRowToRfp(savedRows[0]),
+      message: `RFP lifecycle advanced to ${status}`
+    });
+  } catch (err: any) {
+    console.error('[API] Error advancing RFP status:', err);
+    return res.status(500).json({ error: err.message });
+  }
+});
+
+// DELETE /api/rfps/:id
+apiRouter.delete('/rfps/:id', async (req: Request, res: Response) => {
+  try {
+    if (!ensureDatabase(res)) return;
+    const { id } = req.params;
+
+    await sqlClient!`DELETE FROM rfps WHERE id = ${id};`;
+    return res.json({ success: true, message: `RFP ${id} removed successfully.` });
+  } catch (err: any) {
+    console.error('[API] Error deleting RFP:', err);
+    return res.status(500).json({ error: err.message });
+  }
+});
+
+// ----------------------------------------------------------------------------
+// 2. VENDOR QUOTATIONS ENDPOINTS
+// ----------------------------------------------------------------------------
+
+// GET /api/rfps/:rfpId/quotes - List quotes for an RFP
+apiRouter.get('/rfps/:rfpId/quotes', async (req: Request, res: Response) => {
+  try {
+    if (!ensureDatabase(res)) return;
+    const { rfpId } = req.params;
+
+    const rows = await sqlClient!`
+      SELECT * FROM quotations
+      WHERE rfp_id = ${rfpId}
+      ORDER BY created_at ASC;
+    `;
+
+    const quotes = (rows || []).map(mapDbRowToQuote);
+    return res.json({
+      success: true,
+      data: quotes,
+      count: quotes.length
+    });
+  } catch (err: any) {
+    console.error('[API] Error fetching quotations:', err);
+    return res.status(500).json({ error: err.message });
+  }
+});
+
+// POST /api/rfps/:rfpId/quotes - Submit or upsert vendor quote
+apiRouter.post('/rfps/:rfpId/quotes', async (req: Request, res: Response) => {
+  try {
+    if (!ensureDatabase(res)) return;
+    const { rfpId } = req.params;
+    const quote = req.body as RFPQuote;
+
+    if (!quote.vendorName || !quote.commercials) {
+      return res.status(400).json({ error: 'Vendor name and commercials are required.' });
+    }
+
+    const id = quote.id || `quote-${Date.now().toString(36)}-${Math.random().toString(36).substring(2, 6)}`;
+    const nowIso = new Date().toISOString();
+
+    await sqlClient!`
+      INSERT INTO quotations (
+        id, rfp_id, vendor_id, vendor_name, vendor_company, contact_email,
+        contact_phone, is_external, external_source, official_document_name,
+        submission_date, quote_validity_date, version, status, commercials,
+        technical_specs, deviations_and_exclusions, statutory_certifications,
+        ai_extraction, created_at, updated_at
+      ) VALUES (
+        ${id}, ${rfpId}, ${quote.vendorId || id}, ${quote.vendorName},
+        ${quote.vendorCompany || quote.vendorName}, ${quote.contactEmail || ''},
+        ${quote.contactPhone || null}, ${quote.isExternal ?? false},
+        ${quote.externalSource || null}, ${quote.officialDocumentName || null},
+        ${quote.submissionDate || nowIso}, ${quote.quoteValidityDate || ''},
+        ${quote.version || 1}, ${quote.status || 'submitted'},
+        ${JSON.stringify(quote.commercials || {})},
+        ${JSON.stringify(quote.technicalSpecs || [])},
+        ${JSON.stringify(quote.deviationsAndExclusions || [])},
+        ${JSON.stringify(quote.statutoryCertifications || [])},
+        ${quote.aiExtraction ? JSON.stringify(quote.aiExtraction) : null},
+        ${nowIso}, ${nowIso}
+      )
+      ON CONFLICT (id) DO UPDATE SET
+        vendor_name = EXCLUDED.vendor_name,
+        vendor_company = EXCLUDED.vendor_company,
+        contact_email = EXCLUDED.contact_email,
+        contact_phone = EXCLUDED.contact_phone,
+        status = EXCLUDED.status,
+        commercials = EXCLUDED.commercials,
+        technical_specs = EXCLUDED.technical_specs,
+        deviations_and_exclusions = EXCLUDED.deviations_and_exclusions,
+        statutory_certifications = EXCLUDED.statutory_certifications,
+        ai_extraction = EXCLUDED.ai_extraction,
+        version = EXCLUDED.version,
+        updated_at = ${nowIso};
+    `;
+
+    // Log bid submission in audit events
+    const auditId = `audit-${Date.now()}-${Math.random().toString(36).substring(2, 6)}`;
+    await sqlClient!`
+      INSERT INTO rfp_audit_events (id, rfp_id, action, performed_by, user_role, details, created_at)
+      VALUES (
+        ${auditId}, ${rfpId}, 'Quotation Submitted / Updated',
+        ${quote.vendorName}, 'vendor',
+        ${JSON.stringify({ quoteId: id, totalCost: quote.commercials.netLandedCost, status: quote.status || 'submitted' })},
+        ${nowIso}
+      );
+    `;
+
+    const savedRows = await sqlClient!`SELECT * FROM quotations WHERE id = ${id} LIMIT 1;`;
+    return res.status(201).json({
+      success: true,
+      data: mapDbRowToQuote(savedRows[0]),
+      message: 'Quotation persisted successfully in PostgreSQL.'
+    });
+  } catch (err: any) {
+    console.error('[API] Error submitting quotation:', err);
+    return res.status(500).json({ error: err.message });
+  }
+});
+
+// PATCH /api/rfps/:rfpId/quotes/:quoteId/status
+apiRouter.patch('/rfps/:rfpId/quotes/:quoteId/status', async (req: Request, res: Response) => {
+  try {
+    if (!ensureDatabase(res)) return;
+    const { rfpId, quoteId } = req.params;
+    const { status, decisionRationale, poReference } = req.body;
+
+    if (!status) {
+      return res.status(400).json({ error: 'Status is required' });
+    }
+
+    const nowIso = new Date().toISOString();
+
+    await sqlClient!`
+      UPDATE quotations SET
+        status = ${status},
+        updated_at = ${nowIso}
+      WHERE id = ${quoteId} AND rfp_id = ${rfpId};
+    `;
+
+    // Log decision in audit events
+    const auditId = `audit-${Date.now()}-${Math.random().toString(36).substring(2, 6)}`;
+    await sqlClient!`
+      INSERT INTO rfp_audit_events (id, rfp_id, action, performed_by, user_role, details, created_at)
+      VALUES (
+        ${auditId}, ${rfpId}, ${`Quote Status Changed to ${status}`},
+        'Hospital Procurement Lead', 'owner',
+        ${JSON.stringify({ quoteId, status, decisionRationale, poReference })},
+        ${nowIso}
+      );
+    `;
+
+    const savedRows = await sqlClient!`SELECT * FROM quotations WHERE id = ${quoteId} LIMIT 1;`;
+    if (!savedRows || savedRows.length === 0) {
+      return res.status(404).json({ error: `Quotation ${quoteId} not found` });
+    }
+
+    return res.json({
+      success: true,
+      data: mapDbRowToQuote(savedRows[0]),
+      message: `Quote status updated to ${status}`
+    });
+  } catch (err: any) {
+    console.error('[API] Error updating quote status:', err);
+    return res.status(500).json({ error: err.message });
+  }
+});
+
+// ----------------------------------------------------------------------------
+// 3. CLARIFICATIONS ENDPOINTS (PostgreSQL with SMTP Notification)
+// ----------------------------------------------------------------------------
+
+// GET /api/rfps/:rfpId/clarifications
+apiRouter.get('/rfps/:rfpId/clarifications', async (req: Request, res: Response) => {
+  try {
+    if (!ensureDatabase(res)) return;
+    const { rfpId } = req.params;
+    const { quoteId, status, category } = req.query;
+
+    const rows = await sqlClient!`
+      SELECT 
+        id, rfp_id as "rfpId", quote_id as "quoteId", vendor_name as "vendorName",
+        line_item_id as "lineItemId", parameter_name as "parameterName", category,
+        question, is_ai_drafted as "isAiDrafted", asked_by as "askedBy",
+        asked_at as "askedAt", response, responded_at as "respondedAt",
+        status, revision_resulted as "revisionResulted",
+        whatsapp_status as "whatsappStatus", email_status as "emailStatus"
+      FROM rfp_clarifications
+      WHERE rfp_id = ${rfpId}
+      ORDER BY asked_at DESC;
+    `;
+
+    let items = rows || [];
+    if (quoteId) items = items.filter((c: any) => c.quoteId === String(quoteId));
+    if (status) items = items.filter((c: any) => c.status === String(status));
+    if (category) items = items.filter((c: any) => c.category === String(category));
+
+    return res.json({
+      success: true,
+      data: items,
+      total: items.length
+    });
+  } catch (err: any) {
+    console.error('[API] Error fetching clarifications:', err);
+    return res.status(500).json({ error: err.message });
+  }
+});
+
+// POST /api/rfps/:rfpId/clarifications - Submit a clarification inquiry
+apiRouter.post('/rfps/:rfpId/clarifications', async (req: Request, res: Response) => {
+  try {
+    if (!ensureDatabase(res)) return;
+    const { rfpId } = req.params;
+    const {
+      quoteId,
+      vendorName,
+      lineItemId,
+      parameterName,
+      category = 'technical',
+      question,
+      askedBy = 'Hospital Procurement Owner',
+      isAiDrafted = false,
+      vendorEmail = 'vendor-sales@medtech.com'
+    } = req.body;
+
+    if (!question || typeof question !== 'string' || !question.trim()) {
+      return res.status(400).json({ error: 'Question content is required' });
+    }
+
+    const id = `clar-${Date.now()}-${Math.random().toString(36).substring(2, 6)}`;
+    const nowIso = new Date().toISOString();
+
+    await sqlClient!`
+      INSERT INTO rfp_clarifications (
+        id, rfp_id, quote_id, vendor_name, line_item_id, parameter_name,
+        category, question, is_ai_drafted, asked_by, asked_at, status,
+        revision_resulted, whatsapp_status, email_status
+      ) VALUES (
+        ${id}, ${rfpId}, ${quoteId || null}, ${vendorName || 'Medical Equipment Vendor'},
+        ${lineItemId || null}, ${parameterName || null}, ${category},
+        ${question.trim()}, ${isAiDrafted}, ${askedBy}, ${nowIso}, 'open',
+        false, 'sent', 'sent'
+      );
+    `;
+
+    // Dispatch async notification email to vendor
+    sendSmtpEmail(
+      vendorEmail,
+      `[NOVA-H Tender] Clarification Query on RFP ${rfpId} (${parameterName || category})`,
+      `
+        <div style="font-family:sans-serif;padding:20px;border:1px solid #e2e8f0;border-radius:8px;">
+          <h2 style="color:#0f172a;margin-top:0;">Clarification Requested by Hospital</h2>
+          <p>The hospital procurement team has requested clarification on your quotation line item:</p>
+          <div style="background:#f8fafc;padding:12px;border-left:4px solid #3b82f6;margin:16px 0;">
+            <strong>Parameter:</strong> ${parameterName || 'General Specification'}<br>
+            <strong>Question:</strong> ${question}
+          </div>
+          <p style="font-size:12px;color:#64748b;">Please log in to your NOVA Vendor Workspace to submit your official technical response.</p>
+        </div>
+      `,
+      `Hospital Clarification Request: ${question}`
+    ).catch(() => {});
+
+    // Log audit event
+    const auditId = `audit-${Date.now()}-${Math.random().toString(36).substring(2, 6)}`;
+    await sqlClient!`
+      INSERT INTO rfp_audit_events (id, rfp_id, action, performed_by, user_role, details, created_at)
+      VALUES (
+        ${auditId}, ${rfpId}, 'Clarification Query Sent to Vendor',
+        ${askedBy}, 'owner',
+        ${JSON.stringify({ clarificationId: id, vendorName, parameterName, question })},
+        ${nowIso}
+      );
+    `;
+
+    return res.status(201).json({
+      success: true,
+      data: {
+        id,
+        rfpId,
+        quoteId,
+        vendorName,
+        lineItemId,
+        parameterName,
+        category,
+        question: question.trim(),
+        askedBy,
+        askedAt: nowIso,
+        status: 'open',
+        isAiDrafted,
+        revisionResulted: false,
+        whatsappStatus: 'sent',
+        emailStatus: 'sent'
+      },
+      message: 'Clarification query registered and dispatched to vendor.'
+    });
+  } catch (err: any) {
+    console.error('[API] Error creating clarification:', err);
+    return res.status(500).json({ error: err.message });
+  }
+});
+
+// POST /api/rfps/:rfpId/clarifications/:id/respond
+apiRouter.post('/rfps/:rfpId/clarifications/:id/respond', async (req: Request, res: Response) => {
+  try {
+    if (!ensureDatabase(res)) return;
+    const { id } = req.params;
+    const { response, revisionResulted = false } = req.body;
+
+    if (!response || !response.trim()) {
+      return res.status(400).json({ error: 'Response text is required' });
+    }
+
+    const nowIso = new Date().toISOString();
+
+    await sqlClient!`
+      UPDATE rfp_clarifications SET
+        response = ${response.trim()},
+        responded_at = ${nowIso},
+        status = 'answered',
+        revision_resulted = ${revisionResulted}
+      WHERE id = ${id};
+    `;
+
+    const rows = await sqlClient!`SELECT * FROM rfp_clarifications WHERE id = ${id} LIMIT 1;`;
+    if (!rows || rows.length === 0) {
+      return res.status(404).json({ error: 'Clarification query not found' });
+    }
+
+    return res.json({
+      success: true,
+      data: rows[0],
+      message: 'Vendor response submitted successfully.'
+    });
+  } catch (err: any) {
+    console.error('[API] Error submitting clarification response:', err);
+    return res.status(500).json({ error: err.message });
+  }
+});
+
+// PATCH /api/rfps/:rfpId/clarifications/:id/resolve
+apiRouter.patch('/rfps/:rfpId/clarifications/:id/resolve', async (req: Request, res: Response) => {
+  try {
+    if (!ensureDatabase(res)) return;
+    const { id } = req.params;
+
+    await sqlClient!`
+      UPDATE rfp_clarifications SET
+        status = 'resolved'
+      WHERE id = ${id};
+    `;
+
+    const rows = await sqlClient!`SELECT * FROM rfp_clarifications WHERE id = ${id} LIMIT 1;`;
+    if (!rows || rows.length === 0) {
+      return res.status(404).json({ error: 'Clarification query not found' });
+    }
+
+    return res.json({
+      success: true,
+      data: rows[0],
+      message: 'Clarification thread resolved.'
+    });
+  } catch (err: any) {
+    console.error('[API] Error resolving clarification:', err);
+    return res.status(500).json({ error: err.message });
+  }
+});
+
+// ----------------------------------------------------------------------------
+// 4. AUDIT EVENTS & ADVISOR OBSERVATIONS ENDPOINTS
+// ----------------------------------------------------------------------------
+
+// GET /api/rfps/:rfpId/audits
+apiRouter.get('/rfps/:rfpId/audits', async (req: Request, res: Response) => {
+  try {
+    if (!ensureDatabase(res)) return;
+    const { rfpId } = req.params;
+
+    const rows = await sqlClient!`
+      SELECT 
+        id, rfp_id as "rfpId", action, performed_by as "performedBy",
+        user_role as "userRole", details, created_at as "timestamp"
+      FROM rfp_audit_events
+      WHERE rfp_id = ${rfpId}
+      ORDER BY created_at DESC;
+    `;
+
+    return res.json({
+      success: true,
+      data: rows || []
+    });
+  } catch (err: any) {
+    console.error('[API] Error fetching audits:', err);
+    return res.status(500).json({ error: err.message });
+  }
+});
+
+// POST /api/rfps/:rfpId/audits
+apiRouter.post('/rfps/:rfpId/audits', async (req: Request, res: Response) => {
+  try {
+    if (!ensureDatabase(res)) return;
+    const { rfpId } = req.params;
+    const { action, performedBy = 'User', userRole = 'owner', details = {} } = req.body;
+
+    const id = `audit-${Date.now()}-${Math.random().toString(36).substring(2, 6)}`;
+    const nowIso = new Date().toISOString();
+
+    await sqlClient!`
+      INSERT INTO rfp_audit_events (id, rfp_id, action, performed_by, user_role, details, created_at)
+      VALUES (${id}, ${rfpId}, ${action}, ${performedBy}, ${userRole}, ${JSON.stringify(details)}, ${nowIso});
+    `;
+
+    return res.status(201).json({
+      success: true,
+      data: { id, rfpId, action, performedBy, userRole, details, timestamp: nowIso }
+    });
+  } catch (err: any) {
+    console.error('[API] Error logging audit event:', err);
+    return res.status(500).json({ error: err.message });
+  }
+});
+
+// GET /api/rfps/:rfpId/observations
+apiRouter.get('/rfps/:rfpId/observations', async (req: Request, res: Response) => {
+  try {
+    if (!ensureDatabase(res)) return;
+    const { rfpId } = req.params;
+
+    const rows = await sqlClient!`
+      SELECT 
+        id, rfp_id as "rfpId", advisor_name as "advisorName", organization,
+        category, observation, recommendation, created_at as "createdAt"
+      FROM advisor_observations
+      WHERE rfp_id = ${rfpId}
+      ORDER BY created_at DESC;
+    `;
+
+    return res.json({
+      success: true,
+      data: rows || []
+    });
+  } catch (err: any) {
+    console.error('[API] Error fetching advisor observations:', err);
+    return res.status(500).json({ error: err.message });
+  }
+});
+
+// POST /api/rfps/:rfpId/observations
+apiRouter.post('/rfps/:rfpId/observations', async (req: Request, res: Response) => {
+  try {
+    if (!ensureDatabase(res)) return;
+    const { rfpId } = req.params;
+    const obs = req.body as AdvisorObservation;
+
+    const id = obs.id || `obs-${Date.now()}-${Math.random().toString(36).substring(2, 6)}`;
+    const nowIso = new Date().toISOString();
+
+    await sqlClient!`
+      INSERT INTO advisor_observations (
+        id, rfp_id, advisor_name, organization, category, observation,
+        recommendation, created_at
+      ) VALUES (
+        ${id}, ${rfpId}, ${obs.advisorName}, ${obs.organization || 'Independent Biomedical Advisor'},
+        ${obs.category}, ${obs.observation}, ${obs.recommendation || ''},
+        ${nowIso}
+      );
+    `;
+
+    return res.status(201).json({
+      success: true,
+      data: { ...obs, id, rfpId, createdAt: nowIso }
+    });
+  } catch (err: any) {
+    console.error('[API] Error saving observation:', err);
     return res.status(500).json({ error: err.message });
   }
 });

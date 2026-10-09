@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Menu, X, ShieldCheck, UserCheck, LogOut, Settings, LayoutDashboard, Server, ChevronDown } from 'lucide-react';
+import { Menu, X, ShieldCheck, UserCheck, LogOut, Settings, LayoutDashboard, Server, ChevronDown, FileText } from 'lucide-react';
 import { UserRole, AuthUser } from '../types';
 import { RouteSlug } from '../utils/routes';
 import { ThemeToggle } from './ThemeToggle';
@@ -158,6 +158,19 @@ export const Navbar: React.FC<NavbarProps> = ({
             Directory
           </button>
           <button
+            onClick={() => handleLinkClick('rfp')}
+            className={`text-xs xl:text-sm font-semibold transition-colors cursor-pointer whitespace-nowrap flex items-center gap-1.5 ${
+              activeSlug === 'rfp' || activeSlug.startsWith('rfp/') || activeSlug === 'procurement' || activeSlug.startsWith('procurement/')
+                ? 'text-blue-700 dark:text-blue-400 font-bold'
+                : 'text-slate-600 dark:text-slate-300 hover:text-blue-700 dark:hover:text-blue-400'
+            }`}
+          >
+            <span>RFPs &amp; Bids</span>
+            <span className="text-[10px] font-black uppercase px-1.5 py-0.2 bg-blue-100 dark:bg-blue-900/60 text-blue-700 dark:text-blue-300 rounded">
+              Hub
+            </span>
+          </button>
+          <button
             onClick={() => handleLinkClick('about')}
             className={`text-xs xl:text-sm font-semibold transition-colors cursor-pointer whitespace-nowrap ${
               activeSlug === 'about' ? 'text-blue-700 dark:text-blue-400 font-bold' : 'text-slate-600 dark:text-slate-300 hover:text-blue-700 dark:hover:text-blue-400'
@@ -296,6 +309,17 @@ export const Navbar: React.FC<NavbarProps> = ({
                       >
                         <UserCheck className="w-4 h-4 text-slate-400 shrink-0" />
                         <span className="flex-1">Network Directory</span>
+                      </button>
+
+                      <button
+                        onClick={() => {
+                          setUserDropdownOpen(false);
+                          handleLinkClick('rfp');
+                        }}
+                        className="w-full flex items-center gap-2.5 px-3 py-2 rounded-xl text-xs font-semibold text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors text-left cursor-pointer"
+                      >
+                        <FileText className="w-4 h-4 text-emerald-600 dark:text-emerald-400 shrink-0" />
+                        <span className="flex-1">Procurement &amp; RFP Hub</span>
                       </button>
 
                       <button
@@ -493,6 +517,19 @@ export const Navbar: React.FC<NavbarProps> = ({
               }`}
             >
               Directory
+            </button>
+            <button
+              onClick={() => handleLinkClick('rfp')}
+              className={`px-3 py-2 text-left text-sm font-semibold rounded-md flex items-center justify-between ${
+                activeSlug === 'rfp' || activeSlug.startsWith('rfp/') || activeSlug === 'procurement' || activeSlug.startsWith('procurement/')
+                  ? 'bg-blue-50 dark:bg-blue-950/50 text-blue-700 dark:text-blue-400 font-bold'
+                  : 'text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800'
+              }`}
+            >
+              <span>Procurement &amp; RFPs</span>
+              <span className="text-[10px] font-black uppercase px-1.5 py-0.5 bg-blue-100 dark:bg-blue-900/60 text-blue-700 dark:text-blue-300 rounded">
+                Hub
+              </span>
             </button>
             <button
               onClick={() => handleLinkClick('about')}

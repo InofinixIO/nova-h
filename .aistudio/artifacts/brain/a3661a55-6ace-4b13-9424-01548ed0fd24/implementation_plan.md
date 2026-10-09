@@ -1,121 +1,50 @@
-# Directory Search Query Parameters, Explicit Search Button & Filtered QR Code Generation
+# Directory Sample CSV & Parser Attribute Enhancement Plan
 
-Enable bidirectional synchronization between Directory Search criteria and URL query parameters, introduce an explicit "Search" action button for intentional filter execution, and extend QR code generation in the Marketing & Pamphlet Studio to encode filtered directory URLs for physical flyers and digital sharing.
-
----
-
-### User Review & Critical Decisions
-
-> [!IMPORTANT]
-> The revised plan incorporates all user requirements and feedback:
-> - **Explicit Search Button**: Added a dedicated "Search Directory" action button beside the search keyword input (with Enter-key trigger) to allow users to consciously execute searches and push history states.
-> - **Bidirectional Query Parameter Sync**:
->   - URL parameters (`q`, `role`, `stage`, `category`, `location`) hydated on mount and kept in sync with browser Back/Forward (`popstate`).
->   - Default/all values are omitted from the URL to keep paths clean.
-> - **QR Code Generator Integration**:
->   - Extended `PamphletSection.tsx` and QR generation utilities to support all 5 directory criteria (`q`, `role`, `stage`, `category`, `location`).
->   - Scanning the generated QR code lands directly on the filtered directory view with pre-selected filters.
->   - Added a "Generate QR for this Search" action in the Directory header so administrators and users can instantly export a QR flyer for their currently filtered view.
+Enhance the sample CSV template and parser to cover the remaining directory attributes requested by the user: **Featured Project**, **Compliance Badges**, and **Verified Status**, while keeping profile claiming fields automated through system workflows.
 
 ---
 
-### 1. Overview & Core Concept
+## User Decision & Scope Summary
 
-- **What It Does**:
-  1. Synchronizes the 5 search criteria (`q`, `role`, `stage`, `category`, `location`) between the Directory UI and the browser URL query string.
-  2. Adds an explicit "Search" button that commits the keyword search and updates the URL and listing results.
-  3. Upgrades the QR Code & Pamphlet generator (`PamphletSection.tsx`) with filter criteria options, generating QR codes that embed full query strings (e.g. `https://www.nova-h.in/directory?role=vendor&location=Mumbai&category=Diagnostic+Imaging`).
-  4. Provides a 1-click "Share / QR Code for this Search" button on the Directory page that opens the QR studio with the active search pre-loaded.
-- **Target Audience**: Hospital promoters, verified suppliers, and consultants who need to bookmark searches or print flyers with QR codes targeting specific specialties and cities.
-- **Key Value**: Professional query-parameter deep linking, intentional search triggers, and cross-channel marketing through QR codes.
+- **Missing Attributes to Add**:
+  1. **Featured Project (`featuredProject`)**: Key flagship project or case study showcase (e.g., *"500-Bed Super Specialty ICU Setup; Completed 2024"*).
+  2. **Compliance Badges (`complianceBadges`)**: Semicolon-delimited badges verified for the vendor/advisor (e.g., *"Verified by NOVA Admin; Active AERB License; ISO 13485"*).
+  3. **Verified Status (`verified`)**: Explicit verification boolean column (`true` / `false` or `yes` / `no`).
+- **Profile Claiming Attributes (`isClaimed`, `claimStatus`, `claimedByUserId`)**: Kept automated by NOVA administrative workflows and claim review approvals, excluded from CSV columns to maintain security and prevent unauthorized claiming.
 
 ---
 
-### 2. User Experience & Visual Design
+## Proposed Changes
 
-#### A. Key User Flows
-1. **Explicit Search & Filter Execution**:
-   - The user selects `Stage: Equipment Procurement`, `Category: Diagnostic Imaging`, and types `CT Scan` in the keyword box.
-   - Clicking the explicit **"Search Directory"** button (or pressing Enter) applies the filter, scrolls smoothly to results, and updates the URL to `/directory?q=CT+Scan&stage=Equipment+Procurement&category=Diagnostic+Imaging`.
-2. **Instant Search QR Generation**:
-   - Above the directory results, a **"Generate QR Code"** button is displayed.
-   - Clicking it opens the QR Pamphlet Studio pre-populated with the exact active search URL.
-   - The user can download high-res PNG/SVG QR codes or print A4 flyer pamphlets featuring the filtered search.
-3. **Scanning a QR Code**:
-   - A hospital promoter scans a physical flyer at a conference.
-   - Their phone opens `/directory?role=vendor&location=Bengaluru&category=Modular+OT`.
-   - The page instantly hydrates: the location is set to Bengaluru, category to Modular OT, and only matching verified vendors are presented.
-4. **Browser Back/Forward Navigation**:
-   - Pressing browser Back/Forward smoothly steps through previous filter combinations without reloading the page.
+### 1. Update CSV Generator (`src/utils/directoryStorage.ts`)
+- Update `generateSampleDirectoryCSV()`:
+  - Add 3 new columns to headers:
+    - `"Featured Project"`
+    - `"Compliance Badges"`
+    - `"Verified"`
+  - Expand all sample rows (VitalTech Biomedical, SurgiClean Modular Cleanrooms, AeroMed NABH & Quality Advisors) with high-quality, realistic healthcare data for these columns.
 
-#### B. Visual Polish & Anti-Slop Discipline
-- Complies with *Frontend Design Constitution*:
-  - Single-elevation input bar with uniform $40\text{px}$ control heights.
-  - Primary blue accent on the "Search Directory" button with clear search icon.
-  - Crisp URL parameter encoding handling spaces, `&`, and `+`.
+### 2. Update CSV Parser (`src/utils/directoryStorage.ts`)
+- In `parseDirectoryCSV()`:
+  - Parse `featuredProject` using aliases: `['featuredproject', 'featured_project', 'project', 'flagship']`.
+  - Parse `complianceBadges` using aliases: `['compliancebadges', 'compliance_badges', 'badges', 'compliance']`, split by `;` or `|`, trimmed and filtered.
+  - Parse `verified` using aliases: `['verified', 'is_verified', 'verification']`. Support values like `true`/`false`, `yes`/`no`, `1`/`0`. Default to `true` if blank.
+  - Ensure sanitized `DirectoryItem` objects retain these fields for database synchronization.
 
----
-
-### 3. Key Product Decisions & Trade-Offs
-
-- **Decision 1: Explicit Search Button vs Live Typing**
-  - *Chosen Approach*: Maintain local draft text while typing, and commit search to URL/results when the user clicks the explicit "Search" button or presses Enter (with a clear button to reset).
-  - *Why*: Directly satisfies the user's explicit request and prevents unnecessary URL thrashing while composing long technical terms.
-
-- **Decision 2: Query Parameter Utility (`src/utils/directoryQueryParams.ts`)**
-  - *Chosen Approach*: Centralized helper with `getDirectoryParamsFromUrl()`, `buildDirectorySearchUrl()`, and `updateDirectoryUrlParams()`.
-  - *Why*: Shared between `DirectorySearch.tsx`, `PamphletSection.tsx`, and `Navbar.tsx`, avoiding duplicated URL parsing logic.
-
-- **Decision 3: Filtered QR Code Generation**
-  - *Chosen Approach*: In `PamphletSection.tsx`, provide controls to customize the target directory URL with role, location, stage, category, and keyword parameters.
-  - *Why*: Fulfills Requirement #2 seamlessly so printed pamphlets can target specific regions and vendor categories.
+### 3. Update Admin Console UI Documentation (`src/components/AdminConsoleView.tsx`)
+- Update the CSV column guide and tooltip inside the Bulk CSV Importer modal:
+  - List the new columns (`Featured Project`, `Compliance Badges`, `Verified`).
+  - Provide formatting examples (e.g. semicolon-separated badges, boolean verification).
+  - Clarify that profile claiming continues to be handled automatically via the Claims Review console.
 
 ---
 
-### 4. Technical Architecture & Parameter Mapping
+## Verification Plan
 
-#### Query Parameter Schema
-
-```
-Key        Type                           Default (Omitted)    Description
-─────────────────────────────────────────────────────────────────────────────
-q          string                         "" (empty)           Search keywords
-role       'all' | 'vendor' | 'advisor'   'all'                Partner community role
-stage      string                         'All'                Hospital project stage
-category   string                         'All'                Specialty or category
-location   string                         'All'                City or territory
-```
-
-#### Shared Directory URL Generator (`src/utils/directoryQueryParams.ts`)
-
-```ts
-export const buildDirectoryUrl = (criteria: DirectorySearchParams, base: string = '/directory'): string => {
-  const params = new URLSearchParams();
-  if (criteria.q?.trim()) params.set('q', criteria.q.trim());
-  if (criteria.role && criteria.role !== 'all') params.set('role', criteria.role);
-  if (criteria.stage && criteria.stage !== 'All') params.set('stage', criteria.stage);
-  if (criteria.category && criteria.category !== 'All') params.set('category', criteria.category);
-  if (criteria.location && criteria.location !== 'All') params.set('location', criteria.location);
-  const qs = params.toString();
-  return qs ? `${base}?${qs}` : base;
-};
-```
-
----
-
-### 5. Step-by-Step Implementation Sequence
-
-1. **`src/utils/directoryQueryParams.ts`**:
-   - Implement `getDirectoryParamsFromUrl()`, `buildDirectoryUrl()`, and `updateDirectoryUrlParams()`.
-2. **`src/components/DirectorySearch.tsx`**:
-   - Hydrate initial filter state from URL query parameters on mount.
-   - Add explicit **"Search Directory"** button with `Search` icon alongside the keyword input.
-   - Wire Enter-key submission and button click to update search results and push/replace URL query parameters.
-   - Add a **"Generate QR Code"** action button in the directory controls that opens the Pamphlet Studio with the current search query string.
-   - Attach `popstate` listener to synchronize state on browser Back/Forward navigation.
-3. **`src/components/PamphletSection.tsx`**:
-   - Add query parameter configuration controls (Role, Location, Category, Keyword) so administrators can generate tailored QR codes.
-   - Support receiving incoming query parameters when navigated from `DirectorySearch`.
-4. **Verification**:
-   - Run `compile_applet` and `lint_applet` to confirm zero errors.
-   - Test explicit search execution, browser Back/Forward navigation, and QR code generation for filtered URLs.
+1. **Compilation**: Run `compile_applet` to ensure TypeScript types and exports match without errors.
+2. **CSV Sample Generation Verification**:
+   - Verify generated CSV string contains all 23 headers and corresponding row values.
+3. **Parser Round-Trip Verification**:
+   - Feed the sample CSV back into `parseDirectoryCSV` to verify that `featuredProject`, `complianceBadges`, and `verified` parse cleanly into `DirectoryItem[]`.
+4. **Database Ingestion Verification**:
+   - Ensure the parsed items map directly into the database schema via `/api/directory/bulk`.

@@ -27,7 +27,9 @@ import {
   parseDirectoryCSV, 
   generateSampleDirectoryCSV, 
   saveStoredDirectory, 
-  resetDirectoryToDefault 
+  resetDirectoryToDefault,
+  syncBulkDirectoryToDatabase,
+  getStoredDirectory
 } from '../utils/directoryStorage';
 import { getStoredRequirements } from '../utils/requirementsStorage';
 import { AdminToolkitEditor } from './AdminToolkitEditor';
@@ -137,23 +139,34 @@ export const AdminDirectoryModal: React.FC<AdminDirectoryModalProps> = ({
     onNotify('Downloaded sample CSV template (nova_directory_template.csv)');
   };
 
-  const handleApplyCsvImport = (mode: 'append' | 'replace') => {
+  const handleApplyCsvImport = async (mode: 'append' | 'replace') => {
     if (previewParsedItems.length === 0) {
       onNotify('No valid entries parsed to import.');
       return;
     }
 
-    let newList: DirectoryItem[];
-    if (mode === 'replace') {
-      newList = previewParsedItems;
-      onNotify(`Replaced directory with ${previewParsedItems.length} imported listings.`);
-    } else {
-      newList = [...directoryItems, ...previewParsedItems];
-      onNotify(`Appended ${previewParsedItems.length} new listings to the directory.`);
+    try {
+      const result = await syncBulkDirectoryToDatabase(previewParsedItems, mode);
+      if (mode === 'replace') {
+        onNotify(`Replaced database directory with ${result.importedCount} imported listings.`);
+      } else {
+        onNotify(`Appended ${result.importedCount} new listings to the database directory.`);
+      }
+
+      const refreshed = getStoredDirectory();
+      onUpdateDirectory(refreshed);
+    } catch {
+      let newList: DirectoryItem[];
+      if (mode === 'replace') {
+        newList = previewParsedItems;
+      } else {
+        newList = [...directoryItems, ...previewParsedItems];
+      }
+      saveStoredDirectory(newList);
+      onUpdateDirectory(newList);
+      onNotify(`Imported ${previewParsedItems.length} listings to directory.`);
     }
 
-    saveStoredDirectory(newList);
-    onUpdateDirectory(newList);
     setPreviewParsedItems([]);
     setCsvText('');
     setActiveTab('manage');

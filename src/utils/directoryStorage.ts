@@ -59,6 +59,102 @@ export async function syncDirectoryWithBackend(): Promise<void> {
   }
 }
 
+export interface DirectoryDbStats {
+  totalCount: number;
+  databaseConfigured: boolean;
+  databaseProvider: string;
+  lastSyncedAt: string;
+}
+
+export async function fetchDirectoryDbStats(): Promise<DirectoryDbStats | null> {
+  if (typeof window === 'undefined') return null;
+  try {
+    const res = await fetch('/api/directory/stats');
+    if (res.ok) {
+      return await res.json();
+    }
+  } catch (e) {
+    // Offline or network error
+  }
+  return null;
+}
+
+export interface BulkImportResult {
+  success: boolean;
+  mode: 'append' | 'replace';
+  importedCount: number;
+  totalCount: number;
+  database: string;
+  timestamp: string;
+  error?: string;
+}
+
+/**
+ * Transactional bulk sync of directory items to backend database (/api/directory/bulk)
+ * Supports atomic append or replace modes, with cache fallback and event notification.
+ */
+export async function syncBulkDirectoryToDatabase(
+  items: DirectoryItem[],
+  mode: 'append' | 'replace'
+): Promise<BulkImportResult> {
+  try {
+    const res = await fetch('/api/directory/bulk', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ items, mode })
+    });
+
+    if (!res.ok) {
+      const errData = await res.json().catch(() => ({}));
+      throw new Error(errData.error || `Server responded with status ${res.status}`);
+    }
+
+    const data: BulkImportResult = await res.json();
+
+    // Mirror to client cache
+    let updatedLocalList: DirectoryItem[];
+    if (mode === 'replace') {
+      updatedLocalList = items;
+    } else {
+      const current = getStoredDirectory();
+      const existingIds = new Set(current.map(i => i.id));
+      const additions = items.filter(i => !existingIds.has(i.id));
+      const incomingMap = new Map(items.map(i => [i.id, i]));
+      const updatedExisting = current.map(i => incomingMap.get(i.id) || i);
+      updatedLocalList = [...additions, ...updatedExisting];
+    }
+
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(updatedLocalList));
+    window.dispatchEvent(new CustomEvent('nova_directory_updated', { detail: updatedLocalList }));
+
+    return data;
+  } catch (err: any) {
+    console.warn('[Storage] Database bulk sync failed, falling back to local cache persistence:', err);
+    // Offline or network failure: preserve data locally
+    let updatedLocalList: DirectoryItem[];
+    if (mode === 'replace') {
+      updatedLocalList = items;
+    } else {
+      const current = getStoredDirectory();
+      const existingIds = new Set(current.map(i => i.id));
+      const additions = items.filter(i => !existingIds.has(i.id));
+      updatedLocalList = [...additions, ...current];
+    }
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(updatedLocalList));
+    window.dispatchEvent(new CustomEvent('nova_directory_updated', { detail: updatedLocalList }));
+
+    return {
+      success: false,
+      mode,
+      importedCount: items.length,
+      totalCount: updatedLocalList.length,
+      database: 'Local Storage Fallback (Offline/Deferred)',
+      timestamp: new Date().toISOString(),
+      error: err.message || 'Database bulk endpoint unreachable'
+    };
+  }
+}
+
 // Auto sync on client load
 if (typeof window !== 'undefined') {
   setTimeout(() => {
@@ -181,6 +277,21 @@ export function parseDirectoryCSV(csvText: string): { items: DirectoryItem[]; er
 
     const headquartersAddress = getVal(['headquartersaddress', 'address', 'office']) || `${location}, India`;
 
+    // Featured Project
+    const featuredProject = getVal(['featuredproject', 'featured_project', 'flagshipproject', 'keyproject', 'featured']) || undefined;
+
+    // Compliance Badges (e.g. semicolon or pipe separated)
+    const badgesRaw = getVal(['compliancebadges', 'compliance_badges', 'badges', 'compliance', 'compliancebadge']);
+    const complianceBadges = badgesRaw
+      ? badgesRaw.split(/[;|]/).map(s => s.trim()).filter(Boolean)
+      : ['Verified by NOVA Admin', 'Active License'];
+
+    // Verified Status (treat 'true', 'yes', '1', 'verified' as true; default true if empty)
+    const verifiedVal = getVal(['verified', 'isverified', 'verification']).toLowerCase().trim();
+    const verified = verifiedVal !== ''
+      ? (verifiedVal === 'true' || verifiedVal === 'yes' || verifiedVal === '1' || verifiedVal === 'verified')
+      : true;
+
     const newItem: DirectoryItem = {
       id: `dir-custom-${Date.now()}-${idx}`,
       name,
@@ -193,7 +304,7 @@ export function parseDirectoryCSV(csvText: string): { items: DirectoryItem[]; er
       projectStages,
       productsAndServices,
       description,
-      verified: true,
+      verified,
       yearsOfExperience,
       contactEmail,
       phone,
@@ -204,7 +315,10 @@ export function parseDirectoryCSV(csvText: string): { items: DirectoryItem[]; er
       certifications,
       clientPortfolio,
       headquartersAddress,
-      complianceBadges: ['Verified by NOVA Admin', 'Active License']
+      featuredProject: featuredProject || undefined,
+      complianceBadges: complianceBadges.length > 0 ? complianceBadges : ['Verified by NOVA Admin', 'Active License'],
+      isClaimed: false,
+      claimStatus: 'unclaimed'
     };
 
     items.push(newItem);
@@ -214,7 +328,8 @@ export function parseDirectoryCSV(csvText: string): { items: DirectoryItem[]; er
 }
 
 /**
- * Generates sample CSV template string that users can download to populate easily
+ * Generates sample CSV template string that users can download to populate easily.
+ * Comprehensive template includes Featured Project, Compliance Badges, Verified status, and all directory attributes.
  */
 export function generateSampleDirectoryCSV(): string {
   const headers = [
@@ -226,6 +341,9 @@ export function generateSampleDirectoryCSV(): string {
     "Project Stages",
     "Products & Services",
     "Description",
+    "Featured Project",
+    "Compliance Badges",
+    "Verified",
     "Phone",
     "Contact Email",
     "Years Of Experience",
@@ -250,6 +368,9 @@ export function generateSampleDirectoryCSV(): string {
       "Medical Equipment & Technology; Commissioning & Handover",
       "High-end ICU Ventilators; Digital C-Arm X-Ray; Patient Monitors",
       "Direct authorized supplier of advanced critical care equipment with comprehensive AMC maintenance across South India.",
+      "50-Bed Modular ICU Upgrade at Fortis Bannerghatta",
+      "Verified by NOVA Admin; AERB Certified Supplier; Active GSTIN",
+      "true",
       "+91 80 4123 7890",
       "sales@vitaltech-bio.in",
       "14",
@@ -272,6 +393,9 @@ export function generateSampleDirectoryCSV(): string {
       "Civil Construction & MEP; Interior Fitouts & Finishes",
       "Prefabricated SS Modular OT; Laminar Airflow Plenums; Hermetic Doors",
       "Turnkey cleanroom and modular operation theatre infrastructure compliant with NABH and ISO 14644 standards.",
+      "6-Suite NABH Super-Specialty OT Wing at Max Healthcare Saket",
+      "Verified by NOVA Admin; ISO 14644 Validated; PESO Cleanroom Approved",
+      "true",
       "+91 11 2689 4433",
       "projects@surgiclean.in",
       "12",
@@ -294,6 +418,9 @@ export function generateSampleDirectoryCSV(): string {
       "Dry Runs & Soft Launch; Commercial Launch & NABH",
       "NABH 5th Edition Audit; Infection Control SOPs; Mock Drills & Clinician Training",
       "Healthcare quality advisory firm with 100% first-attempt NABH & NABL accreditation track record for 70+ hospitals.",
+      "Turnkey NABH 5th Edition Full Accreditation for 350-bed Aster Prime",
+      "Verified by NOVA Admin; QCI Empaneled Auditor; ISQua Senior Fellow",
+      "true",
       "+91 40 6712 8899",
       "consult@aeromed-quality.in",
       "16",
@@ -306,6 +433,81 @@ export function generateSampleDirectoryCSV(): string {
       "QCI Empaneled Consultant; Lead Assessor ISO 15189",
       "KIMS Hospital; Yashoda Hospitals; CARE Hospitals",
       "Road No. 36, Jubilee Hills, Hyderabad, TS 500033"
+    ],
+    [
+      "Apex MedDesign Healthcare Architects",
+      "advisor",
+      "Hospital Architecture & MEP",
+      "Mumbai",
+      "Mumbai; Pune; Ahmedabad; Surat; All India",
+      "Feasibility & Concept; Architectural Design; Civil Construction & MEP",
+      "AERB Bunker Shielding Layouts; Clinical Flow Optimization; Green Hospital GRIHA Rating",
+      "Specialized healthcare master planning and engineering consultants delivering radiation-safe oncology wings and energy-efficient hospital blocks.",
+      "120-Bed Comprehensive Oncology & Linear Accelerator Center at Ruby Hall Pune",
+      "Verified by NOVA Admin; Council of Architecture Reg.; AERB Safety Certified",
+      "true",
+      "+91 22 2498 7700",
+      "studio@apexmeddesign.in",
+      "18",
+      "4.9",
+      "38",
+      "https://www.apexmeddesign.in",
+      "27AAACA9876Q1Z2",
+      "₹85 - ₹160 per sq. ft. architectural planning",
+      "30 - 45 Days schematic set",
+      "Council of Architecture CA/2005/31200; GRIHA Evaluator",
+      "Ruby Hall Clinic; Sahyadri Hospitals; Lilavati Hospital",
+      "Senapati Bapat Marg, Lower Parel, Mumbai, MH 400013"
+    ],
+    [
+      "LifeLine MGPS Technologies",
+      "vendor",
+      "Medical Gas Pipeline Systems (MGPS)",
+      "Chennai",
+      "Chennai; Coimbatore; Madurai; Kochi; All India",
+      "Civil Construction & MEP; Medical Equipment & Technology",
+      "HTM 02-01 Medical Gas Plants; Oxygen Vacuum Outlets; Liquid Medical Oxygen (LMO) Storage",
+      "ISO 7396 and HTM 02-01 certified cryogenic medical gas pipelines, digital alarm panels, and automated manifold systems.",
+      "High-Purity Oxygen & Medical Air Grid for 400-bed SRM Global Hospital",
+      "Verified by NOVA Admin; HTM 02-01 Standard Compliant; PESO Cryogenic Licensed",
+      "true",
+      "+91 44 2815 6677",
+      "projects@lifelinemgps.in",
+      "15",
+      "4.8",
+      "31",
+      "https://www.lifelinemgps.in",
+      "33AAACL1122K1Z9",
+      "₹38,000 - ₹55,000 per piped hospital bed point",
+      "20 - 35 Days",
+      "ISO 7396-1; HTM 02-01; CE 0434; PESO Licensed",
+      "SRM Global Hospital; MIOT International; Kauvery Hospital",
+      "Guindy Industrial Estate, Chennai, TN 600032"
+    ],
+    [
+      "PulseCare Digital Health Solutions",
+      "vendor",
+      "Hospital Information Systems (HIS) & PACS",
+      "Pune",
+      "Pune; Mumbai; Delhi NCR; Bengaluru; Pan-India",
+      "Medical Equipment & Technology; Commissioning & Handover",
+      "Cloud HIS with ABDM M1/M2/M3 Integration; DICOM Cloud PACS; EMR & Tele-ICU Platform",
+      "Ayushman Bharat Digital Mission (ABDM) accredited hospital management platform with zero hardware on-prem footprint.",
+      "ABDM Milestone 3 Paperless Transition across 18 Community Health Centers",
+      "Verified by NOVA Admin; NHA ABDM Certified M1-M3; HIPAA / ISO 27001",
+      "true",
+      "+91 20 6620 4400",
+      "integrations@pulsecare.in",
+      "9",
+      "4.7",
+      "19",
+      "https://www.pulsecare.in",
+      "27AAACP5544L1ZP",
+      "₹45 - ₹90 per outpatient encounter / SaaS tier",
+      "14 - 21 Days setup and go-live",
+      "NHA ABDM Milestone 1-3; ISO 27001:2013; HIPAA Compliant",
+      "Sahyadri Hospitals; Deenanath Mangeshkar Hospital; Bharati Vidyapeeth Hospital",
+      "Magarpatta Cybercity, Hadapsar, Pune, MH 411028"
     ]
   ];
 

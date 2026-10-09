@@ -34,7 +34,9 @@ export type RouteSlug =
   | 'whatsapp-flow'
   | 'flow-builder'
   | 'rfp'
+  | `rfp/${string}`
   | 'procurement'
+  | `procurement/${string}`
   | 'mjml-builder'
   | 'email-templates'
   | 'architecture'
@@ -50,6 +52,14 @@ export const getSlugFromPath = (): RouteSlug => {
   // If running in some iframe / subfolder environments, check hash fallback if path is empty
   if (!path && window.location.hash) {
     path = window.location.hash.replace(/^#\/?/, '').toLowerCase();
+  }
+
+  // Handle RFP deep links (e.g. /rfp, /rfp/rfp-ct-scan-blr-0042, /rfp/rfp-ct-scan-blr-0042/comparison)
+  if (path === 'rfp' || path.startsWith('rfp/')) {
+    return path as RouteSlug;
+  }
+  if (path === 'procurement' || path.startsWith('procurement/')) {
+    return path as RouteSlug;
   }
 
   // Handle partner item detail page (e.g. /partner/1 or /partner/apex-biomedical)
@@ -173,3 +183,69 @@ export const navigateToSlug = (slug: RouteSlug | string, replace: boolean = fals
   // Dispatch custom popstate event so listeners update immediately
   window.dispatchEvent(new PopStateEvent('popstate', { state: { slug } }));
 };
+
+export interface RfpRouteParams {
+  rfpId: string | null;
+  tab: string | null;
+}
+
+/**
+ * Extracts RFP ID and active tab from current URL path or search parameters
+ * Supports: /rfp/:id, /rfp/:id/:tab, /procurement/:id, and ?id=...&tab=...
+ */
+export const getRfpRouteParamsFromUrl = (): RfpRouteParams => {
+  if (typeof window === 'undefined') return { rfpId: null, tab: null };
+
+  // 1. Check URL query parameters (?id=... or ?rfpId=... and ?tab=...)
+  const searchParams = new URLSearchParams(window.location.search);
+  const queryId = searchParams.get('id') || searchParams.get('rfpId') || searchParams.get('rfp');
+  const queryTab = searchParams.get('tab') || searchParams.get('section');
+
+  // 2. Check path segments
+  let path = window.location.pathname.replace(/^\/+|\/+$/g, '');
+  if (!path && window.location.hash) {
+    path = window.location.hash.replace(/^#\/?/, '');
+  }
+
+  let pathId: string | null = null;
+  let pathTab: string | null = null;
+
+  const segments = path.split('/');
+  const prefix = segments[0]?.toLowerCase();
+
+  if (prefix === 'rfp' || prefix === 'procurement') {
+    if (segments.length >= 2 && segments[1]) {
+      pathId = decodeURIComponent(segments[1]);
+    }
+    if (segments.length >= 3 && segments[2]) {
+      pathTab = decodeURIComponent(segments[2]).toLowerCase();
+    }
+  }
+
+  return {
+    rfpId: pathId || queryId || null,
+    tab: (pathTab || queryTab || null)?.toLowerCase() || null
+  };
+};
+
+/**
+ * Builds clean route path for an RFP tender and tab
+ * e.g., /rfp, /rfp/rfp-ct-scan-blr-0042, /rfp/rfp-ct-scan-blr-0042/comparison
+ */
+export const buildRfpPath = (rfpId?: string | null, tab?: string | null): string => {
+  if (!rfpId) return 'rfp';
+  const cleanId = encodeURIComponent(rfpId.trim());
+  if (!tab) {
+    return `rfp/${cleanId}`;
+  }
+  return `rfp/${cleanId}/${encodeURIComponent(tab.trim().toLowerCase())}`;
+};
+
+/**
+ * Navigates to an RFP tender with appropriate history mode (push for tender, replace for tab)
+ */
+export const navigateToRfp = (rfpId?: string | null, tab?: string | null, replace: boolean = false) => {
+  const path = buildRfpPath(rfpId, tab);
+  navigateToSlug(path, replace);
+};
+
